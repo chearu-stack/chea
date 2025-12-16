@@ -768,3 +768,110 @@ h1, h2, h3, h4 {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 }
+
+/* ===== СТИЛИ ДЛЯ СТРАНИЦЫ ОПЛАТЫ (payment.html) ===== */
+.payment-container {
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 0 20px;
+    min-height: 70vh;
+}
+
+.payment-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.payment-steps {
+    background-color: #fffaf0;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 30px;
+    border-left: 6px solid #dd6b20;
+}
+
+.payment-steps ol {
+    padding-left: 20px;
+    margin: 15px 0;
+}
+
+.payment-steps li {
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.qr-section {
+    text-align: center;
+    background: linear-gradient(135deg, #fff5f5, #fed7d7);
+    padding: 30px;
+    border-radius: 12px;
+    margin: 30px 0;
+    border: 2px solid #c53030;
+}
+
+.qr-container {
+    max-width: 300px;
+    margin: 25px auto;
+}
+
+.qr-code {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 10px;
+    background: white;
+}
+
+.qr-note {
+    font-size: 0.9rem;
+    color: #718096;
+    margin-top: 10px;
+}
+
+.alt-payment {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+    border-left: 4px solid #c53030;
+}
+
+.payment-warning {
+    background: #fffaf0;
+    border: 2px dashed #d69e2e;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 30px 0;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+    .payment-container {
+        padding: 0 15px;
+        margin: 20px auto;
+    }
+    
+    .payment-steps,
+    .qr-section,
+    .alt-payment,
+    .payment-warning {
+        padding: 20px;
+    }
+    
+    .qr-container {
+        max-width: 250px;
+    }
+}
+
+@media (max-width: 480px) {
+    .payment-steps,
+    .qr-section,
+    .alt-payment,
+    .payment-warning {
+        padding: 15px;
+    }
+    
+    .qr-container {
+        max-width: 200px;
+    }
+}
