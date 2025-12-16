@@ -716,3 +716,55 @@ h1, h2, h3, h4 {
         padding: 5px 10px;
     }
 }
+
+/* ===== УМНАЯ НАВИГАЦИЯ: ПОЛНОЕ НАЗВАНИЕ НА ДЕСКТОПЕ, СОКРАЩЕНИЕ НА МОБИЛЕ ===== */
+.nav-logo {
+    position: relative;
+    min-height: 30px; /* Чтобы логотип не прыгал при переключении */
+}
+
+.logo-full {
+    display: inline; /* Показываем на десктопе по умолчанию */
+    font-weight: 700;
+    color: #c53030;
+}
+
+.logo-short {
+    display: none; /* Прячем на десктопе */
+    font-weight: 700;
+    color: #c53030;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(197, 48, 48, 0.3);
+    font-size: 0.9em;
+}
+
+/* На мобильных устройствах */
+@media (max-width: 768px) {
+    .logo-full {
+        display: none; /* Прячем полное название */
+    }
+    
+    .logo-short {
+        display: inline; /* Показываем сокращение */
+    }
+    
+    /* Дополнительно: при наведении/тапе показываем всплывающую подсказку */
+    .logo-short:hover::after,
+    .logo-short:focus::after {
+        content: 'Адвокат Медного Гроша';
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: #2d3748;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        z-index: 1000;
+        margin-top: 5px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+}
