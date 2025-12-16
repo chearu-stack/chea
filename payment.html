@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Оплата услуг — Адвокат Медного Гроша</title>
+    <title>Оплата по QR-коду — Адвокат Медного Гроша</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,66 +27,94 @@
     </nav>
 
     <div class="payment-container">
-        <div class="payment-header">
-            <h1>💳 Оплата услуг</h1>
-        </div>
-        
+        <!-- Шаги -->
         <div class="payment-steps">
-            <h3><i class="fas fa-info-circle"></i> Порядок действий</h3>
-            <ol>
-                <li>Выберите подходящий тариф на <a href="index.html#pricing">главной странице</a>.</li>
-                <li>Оплатите по реквизитам ниже.</li>
-                <li><strong>Сфотографируйте или сделайте скриншот чека</strong> об оплате.</li>
-                <li>Отправьте скриншот в Telegram: <a href="https://t.me/chearu-stack" target="_blank" class="telegram-link">@chearu-stack</a>.</li>
-                <li>В ответ вы получите доступ к материалам и дальнейшим инструкциям.</li>
-            </ol>
-        </div>
-        
-        <div class="qr-section">
-            <h3><i class="fas fa-qrcode"></i> Оплата по QR-коду</h3>
-            <p>Наведите камеру телефона на QR-код или нажмите на него, чтобы открыть в банковском приложении.</p>
-            
-            <div class="qr-container">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://www.tinkoff.ru/rm/ваш-ник" 
-                     alt="QR-код для оплаты" 
-                     class="qr-code">
-                <p class="qr-note">
-                    Сумма: <strong>выберите тариф</strong><br>
-                    Назначение: «Оплата консультации»
-                </p>
+            <h2><i class="fas fa-shoe-prints"></i> 3 шага для оплаты</h2>
+            <div class="steps-grid">
+                <div class="step">
+                    <div class="step-icon">1</div>
+                    <h4>Наведите камеру</h4>
+                    <p>Наведите камеру вашего телефона на QR-код справа. Он автоматически откроет приложение банка.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">2</div>
+                    <h4>Проверьте и оплатите</h4>
+                    <p>В приложении проверьте сумму (она заполнится автоматически) и назначение платежа.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">3</div>
+                    <h4>Отправьте чек</h4>
+                    <p>После оплаты <strong>сделайте скриншот чека</strong> и отправьте его в <a href="https://t.me/chearu-stack" target="_blank">Telegram</a>.</p>
+                </div>
             </div>
         </div>
-        
-        <div class="alt-payment">
-            <h4><i class="fas fa-mobile-alt"></i> Если QR-код не работает:</h4>
-            <p>1. Откройте приложение вашего банка<br>
-               2. Выберите «Оплата по реквизитам»<br>
-               3. Введите <strong>только эти данные</strong>:</p>
-            <ul>
-                <li><strong>Счёт:</strong> 40702810**********</li>
-                <li><strong>БИК:</strong> 044525***</li>
-                <li><strong>ИНН:</strong> 7701234***</li>
-            </ul>
-            <p class="warning-text"><i class="fas fa-exclamation-circle"></i> <strong>Полные реквизиты откроются только после проверки.</strong></p>
+
+        <!-- Основной QR-блок -->
+        <div class="qr-main-section">
+            <div class="qr-info">
+                <h3><i class="fas fa-qrcode"></i> Оплата по QR-коду</h3>
+                <p class="qr-description">Это самый быстрый и безопасный способ. Банковское приложение автоматически подставит все нужные реквизиты.</p>
+                
+                <div class="qr-amount-selector">
+                    <p><strong>Выберите тариф для оплаты:</strong></p>
+                    <div class="amount-buttons">
+                        <button class="amount-btn" data-amount="500">Базовый (500₽)</button>
+                        <button class="amount-btn active" data-amount="1200">Расширенный (1200₽)</button>
+                        <button class="amount-btn" data-amount="2500">Подписка (2500₽)</button>
+                    </div>
+                    <p class="current-amount">Сумма к оплате: <span id="selectedAmount">1200</span> ₽</p>
+                </div>
+            </div>
+            
+            <div class="qr-code-wrapper">
+                <div class="qr-code-container">
+                    <!-- ЗАМЕНИ ЭТУ ССЫЛКУ НА СВОЮ -->
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://yoomoney.ru/transfer/quickpay/shop-confirm?receiver=410011123456789&quickpay-form=shop&sum=1200&label=order_123&targets=Консультация+АМГ" 
+                         alt="QR-код для оплаты 1200 рублей" 
+                         class="qr-code-image" id="qrCodeImage">
+                    <p class="qr-hint"><i class="fas fa-mobile-alt"></i> Наведите камеру телефона</p>
+                </div>
+            </div>
         </div>
-        
-        <div class="payment-warning">
-            <h4><i class="fas fa-exclamation-triangle"></i> Что будет после оплаты?</h4>
-            <p>В течение 24 часов (обычно быстрее) после подтверждения платежа вы получите:</p>
+
+        <!-- Что делать, если QR не работает -->
+        <div class="qr-fallback">
+            <h4><i class="fas fa-question-circle"></i> Если QR-код не срабатывает</h4>
+            <p>Напишите нам в <a href="https://t.me/chearu-stack" target="_blank">Telegram</a>, и мы моментально вышлем вам:</p>
             <ul>
-                <li>Доступ к личной странице с шаблонами документов для вашего случая.</li>
-                <li>Пошаговый план действий с учётом вашей ситуации.</li>
-                <li>Расчёт неустойки, если она положена по закону.</li>
-                <li>Контакты для дальнейших вопросов.</li>
+                <li><strong>Персональную ссылку для оплаты</strong> (откроется в вашем банке)</li>
+                <li><strong>Короткие реквизиты</strong> (только счёт и БИК)</li>
+                <li><strong>Инструкцию</strong> для вашего конкретного банка</li>
             </ul>
+            <p class="fallback-note">Мы не публикуем полные реквизиты в открытом доступе — это защищает вас от ошибок при заполнении.</p>
         </div>
-        
-        <div class="payment-buttons">
+
+        <!-- Что будет после оплаты -->
+        <div class="payment-after">
+            <h4><i class="fas fa-gift"></i> Что вы получите сразу после оплаты</h4>
+            <div class="benefits-grid">
+                <div class="benefit">
+                    <i class="fas fa-file-contract"></i>
+                    <p><strong>Доступ к документам</strong><br>Шаблоны претензий, расчёты, инструкции</p>
+                </div>
+                <div class="benefit">
+                    <i class="fas fa-headset"></i>
+                    <p><strong>Поддержка в чате</strong><br>Ответы на вопросы в течение 7 дней</p>
+                </div>
+                <div class="benefit">
+                    <i class="fas fa-bolt"></i>
+                    <p><strong>Быстрый старт</strong><br>Всё готово к использованию сразу после проверки платежа</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Кнопки действий -->
+        <div class="payment-actions">
             <a href="index.html" class="btn btn-primary">
-                <i class="fas fa-home"></i> Вернуться на главную
+                <i class="fas fa-arrow-left"></i> Назад к тарифам
             </a>
-            <a href="https://t.me/chearu-stack" target="_blank" class="btn btn-outline">
-                <i class="fab fa-telegram"></i> Написать в Telegram
+            <a href="https://t.me/chearu-stack" target="_blank" class="btn btn-outline telegram-btn">
+                <i class="fab fa-telegram"></i> Задать вопрос в Telegram
             </a>
         </div>
     </div>
@@ -105,11 +133,45 @@
                     <a href="#">Контакты</a>
                 </div>
                 <p class="footer-disclaimer">
-                    <strong>Информационное примечание:</strong> Сервис предоставляет автоматизированную помощь на основе анализа типовых ситуаций. Не является юридической консультацией.
+                    <strong>Информационное примечание:</strong> Сервис предоставляет автоматизированную помощь. Не является юридической консультацией.
                 </p>
             </div>
         </div>
     </footer>
+
+    <!-- JavaScript для переключения QR-кодов -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Базовая ссылка для QR-кода (ЗАМЕНИ НА СВОЮ РЕАЛЬНУЮ)
+            const baseQRUrl = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
+            
+            const amountButtons = document.querySelectorAll('.amount-btn');
+            const selectedAmountSpan = document.getElementById('selectedAmount');
+            const qrCodeImage = document.getElementById('qrCodeImage');
+            
+            amountButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Убираем активный класс у всех кнопок
+                    amountButtons.forEach(btn => btn.classList.remove('active'));
+                    // Добавляем активный класс нажатой кнопке
+                    this.classList.add('active');
+                    
+                    // Получаем сумму из data-атрибута
+                    const amount = this.getAttribute('data-amount');
+                    // Обновляем отображаемую сумму
+                    selectedAmountSpan.textContent = amount;
+                    
+                    // Обновляем QR-код с новой суммой
+                    const newQRUrl = `${baseQRUrl}&sum=${amount}`;
+                    qrCodeImage.src = newQRUrl;
+                    qrCodeImage.alt = `QR-код для оплаты ${amount} рублей`;
+                });
+            });
+            
+            // Имитация клика по кнопке "Расширенный" при загрузке
+            document.querySelector('.amount-btn.active').click();
+        });
+    </script>
     
     <script src="script.js"></script>
 </body>
