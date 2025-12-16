@@ -41,11 +41,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // ===== 2. ПЛАВНАЯ ПРОКРУТКА ДЛЯ ВСЕХ ВНУТРЕННИХ ССЫЛОК =====
+    // ===== 2. ПЛАВНАЯ ПРОКРУТКА ТОЛЬКО ДЛЯ ВНУТРЕННИХ ЯКОРЕЙ =====
+    // НЕ перехватываем ссылки с data-no-scroll или ведущие на другие страницы
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function(event) {
-            const targetId = this.getAttribute('href');
+            // Если у ссылки есть data-no-scroll - пропускаем
+            if (this.hasAttribute('data-no-scroll')) return;
             
+            const targetId = this.getAttribute('href');
             if (targetId === '#') return;
             
             const targetElement = document.querySelector(targetId);
@@ -88,7 +91,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('scroll', animateOnScroll);
     
     // ===== 4. ПРОСТОЙ КАЛЬКУЛЯТОР НЕУСТОЙКИ (пример в карточке) =====
-    // Это демо-версия, показывающая, как будет работать расчёт
     function updateCalculationExample() {
         const amount = 50000; // Сумма договора
         const days = 14;      // Дни просрочки
@@ -105,8 +107,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Запускаем пример расчёта
     updateCalculationExample();
     
-    // ===== 5. ПОДСВЕТКА ВЫБРАННОГО ТАРИФА =====
-    document.querySelectorAll('.pricing-card .btn').forEach(button => {
+    // ===== 5. ПОДСВЕТКА ВЫБРАННОГО ТАРИФА (только для кнопок без data-no-scroll) =====
+    document.querySelectorAll('.pricing-card .btn:not([data-no-scroll])').forEach(button => {
         button.addEventListener('click', function(event) {
             event.preventDefault();
             
