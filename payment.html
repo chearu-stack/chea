@@ -5,26 +5,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Оплата услуг — Адвокат Медного Гроша</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="container" style="padding: 40px 20px; max-width: 600px;">
-        <h1>Оплата услуг</h1>
-        <p>После оплаты пришлите скриншот чека в Telegram: <strong>@твой_ник</strong></p>
+    <nav class="main-nav">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-balance-scale"></i>
+                <span>Адвокат Медного Гроша</span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html#features">Как это работает</a>
+                <a href="index.html#pricing">Тарифы</a>
+                <a href="index.html#start" class="nav-button">Главная</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" style="padding: 40px 20px; max-width: 700px; min-height: 70vh;">
+        <h1 style="text-align: center; margin-bottom: 30px;">💳 Оплата услуг</h1>
         
-        <div class="bank-card" style="background: #f8f9fa; padding: 25px; border-radius: 12px; margin: 30px 0; border: 2px dashed #c53030;">
-            <h3>Реквизиты для перевода (Сбербанк)</h3>
-            <p><strong>Получатель:</strong> ООО "ТВОЁ НАЗВАНИЕ"</p>
-            <p><strong>ИНН:</strong> 7701234567</p>
-            <p><strong>Расчётный счёт:</strong> 40702810123456789012</p>
-            <p><strong>Банк:</strong> ПАО "Сбербанк"</p>
-            <p><strong>БИК:</strong> 044525123</p>
-            <p><strong>Корр. счёт:</strong> 30101234500000000123</p>
-            <p><strong>Назначение платежа:</strong> Оплата консультации по защите прав потребителей</p>
+        <div class="truth-card" style="margin-bottom: 30px;">
+            <h3><i class="fas fa-info-circle"></i> Порядок действий</h3>
+            <ol style="padding-left: 20px; margin: 15px 0;">
+                <li>Выберите подходящий тариф на <a href="index.html#pricing">главной странице</a>.</li>
+                <li>Оплатите по реквизитам ниже.</li>
+                <li><strong>Сфотографируйте или сделайте скриншот чека</strong> об оплате.</li>
+                <li>Отправьте скриншот в Telegram: <a href="https://t.me/chearu-stack" target="_blank" style="color: #c53030; font-weight: bold;">@chearu-stack</a>.</li>
+                <li>В ответ вы получите доступ к материалам и дальнейшим инструкциям.</li>
+            </ol>
         </div>
         
-        <p><strong>Важно:</strong> Укажите в комментарии к платежу ваш email или номер телефона для связи.</p>
+        <div class="bank-card" style="background: linear-gradient(135deg, #fff5f5, #fed7d7); padding: 30px; border-radius: 12px; margin: 30px 0; border: 2px solid #c53030; box-shadow: 0 10px 25px rgba(197, 48, 48, 0.1);">
+            <h3 style="color: #c53030; margin-top: 0;"><i class="fas fa-university"></i> Реквизиты для перевода</h3>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p><strong>Получатель:</strong> ООО "ВАШЕ_НАЗВАНИЕ"</p>
+                <p><strong>ИНН:</strong> 7701234567</p>
+                <p><strong>Расчётный счёт:</strong> 40702810123456789012</p>
+                <p><strong>Банк:</strong> ПАО "Сбербанк"</p>
+                <p><strong>БИК:</strong> 044525123</p>
+                <p><strong>Корр. счёт:</strong> 30101234500000000123</p>
+                <p><strong>Назначение платежа:</strong> Оплата консультации по защите прав потребителей</p>
+            </div>
+            
+            <p style="color: #718096; font-size: 0.9rem; border-left: 3px solid #e53e3e; padding-left: 15px;">
+                <strong>Важно:</strong> В комментарии к платежу укажите ваш email или номер телефона для связи.
+            </p>
+        </div>
         
-        <a href="index.html" class="btn btn-primary" style="margin-top: 20px;">Вернуться на главную</a>
+        <div class="warning-card" style="background: #fffaf0; border: 2px dashed #d69e2e; padding: 20px; border-radius: 8px; margin: 30px 0;">
+            <h4 style="color: #d69e2e; margin-top: 0;"><i class="fas fa-exclamation-triangle"></i> Что будет после оплаты?</h4>
+            <p>В течение 24 часов (обычно быстрее) после подтверждения платежа вы получите:</p>
+            <ul style="padding-left: 20px;">
+                <li>Доступ к личной странице с шаблонами документов для вашего случая.</li>
+                <li>Пошаговый план действий с учётом вашей ситуации.</li>
+                <li>Расчёт неустойки, если она положена по закону.</li>
+                <li>Контакты для дальнейших вопросов.</li>
+            </ul>
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px;">
+            <a href="index.html" class="btn btn-primary" style="margin-right: 15px;">
+                <i class="fas fa-home"></i> Вернуться на главную
+            </a>
+            <a href="https://t.me/chearu-stack" target="_blank" class="btn btn-outline">
+                <i class="fab fa-telegram"></i> Написать в Telegram
+            </a>
+        </div>
     </div>
+
+    <footer class="main-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <i class="fas fa-balance-scale"></i>
+                    <span>Адвокат Медного Гроша</span>
+                </div>
+                <p class="footer-tagline">Цифровой защитник прав потребителей. Досудебное урегулирование споров.</p>
+                <div class="footer-links">
+                    <a href="index.html">Главная</a>
+                    <a href="#">Конфиденциальность</a>
+                    <a href="#">Контакты</a>
+                </div>
+                <p class="footer-disclaimer">
+                    <strong>Информационное примечание:</strong> Сервис предоставляет автоматизированную помощь на основе анализа типовых ситуаций. Не является юридической консультацией.
+                </p>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>
