@@ -124,6 +124,8 @@ h1, h2, h3, h4 {
 }
 
 .nav-logo {
+    position: relative;
+    min-height: 30px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -134,6 +136,23 @@ h1, h2, h3, h4 {
 
 .nav-logo i {
     font-size: 1.5rem;
+}
+
+.logo-full {
+    display: inline; /* Показываем на десктопе по умолчанию */
+    font-weight: 700;
+    color: #c53030;
+}
+
+.logo-short {
+    display: none; /* Прячем на десктопе */
+    font-weight: 700;
+    color: #c53030;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(197, 48, 48, 0.3);
+    font-size: 0.9em;
 }
 
 /* Гамбургер-меню для мобильных */
@@ -678,12 +697,12 @@ h1, h2, h3, h4 {
 
 /* ===== ФИКС НАВИГАЦИИ ДЛЯ МОБИЛЬНЫХ ===== */
 @media (max-width: 768px) {
-    .nav-logo .logo-text {
-        display: inline; /* Показываем сокращение */
+    .logo-full {
+        display: none; /* Прячем полное название */
     }
     
-    .nav-logo span:not(.logo-text) {
-        display: none; /* Прячем полное название */
+    .logo-short {
+        display: inline; /* Показываем сокращение */
     }
     
     .nav-links a {
@@ -717,180 +736,111 @@ h1, h2, h3, h4 {
     }
 }
 
-/* ===== УМНАЯ НАВИГАЦИЯ: ПОЛНОЕ НАЗВАНИЕ НА ДЕСКТОПЕ, СОКРАЩЕНИЕ НА МОБИЛЕ ===== */
-.nav-logo {
-    position: relative;
-    min-height: 30px; /* Чтобы логотип не прыгал при переключении */
-}
-
-.logo-full {
-    display: inline; /* Показываем на десктопе по умолчанию */
-    font-weight: 700;
-    color: #c53030;
-}
-
-.logo-short {
-    display: none; /* Прячем на десктопе */
-    font-weight: 700;
-    color: #c53030;
-    background-color: rgba(255, 255, 255, 0.1);
-    padding: 2px 6px;
-    border-radius: 4px;
-    border: 1px solid rgba(197, 48, 48, 0.3);
-    font-size: 0.9em;
-}
-
-/* На мобильных устройствах */
-@media (max-width: 768px) {
-    .logo-full {
-        display: none; /* Прячем полное название */
-    }
-    
-    .logo-short {
-        display: inline; /* Показываем сокращение */
-    }
-    
-    /* Дополнительно: при наведении/тапе показываем всплывающую подсказку */
-    .logo-short:hover::after,
-    .logo-short:focus::after {
-        content: 'Адвокат Медного Гроша';
-        position: absolute;
-        top: 100%;
-        left: 0;
-        background: #2d3748;
-        color: white;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 0.8rem;
-        white-space: nowrap;
-        z-index: 1000;
-        margin-top: 5px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-}
-
 /* ===== СТИЛИ ДЛЯ СТРАНИЦЫ ОПЛАТЫ (payment.html) ===== */
 .payment-container {
-    max-width: 700px;
+    max-width: 1000px;
     margin: 40px auto;
     padding: 0 20px;
     min-height: 70vh;
 }
 
-.payment-header {
-    text-align: center;
-    margin-bottom: 40px;
-}
-
+/* Шаги оплаты */
 .payment-steps {
     background-color: #fffaf0;
-    border-radius: 12px;
-    padding: 25px;
-    margin-bottom: 30px;
+    border-radius: 16px;
+    padding: 30px;
+    margin-bottom: 40px;
     border-left: 6px solid #dd6b20;
 }
 
-.payment-steps ol {
-    padding-left: 20px;
-    margin: 15px 0;
+.steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+    margin-top: 30px;
 }
 
-.payment-steps li {
-    margin-bottom: 10px;
-    line-height: 1.5;
-}
-
-.qr-section {
+.step {
     text-align: center;
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    border-top: 4px solid #c53030;
+}
+
+.step-icon {
+    width: 40px;
+    height: 40px;
+    background: #c53030;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin: 0 auto 15px;
+}
+
+/* Основной QR-блок */
+.qr-main-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    align-items: center;
+    margin: 40px 0;
     background: linear-gradient(135deg, #fff5f5, #fed7d7);
     padding: 30px;
-    border-radius: 12px;
-    margin: 30px 0;
-    border: 2px solid #c53030;
+    border-radius: 16px;
 }
 
-.qr-container {
-    max-width: 300px;
-    margin: 25px auto;
+.qr-info {
+    flex: 1;
+    min-width: 300px;
 }
 
-.qr-code {
-    width: 100%;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    padding: 10px;
+.qr-code-wrapper {
+    flex: 0 0 auto;
+}
+
+.qr-code-container {
     background: white;
-}
-
-.qr-note {
-    font-size: 0.9rem;
-    color: #718096;
-    margin-top: 10px;
-}
-
-.alt-payment {
-    background: #f8f9fa;
     padding: 20px;
-    border-radius: 10px;
-    margin-top: 20px;
-    border-left: 4px solid #c53030;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    text-align: center;
 }
 
-.payment-warning {
-    background: #fffaf0;
-    border: 2px dashed #d69e2e;
-    padding: 20px;
+.qr-code-image {
+    width: 100%;
+    max-width: 250px;
+    height: auto;
     border-radius: 8px;
-    margin: 30px 0;
 }
 
-/* Адаптивность для мобильных */
-@media (max-width: 768px) {
-    .payment-container {
-        padding: 0 15px;
-        margin: 20px auto;
-    }
-    
-    .payment-steps,
-    .qr-section,
-    .alt-payment,
-    .payment-warning {
-        padding: 20px;
-    }
-    
-    .qr-container {
-        max-width: 250px;
-    }
+.qr-hint {
+    margin-top: 15px;
+    color: #718096;
+    font-size: 0.9rem;
 }
 
-@media (max-width: 480px) {
-    .payment-steps,
-    .qr-section,
-    .alt-payment,
-    .payment-warning {
-        padding: 15px;
-    }
-    
-    .qr-container {
-        max-width: 200px;
-    }
-}
-/* ===== БЛОК "ВЫ ОПЛАЧИВАЕТЕ" ===== */
+/* Блок "Вы оплачиваете" - ЦЕНТРИРОВАННЫЙ */
 .qr-amount-info {
     background: white;
-    padding: 25px;
-    border-radius: 12px;
-    margin: 25px 0;
+    padding: 30px;
+    border-radius: 16px;
+    margin: 30px 0;
     border: 2px solid #c53030;
-    box-shadow: 0 8px 25px rgba(197, 48, 48, 0.1);
+    box-shadow: 0 10px 30px rgba(197, 48, 48, 0.1);
+    text-align: center;
 }
 
 .selected-plan h4 {
     color: #2d3748;
-    margin-bottom: 20px;
-    font-size: 1.2rem;
+    margin-bottom: 25px;
+    font-size: 1.3rem;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
 }
 
@@ -899,43 +849,46 @@ h1, h2, h3, h4 {
 }
 
 .plan-details {
-    text-align: left;
+    text-align: center;
 }
 
 .plan-name {
-    font-size: 1.1rem;
+    font-size: 1.3rem;
     color: #4a5568;
-    margin-bottom: 15px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 20px;
+    font-weight: 600;
 }
 
 .plan-price {
-    font-size: 3rem;
+    font-size: 3.5rem;
     font-weight: bold;
     color: #c53030;
-    margin: 10px 0;
-    text-align: center;
+    margin: 20px 0;
+    position: relative;
+    display: inline-block;
 }
 
 .plan-price::before {
     content: 'Вы оплачиваете: ';
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     color: #2d3748;
-    display: inline;
-    margin-right: 10px;
+    display: block;
+    margin-bottom: 10px;
     font-weight: normal;
 }
 
 .plan-desc {
     color: #718096;
-    font-size: 0.95rem;
+    font-size: 1rem;
     line-height: 1.5;
-    margin-top: 20px;
-    padding: 15px;
+    margin-top: 25px;
+    padding: 20px;
     background-color: #f8f9fa;
-    border-radius: 8px;
+    border-radius: 10px;
     border-left: 4px solid #38a169;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .amount-instruction {
@@ -948,6 +901,7 @@ h1, h2, h3, h4 {
     margin: 10px 0;
     display: flex;
     align-items: flex-start;
+    justify-content: center;
     gap: 10px;
 }
 
@@ -957,17 +911,101 @@ h1, h2, h3, h4 {
     flex-shrink: 0;
 }
 
-/* Адаптивность */
+/* Что делать, если QR не работает */
+.qr-fallback {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 10px;
+    margin-top: 20px;
+    border-left: 4px solid #c53030;
+}
+
+/* Что будет после оплаты */
+.payment-after {
+    margin: 40px 0;
+}
+
+.benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+    margin-top: 20px;
+}
+
+.benefit {
+    text-align: center;
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    border-top: 4px solid #38a169;
+}
+
+.benefit i {
+    font-size: 2.5rem;
+    color: #38a169;
+    margin-bottom: 15px;
+}
+
+/* Кнопки действий */
+.payment-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    margin: 40px 0;
+}
+
+/* Адаптивность для мобильных */
 @media (max-width: 768px) {
+    .qr-main-section {
+        flex-direction: column;
+        text-align: center;
+        padding: 20px;
+    }
+    
+    .steps-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .qr-code-image {
+        max-width: 200px;
+    }
+    
     .plan-price {
         font-size: 2.5rem;
     }
     
     .plan-price::before {
-        font-size: 1.2rem;
+        font-size: 1rem;
     }
     
     .qr-amount-info {
         padding: 20px;
+    }
+    
+    .amount-instruction p {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .payment-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .payment-actions .btn {
+        width: 100%;
+        max-width: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    .plan-price {
+        font-size: 2rem;
+    }
+    
+    .benefits-grid {
+        grid-template-columns: 1fr;
     }
 }
