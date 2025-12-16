@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Валидация
         if (!answer) {
-            showAlert('Пожалуйста, ответьте на вопрос', 'warning');
+            showAlert('Пожалуйста, задайте вопрос', 'warning');
             currentTextarea.focus();
             return;
         }
