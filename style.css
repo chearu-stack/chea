@@ -1009,3 +1009,133 @@ h1, h2, h3, h4 {
         grid-template-columns: 1fr;
     }
 }
+
+/* ==================== ВИДЖЕТ БОТА ==================== */
+
+/* Прогресс-бар */
+.bot-progress-bar {
+    height: 6px;
+    background: #f0f0f0;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.bot-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4361ee, #3a0ca3);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+/* Пример вопроса */
+.bot-example {
+    font-size: 14px !important;
+    color: #666;
+    background: #f8f9fa;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border-left: 3px solid #4361ee;
+    margin-top: 12px !important;
+}
+
+/* Поле ввода */
+.bot-textarea {
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    transition: border-color 0.2s;
+}
+
+.bot-textarea:focus {
+    border-color: #4361ee;
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+}
+
+/* Счётчик символов */
+.bot-char-counter {
+    text-align: right;
+    font-size: 14px;
+    color: #888;
+    margin-top: 6px;
+}
+
+/* Кнопки виджета - горизонтальное расположение */
+.bot-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+/* Диагноз */
+.bot-diagnosis {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    border: 1px solid #eaeaea;
+}
+
+.diagnosis-icon {
+    font-size: 48px;
+    color: #4361ee;
+    margin-bottom: 16px;
+}
+
+.diagnosis-content p {
+    font-size: 18px;
+    line-height: 1.6;
+    color: #444;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f8f9ff;
+    border-radius: 12px;
+    border-left: 4px solid #4361ee;
+}
+
+.diagnosis-note {
+    text-align: left;
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #eaeaea;
+}
+
+/* Алёрты */
+.bot-alert {
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    animation: slideDown 0.3s ease;
+}
+
+.bot-alert-warning {
+    background: #fff3cd;
+    border: 1px solid #ffecb5;
+    color: #856404;
+}
+
+.bot-alert-error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .bot-buttons {
+        flex-direction: column;
+    }
+}
