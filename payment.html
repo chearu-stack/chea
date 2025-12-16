@@ -15,52 +15,65 @@
         <div class="nav-container">
             <div class="nav-logo">
                 <i class="fas fa-balance-scale"></i>
-                <span>Адвокат Медного Гроша</span>
+                <span class="logo-full">Адвокат Медного Гроша</span>
+                <span class="logo-short">АМГ</span>
             </div>
             <div class="nav-links">
-                <a href="index.html#features">Как это работает</a>
+                <a href="index.html#features">Работа</a>
                 <a href="index.html#pricing">Тарифы</a>
                 <a href="index.html#start" class="nav-button">Главная</a>
             </div>
         </div>
     </nav>
 
-    <div class="container" style="padding: 40px 20px; max-width: 700px; min-height: 70vh;">
-        <h1 style="text-align: center; margin-bottom: 30px;">💳 Оплата услуг</h1>
+    <div class="payment-container">
+        <div class="payment-header">
+            <h1>💳 Оплата услуг</h1>
+        </div>
         
-        <div class="truth-card" style="margin-bottom: 30px;">
+        <div class="payment-steps">
             <h3><i class="fas fa-info-circle"></i> Порядок действий</h3>
-            <ol style="padding-left: 20px; margin: 15px 0;">
+            <ol>
                 <li>Выберите подходящий тариф на <a href="index.html#pricing">главной странице</a>.</li>
                 <li>Оплатите по реквизитам ниже.</li>
                 <li><strong>Сфотографируйте или сделайте скриншот чека</strong> об оплате.</li>
-                <li>Отправьте скриншот в Telegram: <a href="https://t.me/chearu-stack" target="_blank" style="color: #c53030; font-weight: bold;">@chearu-stack</a>.</li>
+                <li>Отправьте скриншот в Telegram: <a href="https://t.me/chearu-stack" target="_blank" class="telegram-link">@chearu-stack</a>.</li>
                 <li>В ответ вы получите доступ к материалам и дальнейшим инструкциям.</li>
             </ol>
         </div>
         
-        <div class="bank-card" style="background: linear-gradient(135deg, #fff5f5, #fed7d7); padding: 30px; border-radius: 12px; margin: 30px 0; border: 2px solid #c53030; box-shadow: 0 10px 25px rgba(197, 48, 48, 0.1);">
-            <h3 style="color: #c53030; margin-top: 0;"><i class="fas fa-university"></i> Реквизиты для перевода</h3>
+        <div class="qr-section">
+            <h3><i class="fas fa-qrcode"></i> Оплата по QR-коду</h3>
+            <p>Наведите камеру телефона на QR-код или нажмите на него, чтобы открыть в банковском приложении.</p>
             
-            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <p><strong>Получатель:</strong> ООО "ВАШЕ_НАЗВАНИЕ"</p>
-                <p><strong>ИНН:</strong> 7701234567</p>
-                <p><strong>Расчётный счёт:</strong> 40702810123456789012</p>
-                <p><strong>Банк:</strong> ПАО "Сбербанк"</p>
-                <p><strong>БИК:</strong> 044525123</p>
-                <p><strong>Корр. счёт:</strong> 30101234500000000123</p>
-                <p><strong>Назначение платежа:</strong> Оплата консультации по защите прав потребителей</p>
+            <div class="qr-container">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://www.tinkoff.ru/rm/ваш-ник" 
+                     alt="QR-код для оплаты" 
+                     class="qr-code">
+                <p class="qr-note">
+                    Сумма: <strong>выберите тариф</strong><br>
+                    Назначение: «Оплата консультации»
+                </p>
             </div>
-            
-            <p style="color: #718096; font-size: 0.9rem; border-left: 3px solid #e53e3e; padding-left: 15px;">
-                <strong>Важно:</strong> В комментарии к платежу укажите ваш email или номер телефона для связи.
-            </p>
         </div>
         
-        <div class="warning-card" style="background: #fffaf0; border: 2px dashed #d69e2e; padding: 20px; border-radius: 8px; margin: 30px 0;">
-            <h4 style="color: #d69e2e; margin-top: 0;"><i class="fas fa-exclamation-triangle"></i> Что будет после оплаты?</h4>
+        <div class="alt-payment">
+            <h4><i class="fas fa-mobile-alt"></i> Если QR-код не работает:</h4>
+            <p>1. Откройте приложение вашего банка<br>
+               2. Выберите «Оплата по реквизитам»<br>
+               3. Введите <strong>только эти данные</strong>:</p>
+            <ul>
+                <li><strong>Счёт:</strong> 40702810**********</li>
+                <li><strong>БИК:</strong> 044525***</li>
+                <li><strong>ИНН:</strong> 7701234***</li>
+            </ul>
+            <p class="warning-text"><i class="fas fa-exclamation-circle"></i> <strong>Полные реквизиты откроются только после проверки.</strong></p>
+        </div>
+        
+        <div class="payment-warning">
+            <h4><i class="fas fa-exclamation-triangle"></i> Что будет после оплаты?</h4>
             <p>В течение 24 часов (обычно быстрее) после подтверждения платежа вы получите:</p>
-            <ul style="padding-left: 20px;">
+            <ul>
                 <li>Доступ к личной странице с шаблонами документов для вашего случая.</li>
                 <li>Пошаговый план действий с учётом вашей ситуации.</li>
                 <li>Расчёт неустойки, если она положена по закону.</li>
@@ -68,8 +81,8 @@
             </ul>
         </div>
         
-        <div style="text-align: center; margin-top: 40px;">
-            <a href="index.html" class="btn btn-primary" style="margin-right: 15px;">
+        <div class="payment-buttons">
+            <a href="index.html" class="btn btn-primary">
                 <i class="fas fa-home"></i> Вернуться на главную
             </a>
             <a href="https://t.me/chearu-stack" target="_blank" class="btn btn-outline">
@@ -97,5 +110,7 @@
             </div>
         </div>
     </footer>
+    
+    <script src="script.js"></script>
 </body>
 </html>
