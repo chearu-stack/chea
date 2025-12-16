@@ -80,9 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </button>
                 </div>
                 
-                <p class="bot-note">
-                    <i class="fas fa-lock"></i> Ваши ответы будут использованы только для анализа.
-                </p>
+
             </div>
         `;
         
