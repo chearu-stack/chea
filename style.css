@@ -675,3 +675,44 @@ h1, h2, h3, h4 {
         padding: 20px;
     }
 }
+
+/* ===== ФИКС НАВИГАЦИИ ДЛЯ МОБИЛЬНЫХ ===== */
+@media (max-width: 768px) {
+    .nav-logo .logo-text {
+        display: inline; /* Показываем сокращение */
+    }
+    
+    .nav-logo span:not(.logo-text) {
+        display: none; /* Прячем полное название */
+    }
+    
+    .nav-links a {
+        font-size: 0.85rem;
+        padding: 5px 8px;
+    }
+    
+    .nav-button {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+    }
+}
+
+/* Для очень маленьких экранов */
+@media (max-width: 480px) {
+    .nav-container {
+        padding: 12px 15px;
+    }
+    
+    .nav-links {
+        gap: 10px;
+    }
+    
+    .nav-links a {
+        font-size: 0.8rem;
+        padding: 4px 6px;
+    }
+    
+    .nav-button {
+        padding: 5px 10px;
+    }
+}
