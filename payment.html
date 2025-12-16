@@ -140,38 +140,76 @@
     </footer>
 
     <!-- JavaScript для переключения QR-кодов -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Базовая ссылка для QR-кода (ЗАМЕНИ НА СВОЮ РЕАЛЬНУЮ)
-            const baseQRUrl = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
-            
-            const amountButtons = document.querySelectorAll('.amount-btn');
-            const selectedAmountSpan = document.getElementById('selectedAmount');
-            const qrCodeImage = document.getElementById('qrCodeImage');
-            
-            amountButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    // Убираем активный класс у всех кнопок
-                    amountButtons.forEach(btn => btn.classList.remove('active'));
-                    // Добавляем активный класс нажатой кнопке
-                    this.classList.add('active');
-                    
-                    // Получаем сумму из data-атрибута
-                    const amount = this.getAttribute('data-amount');
-                    // Обновляем отображаемую сумму
-                    selectedAmountSpan.textContent = amount;
-                    
-                    // Обновляем QR-код с новой суммой
-                    const newQRUrl = `${baseQRUrl}&sum=${amount}`;
-                    qrCodeImage.src = newQRUrl;
-                    qrCodeImage.alt = `QR-код для оплаты ${amount} рублей`;
-                });
-            });
-            
-            // Имитация клика по кнопке "Расширенный" при загрузке
-            document.querySelector('.amount-btn.active').click();
-        });
-    </script>
+<!-- Умный JavaScript, который читает тариф из URL -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // План по умолчанию, если ничего не передали
+    const defaultPlan = {
+        name: 'Расширенный пакет помощи',
+        price: '1200',
+        description: 'Расчёт неустойки + 3 шаблона документов + жалоба в Роспотребнадзор'
+    };
+    
+    // Карта соответствия: plan из URL → красивое название и описание
+    const planDetails = {
+        'basic': {
+            name: 'Базовый пакет помощи',
+            description: 'Анализ ситуации + пошаговый план + 1 шаблон документа (претензия)'
+        },
+        'extended': {
+            name: 'Расширенный пакет помощи',
+            description: 'Расчёт неустойки + 3 шаблона документов + жалоба в Роспотребнадзор'
+        },
+        'subscription': {
+            name: 'Подписка на месяц',
+            description: 'Неограниченное число консультаций + все шаблоны + приоритетная поддержка'
+        }
+    };
+    
+    // Получаем параметры из URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const planKey = urlParams.get('plan'); // "basic", "extended" или "subscription"
+    const price = urlParams.get('price');  // "500", "1200" или "2500"
+    
+    // Определяем, какой план показывать
+    let selectedPlan;
+    if (planKey && planDetails[planKey] && price) {
+        // Если параметры переданы правильно
+        selectedPlan = {
+            ...planDetails[planKey],
+            price: price
+        };
+    } else {
+        // Если кто-то зашёл напрямую без параметров
+        selectedPlan = defaultPlan;
+    }
+    
+    // Обновляем информацию на странице
+    document.getElementById('selectedPlanName').textContent = selectedPlan.name;
+    document.getElementById('selectedPlanPrice').textContent = selectedPlan.price + ' ₽';
+    document.getElementById('selectedPlanDesc').textContent = selectedPlan.description;
+    
+    // ЗАМЕНИ ЭТУ ССЫЛКУ НА СВОЮ БАЗОВУЮ ОТ ЮMoney/Тинькофф
+    const baseQRUrl = 'https://yoomoney.ru/transfer/quickpay/shop-confirm?receiver=ВАШ_НОМЕР_КОШЕЛЬКА&quickpay-form=shop&targets=Консультация+АМГ';
+    
+    // Обновляем QR-код с правильной суммой
+    const qrCodeImage = document.getElementById('qrCodeImage');
+    const newQRUrl = `${baseQRUrl}&sum=${selectedPlan.price}&label=plan_${planKey || 'extended'}`;
+    qrCodeImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(newQRUrl)}`;
+    qrCodeImage.alt = `QR-код для оплаты ${selectedPlan.price} рублей`;
+    
+    // Небольшая анимация для подтверждения
+    const planDetailsElement = document.querySelector('.plan-details');
+    planDetailsElement.style.opacity = '0';
+    planDetailsElement.style.transform = 'translateY(10px)';
+    
+    setTimeout(() => {
+        planDetailsElement.style.transition = 'opacity 0.5s, transform 0.5s';
+        planDetailsElement.style.opacity = '1';
+        planDetailsElement.style.transform = 'translateY(0)';
+    }, 100);
+});
+</script>
     
     <script src="script.js"></script>
 </body>
