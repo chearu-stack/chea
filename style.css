@@ -875,3 +875,99 @@ h1, h2, h3, h4 {
         max-width: 200px;
     }
 }
+/* ===== БЛОК "ВЫ ОПЛАЧИВАЕТЕ" ===== */
+.qr-amount-info {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    margin: 25px 0;
+    border: 2px solid #c53030;
+    box-shadow: 0 8px 25px rgba(197, 48, 48, 0.1);
+}
+
+.selected-plan h4 {
+    color: #2d3748;
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.selected-plan h4 i {
+    color: #c53030;
+}
+
+.plan-details {
+    text-align: left;
+}
+
+.plan-name {
+    font-size: 1.1rem;
+    color: #4a5568;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.plan-price {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #c53030;
+    margin: 10px 0;
+    text-align: center;
+}
+
+.plan-price::before {
+    content: 'Вы оплачиваете: ';
+    font-size: 1.5rem;
+    color: #2d3748;
+    display: inline;
+    margin-right: 10px;
+    font-weight: normal;
+}
+
+.plan-desc {
+    color: #718096;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #38a169;
+}
+
+.amount-instruction {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.amount-instruction p {
+    margin: 10px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.amount-instruction .fa-check-circle {
+    color: #38a169;
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .plan-price {
+        font-size: 2.5rem;
+    }
+    
+    .plan-price::before {
+        font-size: 1.2rem;
+    }
+    
+    .qr-amount-info {
+        padding: 20px;
+    }
+}
