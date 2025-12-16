@@ -4,206 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Умный AI-чат | Доступ по подписке</title>
-    <style>
-        /* Базовый сброс и шрифты */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #fff;
-            min-height: 100vh;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 30px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        }
-        
-        /* Шапка */
-        header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #00dbde;
-        }
-        
-        h1 {
-            font-size: 2.8rem;
-            margin-bottom: 15px;
-            background: linear-gradient(90deg, #00dbde, #fc00ff);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            text-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-        
-        .subtitle {
-            font-size: 1.2rem;
-            color: #aaa;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        /* Преимущества */
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            margin: 40px 0;
-        }
-        
-        .feature {
-            background: rgba(255, 255, 255, 0.08);
-            padding: 25px;
-            border-radius: 16px;
-            border-left: 4px solid #00dbde;
-            transition: transform 0.3s, background 0.3s;
-        }
-        
-        .feature:hover {
-            transform: translateY(-5px);
-            background: rgba(255, 255, 255, 0.12);
-        }
-        
-        .feature h3 {
-            color: #00dbde;
-            margin-bottom: 10px;
-            font-size: 1.4rem;
-        }
-        
-        .feature p {
-            color: #ccc;
-        }
-        
-        /* Демо-чат */
-        .demo-chat {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 16px;
-            padding: 25px;
-            margin: 40px 0;
-            border: 1px solid rgba(0, 219, 222, 0.3);
-        }
-        
-        .demo-title {
-            text-align: center;
-            color: #00dbde;
-            margin-bottom: 20px;
-            font-size: 1.5rem;
-        }
-        
-        .chat-window {
-            background: #0f1525;
-            border-radius: 12px;
-            padding: 20px;
-            min-height: 200px;
-            margin-bottom: 20px;
-            overflow-y: auto;
-            max-height: 300px;
-        }
-        
-        .message {
-            padding: 12px 16px;
-            margin-bottom: 15px;
-            border-radius: 18px;
-            max-width: 80%;
-            animation: fadeIn 0.5s;
-        }
-        
-        .user-message {
-            background: linear-gradient(90deg, #0062ff, #00dbde);
-            margin-left: auto;
-            border-bottom-right-radius: 5px;
-        }
-        
-        .bot-message {
-            background: rgba(255, 255, 255, 0.1);
-            border-bottom-left-radius: 5px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        /* Тарифы */
-        .pricing {
-            text-align: center;
-            margin: 50px 0;
-        }
-        
-        .price-card {
-            background: linear-gradient(145deg, #1e2a44, #0f1525);
-            display: inline-block;
-            padding: 35px;
-            border-radius: 20px;
-            border: 2px solid #00dbde;
-            box-shadow: 0 15px 30px rgba(0, 219, 222, 0.2);
-        }
-        
-        .price {
-            font-size: 3.5rem;
-            font-weight: bold;
-            color: #00dbde;
-            margin: 20px 0;
-        }
-        
-        .period {
-            color: #aaa;
-            font-size: 1.2rem;
-        }
-        
-        .buy-button {
-            display: block;
-            width: 100%;
-            padding: 18px;
-            background: linear-gradient(90deg, #00dbde, #fc00ff);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 1.3rem;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 25px;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        
-        .buy-button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 25px rgba(252, 0, 255, 0.4);
-        }
-        
-        /* Подвал */
-        footer {
-            text-align: center;
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            color: #777;
-            font-size: 0.9rem;
-        }
-        
-        /* Анимации */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Адаптивность */
-        @media (max-width: 768px) {
-            .container { padding: 20px; }
-            h1 { font-size: 2.2rem; }
-            .features { grid-template-columns: 1fr; }
-        }
-    </style>
+    <!-- Подключаем стили -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
@@ -211,7 +13,7 @@
             <h1>✨ Умный AI-Чат</h1>
             <p class="subtitle">Общайтесь с продвинутым искусственным интеллектом на любые темы. Получите доступ к нейросети уровня YandexGPT</p>
         </header>
-        
+
         <section class="features">
             <div class="feature">
                 <h3>🧠 Мощная нейросеть</h3>
@@ -226,7 +28,7 @@
                 <p>Оптимизированная архитектура обеспечивает ответы за 2-3 секунды. Не нужно ждать минутами.</p>
             </div>
         </section>
-        
+
         <section class="demo-chat">
             <h2 class="demo-title">🎯 Демо-диалог (как это работает)</h2>
             <div class="chat-window" id="demoChat">
@@ -242,7 +44,7 @@
             </div>
             <button class="buy-button" onclick="scrollToPricing()">🔐 ПОПРОБОВАТЬ СЕЙЧАС</button>
         </section>
-        
+
         <section class="pricing">
             <h2>💎 Выберите тариф</h2>
             <div class="price-card">
@@ -250,61 +52,24 @@
                 <p>Месяц неограниченного общения</p>
                 <div class="price">299 ₽</div>
                 <p class="period">за 30 дней</p>
-                <p style="color: #aaa; margin: 15px 0;">✓ Неограниченное количество запросов<br>
-                ✓ Приоритетная скорость ответов<br>
-                ✓ Доступ ко всем функциям</p>
+                <p style="color: #aaa; margin: 15px 0;">
+                    ✓ Неограниченное количество запросов<br>
+                    ✓ Приоритетная скорость ответов<br>
+                    ✓ Доступ ко всем функциям
+                </p>
                 <button class="buy-button" onclick="buyAccess()">КУПИТЬ ДОСТУП</button>
             </div>
         </section>
-        
+
         <footer>
             <p>© 2023 Умный AI-Чат. Доступ предоставляется по подписке.</p>
-            <p style="margin-top: 10px; font-size: 0.8rem;">После оплаты вы получите персональную ссылку на чат-интерфейс в личном сообщении ВКонтакте.</p>
+            <p style="margin-top: 10px; font-size: 0.8rem;">
+                После оплаты вы получите персональную ссылку на чат-интерфейс в личном сообщении ВКонтакте.
+            </p>
         </footer>
     </div>
 
-    <script>
-        // Простые функции для кнопок (заглушки - потом заменишь)
-        function scrollToPricing() {
-            document.querySelector('.pricing').scrollIntoView({ 
-                behavior: 'smooth' 
-            });
-        }
-        
-        function buyAccess() {
-            // ЭТУ ФУНКЦИЮ ПОТОМ ПЕРЕДЕЛАЕШЬ для реальной оплаты
-            alert('Система оплаты в разработке. Скоро здесь будет подключена ЮKassa/CloudPayments. А пока тебе нужно создать backend для приёма платежей.');
-        }
-        
-        // Можно добавить анимацию появления элементов при прокрутке
-        window.addEventListener('scroll', function() {
-            const features = document.querySelectorAll('.feature');
-            features.forEach(feature => {
-                const position = feature.getBoundingClientRect();
-                if(position.top < window.innerHeight - 100) {
-                    feature.style.opacity = '1';
-                    feature.style.transform = 'translateY(0)';
-                }
-            });
-        });
-        
-        // Инициализация анимации
-        document.querySelectorAll('.feature').forEach(f => {
-            f.style.opacity = '0';
-            f.style.transform = 'translateY(20px)';
-            f.style.transition = 'opacity 0.8s, transform 0.8s';
-        });
-        
-        // Запуск анимации после загрузки
-        setTimeout(() => {
-            document.querySelectorAll('.feature').forEach(f => {
-                const position = f.getBoundingClientRect();
-                if(position.top < window.innerHeight - 100) {
-                    f.style.opacity = '1';
-                    f.style.transform = 'translateY(0)';
-                }
-            });
-        }, 500);
-    </script>
+    <!-- Подключаем JavaScript в конце -->
+    <script src="script.js"></script>
 </body>
 </html>
