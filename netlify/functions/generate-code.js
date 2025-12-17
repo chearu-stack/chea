@@ -1,7 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 
 exports.handler = async (event, context) => {
-  // 1. Подключаемся к Supabase
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   
@@ -15,7 +14,6 @@ exports.handler = async (event, context) => {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    // 2. Получаем данные из запроса (пакет и базовый код от фронтенда)
     const { package: packageType, baseCode } = JSON.parse(event.body || '{}');
     
     if (!packageType || !baseCode) {
@@ -25,7 +23,15 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 3. Ищем последний код для этой минуты (например, AMG25-12172147-*)
+    // Лимиты капсов по пакетам
+    const capsLimitMap = {
+      basic: 30000,
+      pro: 50000,
+      premium: 90000
+    };
+    const caps_limit = capsLimitMap[packageType] || 30000;
+
+    // Ищем последний код для этой минуты
     const { data: existingCodes, error: fetchError } = await supabase
       .from('access_codes')
       .select('code')
@@ -35,7 +41,7 @@ exports.handler = async (event, context) => {
 
     if (fetchError) throw fetchError;
 
-    // 4. Определяем следующую букву
+    // Определяем следующую букву
     let nextLetter = 'A';
     if (existingCodes && existingCodes.length > 0) {
       const lastCode = existingCodes[0].code;
@@ -45,7 +51,7 @@ exports.handler = async (event, context) => {
 
     const finalCode = `${baseCode}-${nextLetter}`;
 
-    // 5. Записываем в БД
+    // Записываем в БД с лимитом
     const { data, error: insertError } = await supabase
       .from('access_codes')
       .insert([
@@ -53,6 +59,8 @@ exports.handler = async (event, context) => {
           code: finalCode,
           package: packageType,
           status: 'pending',
+          caps_limit: caps_limit,
+          caps_used: 0,
           ip_address: event.headers['x-forwarded-for'] || 'unknown'
         }
       ])
@@ -62,7 +70,6 @@ exports.handler = async (event, context) => {
     if (insertError) {
       // Если код уже существует (уникальность нарушена), пробуем следующую букву
       if (insertError.code === '23505') {
-        // Рекурсивно вызываем снова с обновлённой базой
         const newBaseCode = `${baseCode}-${nextLetter}`;
         return exports.handler({
           ...event,
@@ -72,14 +79,15 @@ exports.handler = async (event, context) => {
       throw insertError;
     }
 
-    // 6. Возвращаем успех
+    // Успех
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         success: true, 
         code: finalCode,
-        id: data.id 
+        id: data.id,
+        caps_limit: caps_limit
       })
     };
 
@@ -95,7 +103,7 @@ exports.handler = async (event, context) => {
   }
 };
 
-// Вспомогательная функция для Excel-стиля колонок (A, B, ..., Z, AA, AB, ...)
+// Вспомогательная функция для Excel-стиля колонок
 function getNextExcelColumn(current) {
   if (!current || current === '') return 'A';
   
