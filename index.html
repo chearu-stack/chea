@@ -11,19 +11,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-   
     <!-- Навигация -->
     <nav class="main-nav">
         <div class="nav-container">
             <div class="nav-logo">
                 <i class="fas fa-balance-scale"></i>
-                <span class="logo-full">Адвокат Медного Гроша</span>
-                <span class="logo-short">АМГ</span>
+                <span>Адвокат Медного Гроша</span>
             </div>
             <div class="nav-links">
                 <a href="#features">Работа</a>
                 <a href="#pricing">Тарифы</a>
-                <a href="#ctaBlock" class="nav-button">Старт</a>
+                <a href="#start" class="nav-button" data-no-scroll>Старт</a>
             </div>
         </div>
     </nav>
@@ -37,10 +35,10 @@
                     Пошаговый план действий, <strong>расчёт неустойки</strong> и готовые документы для досудебного урегулирования споров.
                 </p>
                 <div class="hero-buttons">
-                    <a href="#ctaBlock" class="btn btn-primary">
+                    <a href="#start" class="btn btn-primary" data-no-scroll>
                         <i class="fas fa-play-circle"></i> Проанализировать ситуацию
                     </a>
-                    <a href="#features" class="btn btn-secondary">
+                    <a href="#features" class="btn btn-secondary" data-no-scroll>
                         <i class="fas fa-info-circle"></i> Как это работает
                     </a>
                 </div>
@@ -146,7 +144,7 @@
                 <p>Этот помощник — <strong>не замена юристу</strong>, а <strong>ваш цифровой союзник для досудебного урегулирования</strong>.</p>
                 <p>Его цель — дать вам <strong>максимальные шансы</strong> решить проблему с помощью грамотной претензии, точных расчётов и жалоб в контролирующие органы.</p>
                 <div class="highlight-box">
-                    <p><strong><i class="fas fa-chart-line"></i> Факт:</strong> По данным практики, <strong>для 80–95% типовых споров</strong> с магазинами, ЖКХ, банками или турфирмами <strong>этого достаточно</strong>, чтобы добиться результата без обращения в суд.</p>
+                    <p><strong><i class="fas fa-chart-line"></i> Факт:</strong> По данных практики, <strong>для 80–95% типовых споров</strong> с магазинами, ЖКХ, банками или турфирмами <strong>этого достаточно</strong>, чтобы добиться результата без обращения в суд.</p>
                 </div>
                 <p>Для сложных и нетиповых случаев мы всегда рекомендуем обратиться к профессиональному юристу.</p>
             </div>
@@ -158,7 +156,6 @@
         <div class="container">
             <h2 class="section-title">Выберите пакет помощи</h2>
             <div class="pricing-cards">
-                <!-- БАЗОВЫЙ -->
                 <div class="pricing-card">
                     <div class="pricing-header">
                         <h3>Базовый</h3>
@@ -175,8 +172,6 @@
                     </ul>
                     <a href="payment.html?plan=basic&price=500" class="btn btn-outline" data-no-scroll>Оплатить</a>
                 </div>
-
-                <!-- РАСШИРЕННЫЙ -->
                 <div class="pricing-card popular">
                     <div class="popular-badge">Рекомендуем</div>
                     <div class="pricing-header">
@@ -193,8 +188,6 @@
                     </ul>
                     <a href="payment.html?plan=extended&price=1200" class="btn btn-primary" data-no-scroll>Оплатить</a>
                 </div>
-
-                <!-- ПРОФЕССИОНАЛЬНЫЙ -->
                 <div class="pricing-card">
                     <div class="pricing-header">
                         <h3>Профессиональный</h3>
@@ -215,7 +208,7 @@
     </section>
 
     <!-- CTA Форма -->
-    <section class="cta-section" id="ctaBlock">
+    <section class="cta-section" id="start">
         <div class="container">
             <div class="cta-content">
                 <h2 class="section-title">Проанализируйте ситуацию за 2 минуты</h2>
@@ -243,6 +236,12 @@
                     <span>Адвокат Медного Гроша</span>
                 </div>
                 <p class="footer-tagline">Цифровой защитник прав потребителей. Досудебное урегулирование споров.</p>
+                <!-- Ссылки скрыты -->
+                <!-- <div class="footer-links">
+                    <a href="#">Конфиденциальность</a>
+                    <a href="#">Условия использования</a>
+                    <a href="#">Контакты</a>
+                </div> -->
                 <p class="footer-disclaimer">
                     <strong>Информационное примечание:</strong> Сервис предоставляет автоматизированную помощь на основе анализа типовых ситуаций. Не является юридической консультацией и не заменяет обращения к профессиональному юристу для сложных или судебных дел.
                 </p>
