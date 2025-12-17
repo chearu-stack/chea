@@ -1,5 +1,6 @@
 /**
  * АДВОКАТ МЕДНОГО ГРОША — script.js
+ * ВЕРСИЯ С ИНТЕГРАЦИЕЙ NETLIFY FUNCTIONS
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -65,7 +66,48 @@ document.addEventListener('DOMContentLoaded', () => {
         return `AMG${yy}-${mm}${dd}${hh}${min}-${nextLetter}`;
     }
 
-    // ===== 5. ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ =====
+    // ===== 5. ОТПРАВКА КОДА В БАЗУ ДАННЫХ (NETLIFY FUNCTION) =====
+    async function sendCodeToBackend(orderID, planKey) {
+        try {
+            // Извлекаем базовую часть кода (без буквы)
+            const codeParts = orderID.split('-');
+            const baseCode = `${codeParts[0]}-${codeParts[1]}`; // AMG25-12172147
+            
+            // Маппинг планов (basic, pro, premium)
+            const planMap = {
+                'basic': 'basic',
+                'extended': 'pro',
+                'subscription': 'premium'
+            };
+            const backendPlan = planMap[planKey] || 'basic';
+            
+            console.log('📡 Отправка в бэкенд:', { baseCode, package: backendPlan });
+            
+            const response = await fetch('https://amg-access-system.netlify.app/.netlify/functions/generate-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    package: backendPlan,
+                    baseCode: baseCode
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                console.log('✅ Код успешно записан в БД:', result.code);
+                return result.code; // Возвращаем финальный код (с буквой)
+            } else {
+                console.error('❌ Ошибка бэкенда:', result.error);
+                return orderID; // Возвращаем локальный код как запасной вариант
+            }
+        } catch (error) {
+            console.error('❌ Ошибка сети:', error);
+            return orderID; // Возвращаем локальный код при ошибке
+        }
+    }
+
+    // ===== 6. ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ =====
     const tariffButtons = document.querySelectorAll('.pricing-card .btn');
     tariffButtons.forEach(button => {
         button.addEventListener('click', function(e) {
@@ -85,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ===== 6. ЛОГИКА СТРАНИЦЫ ОПЛАТЫ (PAYMENT.HTML) =====
+    // ===== 7. ЛОГИКА СТРАНИЦЫ ОПЛАТЫ (PAYMENT.HTML) =====
     if (window.location.pathname.includes('payment.html')) {
         const urlParams = new URLSearchParams(window.location.search);
         const planKey = urlParams.get('plan') || 'extended';
@@ -97,47 +139,59 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('lastOrderID', orderID);
         }
 
-        const planDetails = {
-            'basic': { name: 'Базовый пакет помощи', desc: 'Анализ ситуации + пошаговый план + 1 шаблон документа (претензия)' },
-            'extended': { name: 'Расширенный пакет помощи', desc: 'Расчёт неустойки + 3 шаблона документов + жалоба в Роспотребнадзор' },
-            'subscription': { name: 'Подписка на месяц', desc: 'Неограниченное число консультаций + все шаблоны + приоритетная поддержка' }
-        };
+        // Отправляем код в бэкенд и получаем финальную версию
+        (async () => {
+            const finalCode = await sendCodeToBackend(orderID, planKey);
+            orderID = finalCode; // Обновляем код на версию из бэкенда
+            localStorage.setItem('lastOrderID', finalCode);
+            
+            // Дальнейшая логика с использованием finalCode
+            updatePageContent(finalCode, planKey, price);
+        })();
 
-        const currentPlan = planDetails[planKey] || planDetails['extended'];
+        function updatePageContent(orderID, planKey, price) {
+            const planDetails = {
+                'basic': { name: 'Базовый пакет помощи', desc: 'Анализ ситуации + пошаговый план + 1 шаблон документа (претензия)' },
+                'extended': { name: 'Расширенный пакет помощи', desc: 'Расчёт неустойки + 3 шаблона документов + жалоба в Роспотребнадзор' },
+                'subscription': { name: 'Подписка на месяц', desc: 'Неограниченное число консультаций + все шаблоны + приоритетная поддержка' }
+            };
 
-        // Заполняем ID в существующие элементы твоего HTML
-        if (document.getElementById('selectedPlanName')) document.getElementById('selectedPlanName').textContent = currentPlan.name;
-        if (document.getElementById('selectedPlanDesc')) document.getElementById('selectedPlanDesc').textContent = currentPlan.desc;
-        if (document.getElementById('stepAmount')) document.getElementById('stepAmount').textContent = price;
-        if (document.getElementById('instructionAmount')) document.getElementById('instructionAmount').textContent = price;
+            const currentPlan = planDetails[planKey] || planDetails['extended'];
 
-        // Вписываем ID в цену (чтобы не дублировать "Вы оплачиваете")
-        const priceEl = document.getElementById('selectedPlanPrice');
-        if (priceEl) {
-            priceEl.innerHTML = `${price} ₽ <br> <span style="font-size: 1.2rem; color: #e53e3e; display:block; margin-top:5px;">ID: ${orderID}</span>`;
-        }
+            // Заполняем ID в существующие элементы твоего HTML
+            if (document.getElementById('selectedPlanName')) document.getElementById('selectedPlanName').textContent = currentPlan.name;
+            if (document.getElementById('selectedPlanDesc')) document.getElementById('selectedPlanDesc').textContent = currentPlan.desc;
+            if (document.getElementById('stepAmount')) document.getElementById('stepAmount').textContent = price;
+            if (document.getElementById('instructionAmount')) document.getElementById('instructionAmount').textContent = price;
 
-        // ВСТАВЛЯЕМ ID В БЛОК ВНИМАНИЕ (сразу после Личного перевода)
-        const amountInstr = document.querySelector('.amount-instruction');
-        if (amountInstr) {
-            const idText = document.createElement('p');
-            idText.innerHTML = `<i class="fas fa-id-card"></i> <strong>ОБЯЗАТЕЛЬНО</strong> отправьте ваш идентификатор <strong>${orderID}</strong> в Telegram вместе с чеком.`;
-            idText.style.color = "#c53030";
-            idText.style.marginTop = "10px";
-            amountInstr.appendChild(idText);
-        }
+            // Вписываем ID в цену
+            const priceEl = document.getElementById('selectedPlanPrice');
+            if (priceEl) {
+                priceEl.innerHTML = `${price} ₽ <br> <span style="font-size: 1.2rem; color: #e53e3e; display:block; margin-top:5px;">ID: ${orderID}</span>`;
+            }
 
-        // НАСТРОЙКА ТЕЛЕГРАМ (Авто-сообщение)
-        const tgMsg = encodeURIComponent(`Здравствуйте! Мой ID: ${orderID}. Оплатил ${price} ₽. Прилагаю чек.`);
-        document.querySelectorAll('a[href*="t.me/chearu252"]').forEach(link => {
-            link.href = `https://t.me/chearu252?text=${tgMsg}`;
-        });
+            // ВСТАВЛЯЕМ ID В БЛОК ВНИМАНИЕ
+            const amountInstr = document.querySelector('.amount-instruction');
+            if (amountInstr) {
+                const idText = document.createElement('p');
+                idText.innerHTML = `<i class="fas fa-id-card"></i> <strong>ОБЯЗАТЕЛЬНО</strong> отправьте ваш идентификатор <strong>${orderID}</strong> в Telegram вместе с чеком.`;
+                idText.style.color = "#c53030";
+                idText.style.marginTop = "10px";
+                amountInstr.appendChild(idText);
+            }
 
-        // ОБНОВЛЕНИЕ QR-КОДА
-        const qrImg = document.getElementById('qrCodeImage');
-        if (qrImg) {
-            const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
-            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(baseQR + '&sum=' + price + '&label=' + orderID)}`;
+            // НАСТРОЙКА ТЕЛЕГРАМ (Авто-сообщение)
+            const tgMsg = encodeURIComponent(`Здравствуйте! Мой ID: ${orderID}. Оплатил ${price} ₽. Прилагаю чек.`);
+            document.querySelectorAll('a[href*="t.me/chearu252"]').forEach(link => {
+                link.href = `https://t.me/chearu252?text=${tgMsg}`;
+            });
+
+            // ОБНОВЛЕНИЕ QR-КОДА
+            const qrImg = document.getElementById('qrCodeImage');
+            if (qrImg) {
+                const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(baseQR + '&sum=' + price + '&label=' + orderID)}`;
+            }
         }
     }
 });
