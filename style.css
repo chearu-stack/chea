@@ -1172,16 +1172,19 @@ h1, h2, h3, h4 {
     border-left: 4px solid #e91e63;
 }
 
-/* Состояния для анимации */
+/* Состояния для анимации — Исправлено */
 .feature-card, .step, .pricing-card, .truth-card, .hero-content {
-    opacity: 0;
-    transform: translateY(20px);
+    /* Убираем opacity 0, чтобы всё было видно сразу */
+    opacity: 1; 
+    transform: none;
     transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
-.feature-card.animated, .step.animated, .pricing-card.animated, .truth-card.animated, .hero-content.animated {
-    opacity: 1;
-    transform: translateY(0);
+/* Класс animated теперь просто может добавлять легкий эффект, если нужно, 
+но он больше не является условием видимости */
+.animated {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
 }
 
 /* Стили динамического объявления (из админки) */
