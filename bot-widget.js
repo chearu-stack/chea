@@ -1,20 +1,24 @@
 // ==================== bot-widget.js ====================
-// Логика виджета "3 вопроса → бот → диагноз"
+// ЛОГИКА ВИДЖЕТА "3 ВОПРОСА → БОТ → ДИАГНОЗ"
 // Подключается только на главной странице (index.html)
-// Сброс сколла перед запуском виджета
+
+// ===== БЛОК 1: СБРОС СКРОЛЛА =====
+// Фиксим баг с автоскроллом браузера
 window.scrollTo(0, 0);
 if ('scrollRestoration' in history) {
     history.scrollRestoration = 'manual';
 }
+
+// ===== БЛОК 2: ОСНОВНАЯ НАСТРОЙКА =====
 document.addEventListener('DOMContentLoaded', function() {
-    // Элементы DOM
+    // Находим форму на странице
     const ctaForm = document.getElementById('problemForm');
-    const originalFormContent = ctaForm.innerHTML; // Сохраняем оригинал на случай сброса
     
-    // Конфигурация
-    const BOT_ENDPOINT = 'https://your-yandex-function-url/analyze'; // ЗАМЕНИ НА СВОЙ URL
+    // Твой URL для бота (замени на свой)
+    const BOT_ENDPOINT = 'https://your-yandex-function-url/analyze';
     
-    // Данные
+    // ===== БЛОК 3: СПИСОК ВОПРОСОВ =====
+    // Три вопроса с лимитами символов
     const questions = [
         { 
             text: 'Опишите проблему коротко (до 200 символов)', 
@@ -36,18 +40,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     ];
     
-    let currentStep = 0;
-    let userAnswers = {};
-    let currentTextarea = null;
-
-    // ==================== ОСНОВНЫЕ ФУНКЦИИ ====================
+    // ===== БЛОК 4: ПЕРЕМЕННЫЕ =====
+    let currentStep = 0;          // Текущий вопрос (0, 1, 2)
+    let userAnswers = {};         // Ответы пользователя
+    let currentTextarea = null;   // Активное поле ввода
     
-    // Рендерим текущий шаг вопроса
+    // ===== БЛОК 5: РЕНДЕР ВОПРОСА =====
+    // Показывает текущий вопрос
     function renderStep() {
         const q = questions[currentStep];
         
+        // HTML виджета
         ctaForm.innerHTML = `
             <div class="bot-widget">
+                <!-- Прогресс-бар -->
                 <div class="bot-progress">
                     <span class="bot-step-indicator">Вопрос ${currentStep + 1} из 3</span>
                     <div class="bot-progress-bar">
@@ -55,11 +61,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
                 
+                <!-- Текст вопроса -->
                 <div class="bot-question">
                     <p><strong>${q.text}</strong></p>
                     <p class="bot-example"><i class="fas fa-lightbulb"></i> Пример: ${q.example}</p>
                 </div>
                 
+                <!-- Поле для ответа -->
                 <div class="bot-input-container">
                     <textarea 
                         id="botTextarea"
@@ -73,30 +81,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
                 
+                <!-- КНОПКА ТОЛЬКО ВПЕРЁД (НАЗАД НЕТ!) -->
                 <div class="bot-buttons">
-                    ${currentStep > 0 ? 
-                        `<button type="button" class="btn btn-outline" onclick="window.botWidget.prevStep()">
-                            <i class="fas fa-arrow-left"></i> Назад
-                        </button>` : ''
-                    }
                     <button type="button" class="btn btn-primary" onclick="window.botWidget.nextStep()">
                         ${currentStep < 2 ? 'Далее <i class="fas fa-arrow-right"></i>' : '<i class="fas fa-stethoscope"></i> Получить диагноз'}
                     </button>
                 </div>
-                
-
             </div>
         `;
         
-        // Инициализируем счётчик символов
+        // Настройка счётчика символов
         currentTextarea = document.getElementById('botTextarea');
         const charCounter = document.querySelector('.bot-char-counter span');
         
+        // Следим за вводом
         currentTextarea.addEventListener('input', function() {
             const len = this.value.length;
             charCounter.textContent = len;
             
-            // Меняем цвет при приближении к лимиту
+            // Красный текст при приближении к лимиту
             if (len > q.max * 0.9) {
                 charCounter.style.color = '#e74c3c';
             } else {
@@ -107,24 +110,26 @@ document.addEventListener('DOMContentLoaded', function() {
             userAnswers[q.key] = this.value;
         });
         
-        // Если уже есть ответ - обновляем счётчик
+        // Если ответ уже есть — показываем длину
         if (userAnswers[q.key]) {
             charCounter.textContent = userAnswers[q.key].length;
         }
     }
     
-    // Следующий шаг
+    // ===== БЛОК 6: СЛЕДУЮЩИЙ ШАГ =====
+    // Переход к следующему вопросу или отправка
     function nextStep() {
         const q = questions[currentStep];
         const answer = currentTextarea ? currentTextarea.value.trim() : '';
         
-        // Валидация
+        // Проверка: пустой ответ
         if (!answer) {
             showAlert('Пожалуйста, задайте вопрос', 'warning');
             currentTextarea.focus();
             return;
         }
         
+        // Проверка: превышен лимит
         if (answer.length > q.max) {
             showAlert(`Превышен лимит в ${q.max} символов. Сократите ответ.`, 'warning');
             return;
@@ -133,32 +138,27 @@ document.addEventListener('DOMContentLoaded', function() {
         // Сохраняем ответ
         userAnswers[q.key] = answer;
         
-        // Если это последний вопрос - отправляем боту
+        // Если это последний вопрос — отправляем боту
         if (currentStep >= 2) {
             sendToBot();
             return;
         }
         
-        // Иначе переходим к следующему вопросу
+        // Иначе следующий вопрос
         currentStep++;
         renderStep();
     }
     
-    // Предыдущий шаг
-    function prevStep() {
-        if (currentStep <= 0) return;
-        currentStep--;
-        renderStep();
-    }
-    
-    // Сброс к начальному состоянию
+    // ===== БЛОК 7: СБРОС ВИДЖЕТА =====
+    // Начать заново (после диагноза)
     function resetWidget() {
         currentStep = 0;
         userAnswers = {};
         renderStep();
     }
     
-    // Отправка данных боту
+    // ===== БЛОК 8: ОТПРАВКА БОТУ =====
+    // Отправляем ответы на сервер
     async function sendToBot() {
         const submitBtn = ctaForm.querySelector('.btn-primary');
         const originalBtnText = submitBtn.innerHTML;
@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Анализируем...';
         
         try {
-            // Отправляем на твой бэкенд
+            // Отправляем POST-запрос
             const response = await fetch(BOT_ENDPOINT, {
                 method: 'POST',
                 headers: {
@@ -178,12 +178,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`Ошибка HTTP: ${response.status}`);
             }
             
             const result = await response.json();
             
-            // Показываем результат
+            // Показываем диагноз
             showDiagnosis(result);
             
         } catch (error) {
@@ -194,9 +194,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Показать диагноз
+    // ===== БЛОК 9: ПОКАЗ ДИАГНОЗА =====
+    // Выводим результат от бота
     function showDiagnosis(result) {
-        // В result должен быть объект с полем diagnosis
         const diagnosisText = result.diagnosis || 'Нарушение прав потребителя. Требуется досудебное урегулирование.';
         
         ctaForm.innerHTML = `
@@ -209,6 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="diagnosis-content">
                     <p>${diagnosisText}</p>
                     
+                    <!-- Кнопки действий -->
                     <div class="diagnosis-actions">
                         <a href="payment.html" class="btn btn-primary btn-large">
                             <i class="fas fa-shield-alt"></i> Продолжить с пакетом помощи
@@ -218,6 +219,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </button>
                     </div>
                     
+                    <!-- Что дальше -->
                     <div class="diagnosis-note">
                         <p><i class="fas fa-info-circle"></i> <strong>Что дальше?</strong> В пакете помощи вы получите:</p>
                         <ul>
@@ -232,9 +234,9 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
     
-    // Показать алерт
+    // ===== БЛОК 10: УВЕДОМЛЕНИЯ =====
+    // Всплывающие сообщения об ошибках
     function showAlert(message, type = 'info') {
-        // Создаём временное уведомление
         const alertEl = document.createElement('div');
         alertEl.className = `bot-alert bot-alert-${type}`;
         alertEl.innerHTML = `
@@ -252,15 +254,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
     
-    // ==================== ИНИЦИАЛИЗАЦИЯ ====================
-    
-    // Заменяем оригинальную форму на виджет
+    // ===== БЛОК 11: ЗАПУСК =====
+    // Запускаем виджет
     renderStep();
     
-    // Экспортируем функции в глобальную область видимости для вызова из onclick
+    // ===== БЛОК 12: ЭКСПОРТ ФУНКЦИЙ =====
+    // Делаем функции доступными для onclick
     window.botWidget = {
-        nextStep,
-        prevStep,
-        resetWidget
+        nextStep,      // Только вперёд
+        resetWidget    // Сброс
+        // prevStep — УДАЛЕН НАХУЙ
     };
 });
