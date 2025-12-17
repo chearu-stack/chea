@@ -44,32 +44,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // ===== 3. АНИМАЦИЯ ПОЯВЛЕНИЯ (ФИКС ВИДИМОСТИ) =====
+    // ===== 3. АНИМАЦИЯ ПОЯВЛЕНИЯ (ПРИНУДИТЕЛЬНЫЙ ПОКАЗ) =====
+    const animElements = document.querySelectorAll('.feature-card, .step, .pricing-card, .truth-card, .hero-content');
+    
     const scrollObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-            // Если элемент пересекает экран хотя бы на 5%
             if (entry.isIntersecting) {
                 entry.target.classList.add('animated');
+                // Дополнительная страховка: убираем инлайновое скрытие
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
                 scrollObserver.unobserve(entry.target); 
             }
         });
-    }, { 
-        threshold: 0.05, // Срабатывает почти сразу при появлении края
-        rootMargin: '0px 0px -50px 0px' 
-    });
+    }, { threshold: 0.01 });
 
-    // Находим все элементы, которые в CSS помечены как скрытые (opacity: 0)
-    const animElements = document.querySelectorAll('.feature-card, .step, .pricing-card, .truth-card, .hero-content');
-    
     animElements.forEach(el => {
-        scrollObserver.observe(el);
-        
-        // СТРАХОВКА: если пользователь уже проскроллил до середины при загрузке
-        if (el.getBoundingClientRect().top < window.innerHeight) {
+        // ПРИНУДИТЕЛЬНО: Если элемент уже на экране или близко — показываем сразу
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight) {
             el.classList.add('animated');
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+        } else {
+            scrollObserver.observe(el);
         }
     });
-
 
     // ===== 4. ПРИМЕР РАСЧЕТА (СТАТИКА) =====
     // Здесь ничего не меняем, расчет берется из HTML. 
