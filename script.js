@@ -180,3 +180,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Исправление автоскролла при загрузке с якорем
+window.addEventListener('load', function() {
+    if (window.location.hash) {
+        // Мгновенный скролл наверх без анимации
+        window.scrollTo(0, 0);
+        // Убираем якорь из URL
+        history.replaceState(null, null, ' ');
+    }
+});
