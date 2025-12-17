@@ -153,61 +153,66 @@
         </div>
     </section>
 
-    <!-- Тарифы -->
-    <section class="pricing-section" id="pricing">
-        <div class="container">
-            <h2 class="section-title">Выберите пакет помощи</h2>
-            <div class="pricing-cards">
-                <div class="pricing-card">
-                    <div class="pricing-header">
-                        <h3>Базовый</h3>
-                        <div class="price">500 ₽</div>
-                        <p>за один случай</p>
-                    </div>
-                    <ul class="pricing-features">
-                        <li><i class="fas fa-check"></i> Анализ вашей ситуации</li>
-                        <li><i class="fas fa-check"></i> Пошаговый план действий</li>
-                        <li><i class="fas fa-check"></i> 1 шаблон документа (претензия)</li>
-                        <li><i class="fas fa-times"></i> <span class="disabled">Расчёт неустойки</span></li>
-                        <li><i class="fas fa-times"></i> <span class="disabled">Жалоба в Роспотребнадзор</span></li>
-                    </ul>
-                    <a href="payment.html?plan=basic&price=500" class="btn btn-outline" data-no-scroll>Оплатить</a>
+ <!-- Тарифы -->
+<section class="pricing-section" id="pricing">
+    <div class="container">
+        <h2 class="section-title">Выберите пакет помощи</h2>
+        <div class="pricing-cards">
+            <!-- БАЗОВЫЙ -->
+            <div class="pricing-card">
+                <div class="pricing-header">
+                    <h3>Базовый</h3>
+                    <div class="price">500 ₽</div>
+                    <p>решение одного типового спора</p>
                 </div>
-                <div class="pricing-card popular">
-                    <div class="popular-badge">Рекомендуем</div>
-                    <div class="pricing-header">
-                        <h3>Расширенный</h3>
-                        <div class="price">1 200 ₽</div>
-                        <p>за один случай</p>
-                    </div>
-                    <ul class="pricing-features">
-                        <li><i class="fas fa-check"></i> Всё из пакета «Базовый»</li>
-                        <li><i class="fas fa-check"></i> <strong>Расчёт неустойки</strong></li>
-                        <li><i class="fas fa-check"></i> 3 шаблона документов</li>
-                        <li><i class="fas fa-check"></i> Шаблон жалобы в Роспотребнадзор</li>
-                        <li><i class="fas fa-check"></i> Поддержка в чате на 7 дней</li>
-                    </ul>
-                    <a href="payment.html?plan=extended&price=1200" class="btn btn-primary" data-no-scroll>Оплатить</a>
+                <ul class="pricing-features">
+                    <li><i class="fas fa-check"></i> Диагноз ситуации (статья закона)</li>
+                    <li><i class="fas fa-check"></i> Пошаговый план досудебного урегулирования</li>
+                    <li><i class="fas fa-check"></i> 1 готовый документ (претензия)</li>
+                    <li><i class="fas fa-check"></i> 5–7 уточняющих вопросов боту</li>
+                    <li><i class="fas fa-times"></i> <span class="disabled">Расчёт неустойки</span></li>
+                    <li><i class="fas fa-times"></i> <span class="disabled">Жалоба в Роспотребнадзор</span></li>
+                </ul>
+                <a href="payment.html?plan=basic&price=500" class="btn btn-outline" data-no-scroll>Оплатить</a>
+            </div>
+
+            <!-- РАСШИРЕННЫЙ -->
+            <div class="pricing-card popular">
+                <div class="popular-badge">Рекомендуем</div>
+                <div class="pricing-header">
+                    <h3>Расширенный</h3>
+                    <div class="price">1 200 ₽</div>
+                    <p>полное досудебное решение</p>
                 </div>
-                <div class="pricing-card">
-                    <div class="pricing-header">
-                        <h3>Подписка</h3>
-                        <div class="price">2 500 ₽</div>
-                        <p>в месяц</p>
-                    </div>
-                    <ul class="pricing-features">
-                        <li><i class="fas fa-check"></i> Неограниченное число консультаций</li>
-                        <li><i class="fas fa-check"></i> Расчёт неустойки для всех случаев</li>
-                        <li><i class="fas fa-check"></i> Все шаблоны документов</li>
-                        <li><i class="fas fa-check"></i> Приоритетная поддержка в чате</li>
-                        <li><i class="fas fa-check"></i> Обновления и новые функции</li>
-                    </ul>
-                    <a href="payment.html?plan=subscription&price=2500" class="btn btn-outline" data-no-scroll>Оплатить</a>
+                <ul class="pricing-features">
+                    <li><i class="fas fa-check"></i> Всё из пакета «Базовый»</li>
+                    <li><i class="fas fa-check"></i> <strong>Расчёт неустойки/компенсации</strong></li>
+                    <li><i class="fas fa-check"></i> 3 готовых документа (претензия, жалоба, заявление)</li>
+                    <li><i class="fas fa-check"></i> До 20 вопросов боту для детализации</li>
+                    <li><i class="fas fa-check"></i> Поддержка этапов переписки</li>
+                </ul>
+                <a href="payment.html?plan=extended&price=1200" class="btn btn-primary" data-no-scroll>Оплатить</a>
+            </div>
+
+            <!-- ПРОФЕССИОНАЛЬНЫЙ -->
+            <div class="pricing-card">
+                <div class="pricing-header">
+                    <h3>Профессиональный</h3>
+                    <div class="price">2 500 ₽</div>
+                    <p>сложный или многоэтапный спор</p>
                 </div>
+                <ul class="pricing-features">
+                    <li><i class="fas fa-check"></i> Всё из пакета «Расширенный»</li>
+                    <li><i class="fas fa-check"></i> Дополнительные документы (2-й этап, ответы на отписки)</li>
+                    <li><i class="fas fa-check"></i> Расширенный расчёт с вариантами</li>
+                    <li><i class="fas fa-check"></i> До 50 вопросов боту</li>
+                    <li><i class="fas fa-check"></i> Приоритетная генерация документов</li>
+                </ul>
+                <a href="payment.html?plan=professional&price=2500" class="btn btn-outline" data-no-scroll>Оплатить</a>
             </div>
         </div>
-    </section>
-
+    </div>
+</section>
     <!-- CTA Форма -->
     <section class="cta-section" id="start">
         <div class="container">
