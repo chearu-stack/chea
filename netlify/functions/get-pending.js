@@ -14,11 +14,12 @@ exports.handler = async (event, context) => {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
+    // Убрал created_at, сортируем по id (времени создания)
     const { data, error } = await supabase
       .from('access_codes')
-      .select('code, package, status, created_at')
+      .select('code, package, status, id')
       .eq('status', 'pending')
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: false });
 
     if (error) throw error;
 
