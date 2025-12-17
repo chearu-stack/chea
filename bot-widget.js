@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         rows="3"
                         maxlength="${q.max}"
                         placeholder="Опишите вашу проблему согласно примеру...."
-                        autofocus>${userAnswers[q.key] || ''}</textarea>
+                        >${userAnswers[q.key] || ''}</textarea>
                     <div class="bot-char-counter">
                         <span id="charCount">${userAnswers[q.key] ? userAnswers[q.key].length : 0}</span> / ${q.max}
                     </div>
