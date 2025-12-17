@@ -1,14 +1,3 @@
-// ===== 0. БЛОКИРОВКА АВТОСКРОЛЛА ПРИ ЗАГРУЗКЕ С ЯКОРЕМ =====
-(function() {
-    // Если в URL есть якорь (например, #start)
-    if (window.location.hash) {
-        // Немедленно скроллим наверх
-        window.scrollTo(0, 0);
-        // Убираем якорь из URL без перезагрузки
-        history.replaceState(null, null, window.location.pathname + window.location.search);
-    }
-})();
-
 // ===== 1. ОБРАБОТКА ФОРМЫ (заглушка) =====
 document.addEventListener('DOMContentLoaded', function() {
     const problemForm = document.getElementById('problemForm');
