@@ -3,77 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Панель управления — АМГ</title>
+    <title>Админ-панель — Активация кодов</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="admin-body">
-
-    <!-- Оверлей логина -->
     <div id="loginOverlay" class="admin-login-overlay">
         <div class="admin-login-box">
-            <i class="fas fa-balance-scale admin-logo-icon"></i>
-            <h2 class="admin-login-title">Вход в систему</h2>
-            <input type="password" id="adminPass" placeholder="Введите пароль доступа" class="admin-pass-input">
-            <button onclick="checkAuth()" class="btn btn-primary admin-login-btn">Войти в панель</button>
-            <p id="errorMsg" class="admin-error-msg">Неверный пароль!</p>
+            <h2>Вход в панель управления</h2>
+            <input type="password" id="adminPass" placeholder="Пароль" class="admin-pass-input">
+            <button onclick="checkAuth()" class="btn btn-primary admin-login-btn">Войти</button>
+            <p id="errorMsg" class="admin-error-msg">Неверный пароль</p>
         </div>
     </div>
 
-    <!-- Основной контент админки -->
     <div id="adminPage" class="admin-content">
         <header class="admin-header">
-            <h1 class="admin-title"><i class="fas fa-user-shield"></i> Контроль заявок</h1>
-            <button class="admin-logout-btn" onclick="logout()">Выйти</button>
+            <h1>Заявки на активацию</h1>
+            <button onclick="logout()" class="admin-logout-btn">Выйти</button>
         </header>
 
-        <!-- Статистика -->
         <div class="admin-stats-grid">
             <div class="admin-stat-card">
-                <h3 class="admin-stat-title">Ожидают активации</h3>
-                <p id="pendingCount" class="admin-stat-value">0</p>
+                <h3>Ожидают</h3>
+                <p id="pendingCount">0</p>
             </div>
             <div class="admin-stat-card">
-                <h3 class="admin-stat-title">Активные доступы</h3>
-                <p id="activeCount" class="admin-stat-value">0</p>
-            </div>
-            <div class="admin-stat-card">
-                <h3 class="admin-stat-title">Статус системы</h3>
-                <p id="systemStatus" class="admin-stat-status">🟢 Активна</p>
+                <h3>Активны</h3>
+                <p id="activeCount">0</p>
             </div>
         </div>
 
-        <!-- Таблица заказов -->
         <div class="admin-table-container">
-            <h3 class="admin-table-title">Заявки на активацию</h3>
             <div class="admin-table-actions">
                 <button onclick="loadOrders()" class="btn btn-secondary">
-                    <i class="fas fa-sync-alt"></i> Обновить
+                    Обновить
                 </button>
-                <span class="admin-update-time" id="lastUpdate">Загрузка...</span>
+                <span id="lastUpdate" class="admin-update-time"></span>
             </div>
-            
-            <div class="table-responsive">
-                <table class="admin-orders-table">
-                    <thead>
-                        <tr>
-                            <th>Код доступа</th>
-                            <th>Тариф</th>
-                            <th>Дата создания</th>
-                            <th>Статус</th>
-                            <th>Действие</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ordersBody">
-                        <!-- Данные загружаются через JS -->
-                        <tr><td colspan="5" class="loading-row">Загрузка данных...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+
+            <table class="admin-orders-table">
+                <thead>
+                    <tr>
+                        <th>Код доступа</th>
+                        <th>Тариф</th>
+                        <th>Дата</th>
+                        <th>Статус</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersBody">
+                    <tr><td colspan="5" class="loading-row">Загрузка...</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <!-- Подключаем JS -->
     <script src="admin.js"></script>
 </body>
 </html>
