@@ -1139,3 +1139,35 @@ h1, h2, h3, h4 {
         flex-direction: column;
     }
 }
+
+/* Анимация подсветки карточек "Что вы получаете" */
+.feature-card {
+    transition: all 0.4s ease;
+    transform: scale(1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.feature-card:hover {
+    transform: scale(1.03);
+    box-shadow: 0 12px 25px rgba(67, 97, 238, 0.15);
+    border-left: 4px solid #4361ee;
+}
+
+.feature-card.highlight:hover {
+    transform: scale(1.03);
+    box-shadow: 0 12px 25px rgba(233, 30, 99, 0.2);
+    border-left: 4px solid #e91e63;
+}
+
+/* Для мобилок: класс active при скролле */
+.feature-card.scroll-active {
+    transform: scale(1.02);
+    box-shadow: 0 10px 20px rgba(67, 97, 238, 0.12);
+    border-left: 4px solid #4361ee;
+}
+
+.feature-card.highlight.scroll-active {
+    transform: scale(1.02);
+    box-shadow: 0 10px 20px rgba(233, 30, 99, 0.15);
+    border-left: 4px solid #e91e63;
+}
