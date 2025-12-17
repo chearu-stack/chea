@@ -94,3 +94,61 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("Выбран тариф для внутреннего взаимодействия");
         });
     });
+
+   // Функция генерации ID (наш стандарт)
+function generateOrderIdentifier() {
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(-2);
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    
+    // Пока заглушка индекса - "A"
+    return `AMG${yy}-${mm}${dd}${hh}${min}-A`;
+}
+
+// 1. ЛОГИКА ДЛЯ ГЛАВНОЙ (index.html)
+const tariffButtons = document.querySelectorAll('.pricing-card .btn'); // проверь свой селектор
+tariffButtons.forEach(button => {
+    button.addEventListener('click', function(e) {
+        e.preventDefault(); // Стопим обычный переход
+        
+        const card = this.closest('.pricing-card');
+        const plan = this.dataset.plan; // берем из data-plan="basic"
+        const price = this.dataset.price;
+        
+        const newID = generateOrderIdentifier();
+        
+        // СОХРАНЯЕМ В ПАМЯТЬ (имитация записи в БД)
+        localStorage.setItem('lastOrderID', newID);
+        localStorage.setItem('selectedPrice', price);
+        localStorage.setItem('selectedPlan', plan);
+        
+        console.log(`[ЗАГЛУШКА БД]: Сгенерирован ID ${newID}. Готов к отправке в Supabase.`);
+        
+        // Переходим на оплату
+        window.location.href = `payment.html?plan=${plan}&price=${price}`;
+    });
+});
+
+// 2. ЛОГИКА ДЛЯ ОПЛАТЫ (payment.html)
+if (window.location.pathname.includes('payment.html')) {
+    document.addEventListener('DOMContentLoaded', () => {
+        const orderID = localStorage.getItem('lastOrderID');
+        const displayElement = document.getElementById('selectedPlanPrice');
+        
+        if (orderID && displayElement) {
+            // Вставляем ID в верстку (как на твоем скрине)
+            // Мы не меняем структуру, просто инжектим данные в нужные места
+            const idBlock = document.createElement('div');
+            idBlock.className = 'id-display-block';
+            idBlock.innerHTML = `
+                <div style="font-size: 1.2rem; color: #4a5568; margin-top:15px;">ВАШ ИДЕНТИФИКАТОР</div>
+                <div style="font-size: 2.2rem; font-weight: bold; color: #2d3748;">${orderID}</div>
+                <div style="font-size: 0.8rem; color: #e53e3e; margin-top:5px;">ВСТАВЬТЕ ВАШ ИДЕНТИФИКАТОР ПРИ ОТПРАВКЕ ЧЕКА</div>
+            `;
+            displayElement.after(idBlock);
+        }
+    });
+}                       
