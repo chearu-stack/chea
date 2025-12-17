@@ -1171,3 +1171,7 @@ h1, h2, h3, h4 {
     box-shadow: 0 10px 20px rgba(233, 30, 99, 0.15);
     border-left: 4px solid #e91e63;
 }
+/* Блокируем автоскролл браузера до загрузки JavaScript */
+html:has(body) {
+    scroll-behavior: auto !important;
+}
