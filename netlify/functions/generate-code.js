@@ -1,12 +1,25 @@
 const { createClient } = require('@supabase/supabase-js');
 
 exports.handler = async (event, context) => {
+  // CORS headers for GitHub Pages
+  const headers = {
+    'Access-Control-Allow-Origin': 'https://chearu-stack.github.io',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  };
+
+  // Handle preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
+  }
+
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   
   if (!supabaseUrl || !supabaseKey) {
     return { 
       statusCode: 500, 
+      headers, // ✅ Добавил здесь
       body: JSON.stringify({ error: 'Supabase credentials not configured' }) 
     };
   }
@@ -19,6 +32,7 @@ exports.handler = async (event, context) => {
     if (!packageType || !baseCode) {
       return { 
         statusCode: 400, 
+        headers, // ✅ Добавил здесь
         body: JSON.stringify({ error: 'Missing package or baseCode' }) 
       };
     }
@@ -68,7 +82,6 @@ exports.handler = async (event, context) => {
       .single();
 
     if (insertError) {
-      // Если код уже существует (уникальность нарушена), пробуем следующую букву
       if (insertError.code === '23505') {
         const newBaseCode = `${baseCode}-${nextLetter}`;
         return exports.handler({
@@ -82,7 +95,7 @@ exports.handler = async (event, context) => {
     // Успех
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...headers, 'Content-Type': 'application/json' }, // ✅ Добавил headers
       body: JSON.stringify({ 
         success: true, 
         code: finalCode,
@@ -95,6 +108,7 @@ exports.handler = async (event, context) => {
     console.error('Function error:', error);
     return {
       statusCode: 500,
+      headers, // ✅ Добавил здесь
       body: JSON.stringify({ 
         error: 'Internal server error', 
         details: error.message 
