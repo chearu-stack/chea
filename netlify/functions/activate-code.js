@@ -1,12 +1,25 @@
 const { createClient } = require('@supabase/supabase-js');
 
 exports.handler = async (event, context) => {
+  // CORS headers for GitHub Pages
+  const headers = {
+    'Access-Control-Allow-Origin': 'https://chearu-stack.github.io',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  };
+
+  // Handle preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
+  }
+
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   
   if (!supabaseUrl || !supabaseKey) {
     return { 
       statusCode: 500, 
+      headers, // ✅ Добавил
       body: JSON.stringify({ error: 'Supabase credentials not configured' }) 
     };
   }
@@ -14,17 +27,16 @@ exports.handler = async (event, context) => {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    // Получаем код из параметра запроса
     const { code } = event.queryStringParameters || {};
     
     if (!code) {
       return { 
         statusCode: 400, 
+        headers, // ✅ Добавил
         body: JSON.stringify({ error: 'Missing code parameter' }) 
       };
     }
 
-    // Обновляем статус на 'active' и ставим время активации
     const { data, error } = await supabase
       .from('access_codes')
       .update({ 
@@ -32,7 +44,7 @@ exports.handler = async (event, context) => {
         activated_at: new Date().toISOString()
       })
       .eq('code', code)
-      .eq('status', 'pending') // Защита от повторной активации
+      .eq('status', 'pending')
       .select()
       .single();
 
@@ -41,18 +53,16 @@ exports.handler = async (event, context) => {
     if (!data) {
       return {
         statusCode: 404,
+        headers, // ✅ Добавил
         body: JSON.stringify({ 
           error: 'Code not found or already activated' 
         })
       };
     }
 
-    // Здесь потом добавим вызов API ботхаба для установки лимита капсов
-    // const botResponse = await fetch('https://bot-hub-api.com/set-limit', {...});
-
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...headers, 'Content-Type': 'application/json' }, // ✅ Объединил заголовки
       body: JSON.stringify({ 
         success: true, 
         message: `Code ${code} activated`,
@@ -65,6 +75,7 @@ exports.handler = async (event, context) => {
     console.error('Function error:', error);
     return {
       statusCode: 500,
+      headers, // ✅ Добавил
       body: JSON.stringify({ 
         error: 'Internal server error', 
         details: error.message 
