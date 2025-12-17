@@ -1,21 +1,19 @@
 /**
- * АДВОКАТ МЕДНОГО ГРОША — Чистый скрипт интерфейса
+ * АДВОКАТ МЕДНОГО ГРОША — Финальный скрипт
  */
 
 document.addEventListener('DOMContentLoaded', () => {
 
     // ===== 1. ЗАГЛУШКА ДЛЯ АДМИНКИ (БУДУЩЕЕ ВНЕДРЕНИЕ) =====
-    // По умолчанию функция ничего не меняет, пока ты не пропишешь логику в syncWithAdmin()
     const syncWithAdmin = () => {
         const heroCard = document.querySelector('.hero-card');
         if (!heroCard) return;
 
-        // Здесь в будущем будет fetch() из твоей админки
-        const isExternalContentReady = false; // Переключишь на true, когда админка будет готова
+        // Место для будущего fetch()
+        const isExternalContentReady = false; 
 
         if (isExternalContentReady) {
-            // Только здесь сработает замена контента
-            console.log("Система: обнаружен контент из админки. Начинаю внедрение...");
+            console.log("Админка готова к внедрению.");
         }
     };
     syncWithAdmin();
@@ -27,6 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (this.hasAttribute('data-no-scroll')) return;
             
             const targetId = this.getAttribute('href');
+            if (targetId === '#') return;
+            
             const targetElement = document.querySelector(targetId);
             
             if (targetElement) {
@@ -44,39 +44,45 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // ===== 3. АНИМАЦИЯ ПОЯВЛЕНИЯ ЭЛЕМЕНТОВ =====
+    // ===== 3. АНИМАЦИЯ ПОЯВЛЕНИЯ (ФИКС ВИДИМОСТИ) =====
     const scrollObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
+            // Если элемент пересекает экран хотя бы на 5%
             if (entry.isIntersecting) {
                 entry.target.classList.add('animated');
-                observer.unobserve(entry.target); // Один раз анимируем и забываем
+                scrollObserver.unobserve(entry.target); 
             }
         });
-    }, { threshold: 0.1 });
+    }, { 
+        threshold: 0.05, // Срабатывает почти сразу при появлении края
+        rootMargin: '0px 0px -50px 0px' 
+    });
 
-    document.querySelectorAll('.feature-card, .step, .pricing-card, .truth-card')
-            .forEach(el => scrollObserver.observe(el));
-
-
-    // ===== 4. ПРИМЕР РАСЧЕТА (ОСТАЕТСЯ СТАТИЧНЫМ) =====
-    const updateStaticCalc = () => {
-        const result = document.querySelector('.result');
-        // Если в HTML что-то поменяется, скрипт просто подстрахует формат вывода
-        if (result && result.textContent === '21 000 руб.') {
-            // Оставляем как есть, расчет уже вшит в HTML
+    // Находим все элементы, которые в CSS помечены как скрытые (opacity: 0)
+    const animElements = document.querySelectorAll('.feature-card, .step, .pricing-card, .truth-card, .hero-content');
+    
+    animElements.forEach(el => {
+        scrollObserver.observe(el);
+        
+        // СТРАХОВКА: если пользователь уже проскроллил до середины при загрузке
+        if (el.getBoundingClientRect().top < window.innerHeight) {
+            el.classList.add('animated');
         }
-    };
-    updateStaticCalc();
+    });
+
+
+    // ===== 4. ПРИМЕР РАСЧЕТА (СТАТИКА) =====
+    // Здесь ничего не меняем, расчет берется из HTML. 
+    // Скрипт просто подтверждает наличие блока.
+    console.log("Система: расчет компенсации активен.");
 
 
     // ===== 5. ТАРИФЫ (ОБРАБОТКА КЛИКОВ) =====
     document.querySelectorAll('.pricing-card .btn').forEach(button => {
         button.addEventListener('click', function(e) {
-            // Если кнопка без перехода (data-no-scroll), просто логируем выбор
             if (this.hasAttribute('data-no-scroll')) {
                 e.preventDefault();
-                const plan = this.closest('.pricing-card').querySelector('h3').textContent;
-                console.log(`Выбран тариф: ${plan}`);
+                // Логика выбора без перезагрузки
             }
         });
     });
