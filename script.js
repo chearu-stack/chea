@@ -114,59 +114,48 @@ document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
         const planKey = urlParams.get('plan') || 'extended';
         const price = urlParams.get('price') || '1200';
-        const orderID = localStorage.getItem('lastOrderID') || generateOrderIdentifier();
+        const orderID = localStorage.getItem('lastOrderID') || "AMG-TEMP-A";
 
-        const planDetails = {
-            'basic': { name: 'Базовый пакет помощи', desc: 'Анализ ситуации + пошаговый план + 1 шаблон документа (претензия)' },
-            'extended': { name: 'Расширенный пакет помощи', desc: 'Расчёт неустойки + 3 шаблона документов + жалоба в Роспотребнадзор' },
-            'subscription': { name: 'Подписка на месяц', desc: 'Неограниченное число консультаций + все шаблоны + приоритетная поддержка' }
-        };
-
-        const currentPlan = planDetails[planKey] || planDetails['extended'];
-
-        // Обновляем текстовые блоки (которые раньше обновлял скрипт в HTML)
-        const nameEl = document.getElementById('selectedPlanName');
-        const descEl = document.getElementById('selectedPlanDesc');
+        // 1. Находим элементы
         const priceDisplay = document.getElementById('selectedPlanPrice');
         const stepAmt = document.getElementById('stepAmount');
         const instrAmt = document.getElementById('instructionAmount');
 
-        if (nameEl) nameEl.textContent = currentPlan.name;
-        if (descEl) descEl.textContent = currentPlan.desc;
+        // 2. Обновляем простые значения (без дублирования текста)
         if (stepAmt) stepAmt.textContent = price;
         if (instrAmt) instrAmt.textContent = price;
 
-        // Вставка ID (Тот самый блок со скрина)
+        // 3. Красивый блок ID под ценой (БЕЗ лишних слов "Вы оплачиваете")
         if (priceDisplay) {
-            priceDisplay.innerHTML = `${price} ₽`; // Ставим цену
-            const idBlock = document.createElement('div');
-            idBlock.style.marginTop = '15px';
-            idBlock.style.borderTop = '1px dashed #ccc';
-            idBlock.style.paddingTop = '10px';
-            idBlock.innerHTML = `
-                <span style="font-size: 0.85rem; color: #718096; display: block; letter-spacing: 1px; font-weight: bold;">ВАШ ИДЕНТИФИКАТОР</span>
-                <span style="font-family: 'Courier New', monospace; font-size: 1.8rem; font-weight: bold; color: #2d3748; display: block;">${orderID}</span>
+            priceDisplay.innerHTML = `${price} ₽`; // Оставляем только саму цену
+            
+            const idCard = document.createElement('div');
+            idCard.style.cssText = `
+                margin-top: 20px;
+                padding: 15px;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-left: 4px solid #2d3748;
+                border-radius: 4px;
+                text-align: left;
             `;
-            priceDisplay.after(idBlock);
+            idCard.innerHTML = `
+                <span style="font-size: 0.7rem; color: #718096; display: block; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">ID транзакции</span>
+                <span style="font-family: 'Courier New', monospace; font-size: 1.5rem; font-weight: bold; color: #1a202c;">${orderID}</span>
+            `;
+            priceDisplay.after(idCard);
         }
 
-        // Вывод ID в блок "Внимание"
-        const instrBlock = document.querySelector('.amount-instruction');
-        if (orderID && instrBlock) {
-            const idNotice = document.createElement('p');
-            idNotice.style.cssText = "color:#e53e3e; font-weight:700; margin-top:10px; background:#fff5f5; padding:8px; border-left:4px solid #e53e3e;";
-            idNotice.innerHTML = `<i class="fas fa-exclamation-circle"></i> ОБЯЗАТЕЛЬНО отправьте код <u>${orderID}</u> в Telegram.`;
-            instrBlock.appendChild(idNotice);
-        }
+        // 4. Авто-текст для Telegram (t.me/chearu252)
+        const tgMsg = encodeURIComponent(`Здравствуйте! Мой ID: ${orderID}. Оплатил ${price} ₽. Прилагаю чек.`);
+        document.querySelectorAll('a[href*="t.me/chearu252"]').forEach(link => {
+            link.href = `https://t.me/chearu252?text=${tgMsg}`;
+        });
 
-        // Обновление QR-кода
+        // 5. Обновление QR-кода
         const qrImg = document.getElementById('qrCodeImage');
         if (qrImg) {
-            const baseQRUrl = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
-            const finalQRData = `${baseQRUrl}&sum=${price}&label=${orderID}`;
-            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(finalQRData)}`;
+            const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(baseQR + '&sum=' + price + '&label=' + orderID)}`;
         }
     }
-
-    console.log("Адвокат Медного Гроша: Скрипт полностью инициализирован.");
-});
