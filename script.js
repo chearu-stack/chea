@@ -80,11 +80,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===== 5. ТАРИФЫ (ОБРАБОТКА КЛИКОВ) =====
     document.querySelectorAll('.pricing-card .btn').forEach(button => {
         button.addEventListener('click', function(e) {
-            if (this.hasAttribute('data-no-scroll')) {
-                e.preventDefault();
-                // Логика выбора без перезагрузки
-            }
+            // Если у кнопки НЕТ атрибута 'data-no-scroll', мы ВООБЩЕ ничего не делаем.
+            // Браузер просто перейдет по ссылке (на оплату), как и должен.
+            if (!this.hasAttribute('data-no-scroll')) return;
+
+            // Только если атрибут ЕСТЬ, мы блокируем переход (для красоты выбора)
+            e.preventDefault();
+            
+            // Убираем активный класс у всех и даем этой карточке
+            document.querySelectorAll('.pricing-card').forEach(c => c.classList.remove('active-plan'));
+            this.closest('.pricing-card').classList.add('active-plan');
+            
+            console.log("Выбран тариф для внутреннего взаимодействия");
         });
     });
-
-});
