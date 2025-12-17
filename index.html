@@ -23,7 +23,7 @@
             <div class="nav-links">
                 <a href="#features">Работа</a>
                 <a href="#pricing">Тарифы</a>
-                <a href="#start" class="nav-button">Старт</a>
+                <a href="#start" class="nav-button" data-no-scroll>Старт</a> <!-- Добавил data-no-scroll -->
             </div>
         </div>
     </nav>
@@ -37,10 +37,10 @@
                     Пошаговый план действий, <strong>расчёт неустойки</strong> и готовые документы для досудебного урегулирования споров.
                 </p>
                 <div class="hero-buttons">
-                    <a href="#start" class="btn btn-primary">
+                    <a href="#start" class="btn btn-primary" data-no-scroll> <!-- Добавил data-no-scroll -->
                         <i class="fas fa-play-circle"></i> Проанализировать ситуацию
                     </a>
-                    <a href="#features" class="btn btn-secondary">
+                    <a href="#features" class="btn btn-secondary" data-no-scroll> <!-- Добавил data-no-scroll -->
                         <i class="fas fa-info-circle"></i> Как это работает
                     </a>
                 </div>
@@ -63,42 +63,42 @@
         </div>
     </header>
 
-   <!-- Блок "Что вы получаете" -->
-<section class="features-section" id="features">
-    <div class="container">
-        <h2 class="section-title">Что вы получаете с «Адвокатом Медного Гроша»</h2>
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-search"></i>
+    <!-- Блок "Что вы получаете" -->
+    <section class="features-section" id="features">
+        <div class="container">
+            <h2 class="section-title">Что вы получаете с «Адвокатом Медного Гроша»</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3>Диагноз ситуации</h3>
+                    <p>Бот определит нарушенную статью закона и даст первичную оценку ваших шансов. Вы поймёте, с чем имеете дело.</p>
                 </div>
-                <h3>Диагноз ситуации</h3>
-                <p>Бот определит нарушенную статью закона и даст первичную оценку ваших шансов. Вы поймёте, с чем имеете дело.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-calculator"></i>
+                <div class="feature-card"> <!-- Убрал класс highlight -->
+                    <div class="feature-icon">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <h3>Расчёт неустойки/возврата</h3>
+                    <p>Автоматический расчёт суммы, которую вы можете требовать по закону. Цифры, а не эмоции.</p>
                 </div>
-                <h3>Расчёт неустойки/возврата</h3>
-                <p>Автоматический расчёт суммы, которую вы можете требовать по закону. Цифры, а не эмоции.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-file-contract"></i>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-file-contract"></i>
+                    </div>
+                    <h3>Готовые документы</h3>
+                    <p>Шаблоны претензий и жалоб для досудебного урегулирования. Заполняются вашими данными. Отправляйте по указанным адресам.</p>
                 </div>
-                <h3>Готовые документы</h3>
-                <p>Шаблоны претензий и жалоб для досудебного урегулирования. Заполняются вашими данными. Отправляйте по указанным адресам.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-road"></i>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-road"></i>
+                    </div>
+                    <h3>Алгоритм действий</h3>
+                    <p>Чёткие шаги: куда писать, в какие сроки, что отвечать. Вы действуете сами, но по проверенной схеме.</p>
                 </div>
-                <h3>Алгоритм действий</h3>
-                <p>Чёткие шаги: куда писать, в какие сроки, что отвечать. Вы действуете сами, но по проверенной схеме.</p>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
     <!-- Как это работает -->
     <section class="how-section">
@@ -153,80 +153,79 @@
         </div>
     </section>
 
- <!-- Тарифы -->
-    
-<section class="pricing-section" id="pricing">
-    <div class="container">
-        <h2 class="section-title">Выберите пакет помощи</h2>
-        <div class="pricing-cards">
-            <!-- БАЗОВЫЙ -->
-            <div class="pricing-card">
-                <div class="pricing-header">
-                    <h3>Базовый</h3>
-                    <div class="price">500 ₽</div>
-                    <p>решение одного типового спора</p>
+    <!-- Тарифы -->
+    <section class="pricing-section" id="pricing">
+        <div class="container">
+            <h2 class="section-title">Выберите пакет помощи</h2>
+            <div class="pricing-cards">
+                <!-- БАЗОВЫЙ -->
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3>Базовый</h3>
+                        <div class="price">500 ₽</div>
+                        <p>решение одного типового спора</p>
+                    </div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Диагноз ситуации (статья закона)</li>
+                        <li><i class="fas fa-check"></i> Пошаговый план досудебного урегулирования</li>
+                        <li><i class="fas fa-check"></i> 1 готовый документ (претензия)</li>
+                        <li><i class="fas fa-check"></i> 5–7 уточняющих вопросов боту</li>
+                        <li><i class="fas fa-times"></i> <span class="disabled">Расчёт неустойки</span></li>
+                        <li><i class="fas fa-times"></i> <span class="disabled">Жалоба в Роспотребнадзор</span></li>
+                    </ul>
+                    <a href="payment.html?plan=basic&price=500" class="btn btn-outline" data-no-scroll>Оплатить</a>
                 </div>
-                <ul class="pricing-features">
-                    <li><i class="fas fa-check"></i> Диагноз ситуации (статья закона)</li>
-                    <li><i class="fas fa-check"></i> Пошаговый план досудебного урегулирования</li>
-                    <li><i class="fas fa-check"></i> 1 готовый документ (претензия)</li>
-                    <li><i class="fas fa-check"></i> 5–7 уточняющих вопросов боту</li>
-                    <li><i class="fas fa-times"></i> <span class="disabled">Расчёт неустойки</span></li>
-                    <li><i class="fas fa-times"></i> <span class="disabled">Жалоба в Роспотребнадзор</span></li>
-                </ul>
-                <a href="payment.html?plan=basic&price=500" class="btn btn-outline" data-no-scroll>Оплатить</a>
-            </div>
 
-            <!-- РАСШИРЕННЫЙ -->
-            <div class="pricing-card popular">
-                <div class="popular-badge">Рекомендуем</div>
-                <div class="pricing-header">
-                    <h3>Расширенный</h3>
-                    <div class="price">1 200 ₽</div>
-                    <p>полное досудебное решение</p>
+                <!-- РАСШИРЕННЫЙ -->
+                <div class="pricing-card popular">
+                    <div class="popular-badge">Рекомендуем</div>
+                    <div class="pricing-header">
+                        <h3>Расширенный</h3>
+                        <div class="price">1 200 ₽</div>
+                        <p>полное досудебное решение</p>
+                    </div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Всё из пакета «Базовый»</li>
+                        <li><i class="fas fa-check"></i> <strong>Расчёт неустойки/компенсации</strong></li>
+                        <li><i class="fas fa-check"></i> 3 готовых документа (претензия, жалоба, заявление)</li>
+                        <li><i class="fas fa-check"></i> До 20 вопросов боту для детализации</li>
+                        <li><i class="fas fa-times"></i> <span class="disabled">Борьба с формальными отписками</span></li>
+                    </ul>
+                    <a href="payment.html?plan=extended&price=1200" class="btn btn-primary" data-no-scroll>Оплатить</a>
                 </div>
-                <ul class="pricing-features">
-                    <li><i class="fas fa-check"></i> Всё из пакета «Базовый»</li>
-                    <li><i class="fas fa-check"></i> <strong>Расчёт неустойки/компенсации</strong></li>
-                    <li><i class="fas fa-check"></i> 3 готовых документа (претензия, жалоба, заявление)</li>
-                    <li><i class="fas fa-check"></i> До 20 вопросов боту для детализации</li>
-                    <li><i class="fas fa-times"></i> <span class="disabled">Борьба с формальными отписками</span></li>
-                </ul>
-                <a href="payment.html?plan=extended&price=1200" class="btn btn-primary" data-no-scroll>Оплатить</a>
-            </div>
 
-            <!-- ПРОФЕССИОНАЛЬНЫЙ -->
-            <div class="pricing-card">
-                <div class="pricing-header">
-                    <h3>Профессиональный</h3>
-                    <div class="price">2 500 ₽</div>
-                    <p>сложный или многоэтапный спор</p>
+                <!-- ПРОФЕССИОНАЛЬНЫЙ -->
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3>Профессиональный</h3>
+                        <div class="price">2 500 ₽</div>
+                        <p>сложный или многоэтапный спор</p>
+                    </div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Всё из пакета «Расширенный»</li>
+                        <li><i class="fas fa-check"></i> <strong>Ответ на формальную отписку</strong> (готовый документ)</li>
+                        <li><i class="fas fa-check"></i> Стратегия «ломаем отписки» — как вести переписку</li>
+                        <li><i class="fas fa-check"></i> Расширенный расчёт неустойки с пенёй за задержку</li>
+                        <li><i class="fas fa-check"></i> Приоритетная генерация + до 50 вопросов боту</li>
+                    </ul>
+                    <a href="payment.html?plan=professional&price=2500" class="btn btn-outline" data-no-scroll>Оплатить</a>
                 </div>
-                <ul class="pricing-features">
-                   <li><i class="fas fa-check"></i> Всё из пакета «Расширенный»</li>
-<li><i class="fas fa-check"></i> Стратегия «ломаем отписки» — как вести переписку</li>
-<li><i class="fas fa-check"></i> Расширенный расчёт неустойки с пенёй за задержку</li>
-<li><i class="fas fa-check"></i> Приоритетная генерация + до 50 вопросов боту</li>
-<li><i class="fas fa-check"></i> <strong>Борьба с отписками:</strong> готовый ответ на формальную отписку + стратегия переписки</li>
-                </ul>
-                <a href="payment.html?plan=professional&price=2500" class="btn btn-outline" data-no-scroll>Оплатить</a>
             </div>
         </div>
-    </div>
-</section>
+    </section>
+
     <!-- CTA Форма -->
     <section class="cta-section" id="start">
         <div class="container">
             <div class="cta-content">
-                <h2 class="section-title">Начните защищать свои права сейчас</h2>
+                <h2 class="section-title">Проанализируйте ситуацию за 2 минуты</h2>
                 <p>Задайте 3 вопроса → получите диагноз нарушения → выберите вариант оплаты.</p>
                 <form class="cta-form" id="problemForm">
-                    <textarea 
-                        placeholder="Опишите кратко вашу проблему. Например: 'Купил телефон, он сломался через неделю. Магазин отказывается менять. Стоимость 30 000 руб.'" 
-                        rows="4" required></textarea>
-                    <button type="submit" class="btn btn-primary btn-large">
-                        <i class="fas fa-paper-plane"></i> Получить план действий
-                    </button>
+                    <div class="bot-widget-placeholder">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i> Загрузка анализатора...
+                        </div>
+                    </div>
                 </form>
                 <p class="form-note">
                     <i class="fas fa-lock"></i> Ваши данные конфиденциальны. Мы не сохраняем введённую информацию.
@@ -245,7 +244,7 @@
                 </div>
                 <p class="footer-tagline">Цифровой защитник прав потребителей. Досудебное урегулирование споров.</p>
                 <!-- Ссылки пока скрыты - добавим, когда появятся реальные страницы -->
-                 <!-- 
+                <!-- 
                 <div class="footer-links">
                     <a href="#">Конфиденциальность</a>
                     <a href="#">Условия использования</a>
