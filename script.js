@@ -127,3 +127,38 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Подсветка карточек при скролле на мобильных
+document.addEventListener('DOMContentLoaded', function() {
+    const featureCards = document.querySelectorAll('.feature-card');
+    
+    // Только для мобильных устройств
+    if (window.innerWidth <= 768) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Убираем активность у всех
+                    featureCards.forEach(card => {
+                        card.classList.remove('scroll-active');
+                    });
+                    // Добавляем активность видимой
+                    entry.target.classList.add('scroll-active');
+                }
+            });
+        }, {
+            threshold: 0.6, // Карточка на 60% в поле зрения
+            rootMargin: '0px 0px -20% 0px' // Игнорируем верхние/нижние края
+        });
+
+        featureCards.forEach(card => {
+            observer.observe(card);
+        });
+    }
+
+    // Для десктопа: добавляем плавность ховера
+    featureCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transition = 'all 0.4s ease';
+        });
+    });
+});
