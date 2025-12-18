@@ -2,21 +2,27 @@ const express = require('express');
 const app = express();
 app.use(express.json());
 
-// ===== СПЕЦИАЛЬНЫЙ CORS ТОЛЬКО ДЛЯ /proxy (ДОЛЖЕН БЫТЬ ПЕРВЫМ!) =====
-app.use('/proxy', (req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
-    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    if (req.method === 'OPTIONS') return res.status(200).end();
-    next();
-});
-
-// ===== ОБЩИЙ CORS (для остального проекта) =====
+// ===== УНИВЕРСАЛЬНЫЙ CORS ДЛЯ ВСЕХ МАРШРУТОВ =====
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'https://chearu-stack.github.io');
+    // Определяем, какой Origin разрешить
+    let allowedOrigin;
+    
+    // Если запрос идёт на /proxy — разрешаем ВСЕ (как Netlify)
+    if (req.path.startsWith('/proxy')) {
+        allowedOrigin = '*';
+    } 
+    // Для всех остальных маршрутов — только GitHub Pages
+    else {
+        allowedOrigin = 'https://chearu-stack.github.io';
+    }
+    
+    res.header('Access-Control-Allow-Origin', allowedOrigin);
     res.header('Access-Control-Allow-Headers', 'Content-Type');
     res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    if (req.method === 'OPTIONS') return res.status(200).end();
+    
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
     next();
 });
 
