@@ -1,4 +1,3 @@
-{
-  "name": "netlify-functions",
-  "private": true
+"scripts": {
+  "start": "node server.js"
 }
