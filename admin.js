@@ -50,9 +50,26 @@ async function loadOrders() {
             throw new Error(`Ошибка сервера: ${response.status}`);
         }
         
-        const orders = await response.json();
+        // ✅ ВАЖНОЕ ИСПРАВЛЕНИЕ: Извлекаем данные из body
+        const result = await response.json();
+        console.log('Ответ от сервера:', result); // Для отладки
         
-        // Статистика
+        // Проверяем, если ответ в формате Netlify Functions
+        let orders = result;
+        if (result.body !== undefined) {
+            // Если body - строка, парсим её как JSON
+            orders = typeof result.body === 'string' 
+                ? JSON.parse(result.body) 
+                : result.body;
+        }
+        
+        // Убедимся, что orders - массив
+        if (!Array.isArray(orders)) {
+            console.error('Ожидался массив, но получено:', orders);
+            throw new Error('Некорректный формат данных от сервера');
+        }
+        
+        // Статистика (теперь orders точно массив)
         const pending = orders.filter(o => o.status === 'pending').length;
         const active = orders.filter(o => o.status === 'active').length;
         
@@ -64,7 +81,7 @@ async function loadOrders() {
         tbody.innerHTML = '';
         
         if (orders.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="empty-row">Нет заявок на активацию</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-row">Нет заявок на активации</td></tr>';
             return;
         }
         
