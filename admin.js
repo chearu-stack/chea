@@ -1,7 +1,7 @@
 /**
  * АДМИН-ПАНЕЛЬ — работа с реальной БД
  */
-const API_BASE = 'https://amg-access-system.netlify.app/.netlify/functions';
+const API_BASE = 'https://chea.onrender.com'; // ✅ ИЗМЕНЕНО: новый адрес Render
 const ADMIN_PASS = "amg2025";
 let isAuthenticated = sessionStorage.getItem('adminAuth') === 'true';
 
@@ -44,7 +44,7 @@ async function loadOrders() {
     tbody.innerHTML = '<tr><td colspan="6" class="loading-row">Загрузка данных...</td></tr>';
 
     try {
-        const response = await fetch(`${API_BASE}/get-pending`);
+        const response = await fetch(`${API_BASE}/get-pending`); // ✅ Теперь запрос идёт на Render
         
         if (!response.ok) {
             throw new Error(`Ошибка сервера: ${response.status}`);
@@ -108,7 +108,12 @@ async function activateCode(code) {
     }
     
     try {
-        const response = await fetch(`${API_BASE}/activate-code?code=${encodeURIComponent(code)}`);
+        // ✅ ИЗМЕНЕНО: Теперь POST-запрос с телом в формате JSON
+        const response = await fetch(`${API_BASE}/activate-code`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: code })
+        });
         const result = await response.json();
         
         if (result.success) {
