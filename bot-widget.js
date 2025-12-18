@@ -1,9 +1,8 @@
 // ==================== bot-widget.js ====================
-// ЛОГИКА ВИДЖЕТА "3 ВОПРОСА → БОТ → ДИАГНОЗ"
+// ЛОГИКА ВИДЖЕТА "3 ВОПРОСА → ПРОВЕРКА КОДА → ЧАТ"
 // Подключается только на главной странице (index.html)
 
 // ===== БЛОК 1: СБРОС СКРОЛЛА =====
-// Фиксим баг с автоскроллом браузера
 window.scrollTo(0, 0);
 if ('scrollRestoration' in history) {
     history.scrollRestoration = 'manual';
@@ -11,14 +10,10 @@ if ('scrollRestoration' in history) {
 
 // ===== БЛОК 2: ОСНОВНАЯ НАСТРОЙКА =====
 document.addEventListener('DOMContentLoaded', function() {
-    // Находим форму на странице
     const ctaForm = document.getElementById('problemForm');
-    
-    // Твой URL для бота (замени на свой)
-    const BOT_ENDPOINT = 'https://your-yandex-function-url/analyze';
+    const CODE_VERIFY_ENDPOINT = 'https://chea.onrender.com/verify-code';
     
     // ===== БЛОК 3: СПИСОК ВОПРОСОВ =====
-    // Три вопроса с лимитами символов
     const questions = [
         { 
             text: 'Опишите проблему коротко (до 200 символов)', 
@@ -41,33 +36,25 @@ document.addEventListener('DOMContentLoaded', function() {
     ];
     
     // ===== БЛОК 4: ПЕРЕМЕННЫЕ =====
-    let currentStep = 0;          // Текущий вопрос (0, 1, 2)
-    let userAnswers = {};         // Ответы пользователя
-    let currentTextarea = null;   // Активное поле ввода
+    let currentStep = 0;
+    let userAnswers = {};
+    let currentTextarea = null;
     
     // ===== БЛОК 5: РЕНДЕР ВОПРОСА =====
-    // Показывает текущий вопрос
     function renderStep() {
         const q = questions[currentStep];
-        
-        // HTML виджета
         ctaForm.innerHTML = `
             <div class="bot-widget">
-                <!-- Прогресс-бар -->
                 <div class="bot-progress">
                     <span class="bot-step-indicator">Вопрос ${currentStep + 1} из 3</span>
                     <div class="bot-progress-bar">
                         <div class="bot-progress-fill" style="width: ${((currentStep + 1) / 3) * 100}%"></div>
                     </div>
                 </div>
-                
-                <!-- Текст вопроса -->
                 <div class="bot-question">
                     <p><strong>${q.text}</strong></p>
                     <p class="bot-example"><i class="fas fa-lightbulb"></i> Пример: ${q.example}</p>
                 </div>
-                
-                <!-- Поле для ответа -->
                 <div class="bot-input-container">
                     <textarea 
                         id="botTextarea"
@@ -80,8 +67,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span id="charCount">${userAnswers[q.key] ? userAnswers[q.key].length : 0}</span> / ${q.max}
                     </div>
                 </div>
-                
-                <!-- КНОПКА ТОЛЬКО ВПЕРЁД (НАЗАД НЕТ!) -->
                 <div class="bot-buttons">
                     <button type="button" class="btn btn-primary" onclick="window.botWidget.nextStep()">
                         ${currentStep < 2 ? 'Далее <i class="fas fa-arrow-right"></i>' : '<i class="fas fa-stethoscope"></i> Получить диагноз'}
@@ -90,152 +75,116 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         
-        // Настройка счётчика символов
         currentTextarea = document.getElementById('botTextarea');
         const charCounter = document.querySelector('.bot-char-counter span');
         
-        // Следим за вводом
         currentTextarea.addEventListener('input', function() {
             const len = this.value.length;
             charCounter.textContent = len;
-            
-            // Красный текст при приближении к лимиту
-            if (len > q.max * 0.9) {
-                charCounter.style.color = '#e74c3c';
-            } else {
-                charCounter.style.color = '';
-            }
-            
-            // Сохраняем ответ
+            if (len > q.max * 0.9) charCounter.style.color = '#e74c3c';
+            else charCounter.style.color = '';
             userAnswers[q.key] = this.value;
         });
         
-        // Если ответ уже есть — показываем длину
-        if (userAnswers[q.key]) {
-            charCounter.textContent = userAnswers[q.key].length;
-        }
+        if (userAnswers[q.key]) charCounter.textContent = userAnswers[q.key].length;
     }
     
     // ===== БЛОК 6: СЛЕДУЮЩИЙ ШАГ =====
-    // Переход к следующему вопросу или отправка
     function nextStep() {
         const q = questions[currentStep];
         const answer = currentTextarea ? currentTextarea.value.trim() : '';
-        
-        // Проверка: пустой ответ
+
         if (!answer) {
             showAlert('Пожалуйста, задайте вопрос', 'warning');
             currentTextarea.focus();
             return;
         }
-        
-        // Проверка: превышен лимит
         if (answer.length > q.max) {
             showAlert(`Превышен лимит в ${q.max} символов. Сократите ответ.`, 'warning');
             return;
         }
-        
-        // Сохраняем ответ
+
         userAnswers[q.key] = answer;
-        
-        // Если это последний вопрос — отправляем боту
+
+        // Если это последний вопрос — ПРОВЕРЯЕМ КОД ДОСТУПА
         if (currentStep >= 2) {
-            sendToBot();
+            const userAccessCode = prompt("Для анализа введите код доступа, который вы получили после оплаты:\n\n(Если у вас нет кода, нажмите 'Отмена'. Вы получите базовую информацию.)");
+            if (userAccessCode) {
+                verifyAccessCode(userAccessCode);
+            } else {
+                showFinalScreenNoCode();
+            }
             return;
         }
-        
-        // Иначе следующий вопрос
+
         currentStep++;
         renderStep();
     }
-    
-    // ===== БЛОК 7: СБРОС ВИДЖЕТА =====
-    // Начать заново (после диагноза)
-    function resetWidget() {
-        currentStep = 0;
-        userAnswers = {};
-        renderStep();
+
+    // ===== БЛОК 7: ФИНАЛЬНЫЙ ЭКРАН (БЕЗ КОДА) =====
+    function showFinalScreenNoCode() {
+        const submitBtn = ctaForm.querySelector('.btn-primary');
+        submitBtn.disabled = true;
+
+        ctaForm.innerHTML = `
+            <div class="bot-diagnosis">
+                <div class="diagnosis-header">
+                    <i class="fas fa-info-circle diagnosis-icon"></i>
+                    <h3>Бесплатный анализ завершён</h3>
+                </div>
+                <div class="diagnosis-content">
+                    <p><strong>Вы предоставили достаточно информации для первичной оценки.</strong></p>
+                    <p>На основе вашего описания ситуация подпадает под <strong>статью 18 Закона «О защите прав потребителей»</strong>.</p>
+                    <p>Для получения полного пошагового плана, расчёта неустойки и готовых документов требуется оплата пакета помощи.</p>
+                    <div class="diagnosis-actions">
+                        <a href="payment.html" class="btn btn-primary btn-large">
+                            <i class="fas fa-shield-alt"></i> Перейти к оплате
+                        </a>
+                        <p style="margin-top: 15px; font-size: 0.9em; color: #666;">
+                            <i class="fas fa-lock"></i> Этот сеанс анализа завершён.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `;
+        // Стираем возможность сброса
+        window.botWidget = {};
     }
-    
-    // ===== БЛОК 8: ОТПРАВКА БОТУ =====
-    // Отправляем ответы на сервер
-    async function sendToBot() {
+
+    // ===== БЛОК 8: ПРОВЕРКА КОДА ДОСТУПА =====
+    async function verifyAccessCode(accessCode) {
         const submitBtn = ctaForm.querySelector('.btn-primary');
         const originalBtnText = submitBtn.innerHTML;
-        
-        // Блокируем кнопку
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Анализируем...';
-        
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Проверяем доступ...';
+
         try {
-            // Отправляем POST-запрос
-            const response = await fetch(BOT_ENDPOINT, {
+            const response = await fetch(CODE_VERIFY_ENDPOINT, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(userAnswers)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: accessCode })
             });
-            
-            if (!response.ok) {
-                throw new Error(`Ошибка HTTP: ${response.status}`);
-            }
-            
             const result = await response.json();
-            
-            // Показываем диагноз
-            showDiagnosis(result);
-            
+
+            if (response.ok && result.valid && result.status === 'active') {
+                showAlert('✅ Доступ подтвержден! Перенаправляем в чат...', 'success');
+                setTimeout(() => {
+                    window.location.href = `chat.html?access_code=${encodeURIComponent(accessCode)}`;
+                }, 1500);
+            } else {
+                const errorMsg = result.error || 'Неверный или истёкший код доступа.';
+                showAlert(`❌ ${errorMsg}`, 'error');
+                showFinalScreenNoCode();
+            }
         } catch (error) {
-            console.error('Ошибка отправки боту:', error);
-            showAlert('Не удалось получить диагноз. Пожалуйста, попробуйте позже.', 'error');
+            console.error('Ошибка проверки кода:', error);
+            showAlert('⚠️ Ошибка сети. Попробуйте позже.', 'error');
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalBtnText;
         }
     }
     
-    // ===== БЛОК 9: ПОКАЗ ДИАГНОЗА =====
-    // Выводим результат от бота
-    function showDiagnosis(result) {
-        const diagnosisText = result.diagnosis || 'Нарушение прав потребителя. Требуется досудебное урегулирование.';
-        
-        ctaForm.innerHTML = `
-            <div class="bot-diagnosis">
-                <div class="diagnosis-header">
-                    <i class="fas fa-scale-balanced diagnosis-icon"></i>
-                    <h3>Диагноз ситуации</h3>
-                </div>
-                
-                <div class="diagnosis-content">
-                    <p>${diagnosisText}</p>
-                    
-                    <!-- Кнопки действий -->
-                    <div class="diagnosis-actions">
-                        <a href="payment.html" class="btn btn-primary btn-large">
-                            <i class="fas fa-shield-alt"></i> Продолжить с пакетом помощи
-                        </a>
-                        <button type="button" class="btn btn-outline" onclick="window.botWidget.resetWidget()">
-                            <i class="fas fa-redo"></i> Задать другую ситуацию
-                        </button>
-                    </div>
-                    
-                    <!-- Что дальше -->
-                    <div class="diagnosis-note">
-                        <p><i class="fas fa-info-circle"></i> <strong>Что дальше?</strong> В пакете помощи вы получите:</p>
-                        <ul>
-                            <li>Пошаговый план действий</li>
-                            <li>Расчёт неустойки</li>
-                            <li>Готовые документы для отправки</li>
-                            <li>Поддержку в чате</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    // ===== БЛОК 10: УВЕДОМЛЕНИЯ =====
-    // Всплывающие сообщения об ошибках
+    // ===== БЛОК 9: УВЕДОМЛЕНИЯ =====
     function showAlert(message, type = 'info') {
         const alertEl = document.createElement('div');
         alertEl.className = `bot-alert bot-alert-${type}`;
@@ -243,26 +192,17 @@ document.addEventListener('DOMContentLoaded', function() {
             <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
             <span>${message}</span>
         `;
-        
         ctaForm.insertBefore(alertEl, ctaForm.firstChild);
-        
-        // Удаляем через 5 секунд
         setTimeout(() => {
-            if (alertEl.parentNode) {
-                alertEl.parentNode.removeChild(alertEl);
-            }
+            if (alertEl.parentNode) alertEl.parentNode.removeChild(alertEl);
         }, 5000);
     }
     
-    // ===== БЛОК 11: ЗАПУСК =====
-    // Запускаем виджет
+    // ===== БЛОК 10: ЗАПУСК =====
     renderStep();
     
-    // ===== БЛОК 12: ЭКСПОРТ ФУНКЦИЙ =====
-    // Делаем функции доступными для onclick
+    // ===== БЛОК 11: ЭКСПОРТ ФУНКЦИЙ =====
     window.botWidget = {
-        nextStep,      // Только вперёд
-        resetWidget    // Сброс
-        // prevStep — УДАЛЕН НАХУЙ
+        nextStep // ТОЛЬКО ОДНА ФУНКЦИЯ, resetWidget УДАЛЕН
     };
 });
