@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 app.use(express.json());
 
-// ===== CORS Middleware (ДОБАВЬТЕ ЭТОТ БЛОК) =====
+// ===== CORS Middleware (ВАЖНО: ОДИН РАЗ В НАЧАЛЕ) =====
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', 'https://chearu-stack.github.io');
     res.header('Access-Control-Allow-Headers', 'Content-Type');
@@ -13,11 +13,6 @@ app.use((req, res, next) => {
     }
     next();
 });
-
-// ... остальной код (createNetlifyEvent, маршруты) ...
-const express = require('express');
-const app = express();
-app.use(express.json());
 
 // Импортируем ваши функции
 const generateCode = require('./generate-code');
