@@ -2,6 +2,23 @@ const express = require('express');
 const app = express();
 app.use(express.json());
 
+// ===== CORS Middleware (ДОБАВЬТЕ ЭТОТ БЛОК) =====
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'https://chearu-stack.github.io');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    // Обработка preflight-запроса
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    next();
+});
+
+// ... остальной код (createNetlifyEvent, маршруты) ...
+const express = require('express');
+const app = express();
+app.use(express.json());
+
 // Импортируем ваши функции
 const generateCode = require('./generate-code');
 const getPending = require('./get-pending');
