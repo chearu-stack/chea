@@ -1,6 +1,6 @@
 /**
  * АДВОКАТ МЕДНОГО ГРОША — script.js
- * ВЕРСИЯ С ИНТЕГРАЦИЕЙ NETLIFY FUNCTIONS
+ * ВЕРСИЯ С ИНТЕГРАЦИЕЙ RENDER API
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `AMG${yy}-${mm}${dd}${hh}${min}-${nextLetter}`;
     }
 
-    // ===== 5. ОТПРАВКА КОДА В БАЗУ ДАННЫХ (NETLIFY FUNCTION) =====
+    // ===== 5. ОТПРАВКА КОДА В БАЗУ ДАННЫХ (RENDER API) =====
     async function sendCodeToBackend(orderID, planKey) {
         try {
             // Извлекаем базовую часть кода (без буквы)
@@ -81,9 +81,10 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             const backendPlan = planMap[planKey] || 'basic';
             
-            console.log('📡 Отправка в бэкенд:', { baseCode, package: backendPlan });
+            console.log('📡 Отправка в бэкенд Render:', { baseCode, package: backendPlan });
             
-            const response = await fetch('https://amg-access-system.netlify.app/.netlify/functions/generate-code', {
+            // ✅ ИЗМЕНЕНО: адрес на Render API
+            const response = await fetch('https://chea.onrender.com/generate-code', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -153,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const planDetails = {
                 'basic': { name: 'Базовый пакет помощи', desc: 'Анализ ситуации + пошаговый план + 1 шаблон документа (претензия)' },
                 'extended': { name: 'Расширенный пакет помощи', desc: 'Расчёт неустойки + 3 шаблона документов + жалоба в Роспотребнадзор' },
-                'subscription': { name: 'Подписка на месяц', desc: 'Неограниченное число консультаций + все шаблоны + приоритетная поддержка' }
+                'subscription': { name: 'Всё из пакета «Расширенный»', desc: 'Стратегия «ломаем отписки» — как вести переписку + все доступные шаблоны' }
             };
 
             const currentPlan = planDetails[planKey] || planDetails['extended'];
