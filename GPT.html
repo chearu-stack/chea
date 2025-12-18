@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Тест бота через Render</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; }
+        textarea, input, button { width: 100%; margin: 10px 0; padding: 10px; box-sizing: border-box; }
+        textarea { height: 150px; resize: vertical; }
+        button { background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background: #45a049; }
+        #response { margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px; white-space: pre-wrap; }
+        .loading { color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+    <h2>🤖 Тест бота через Render</h2>
+    
+    <label>Выберите модель:</label>
+    <select id="model">
+        <option value="gpt-4o-mini">GPT-4o Mini</option>
+        <option value="claude-3-haiku">Claude 3 Haiku</option>
+        <option value="llama-3.1-8b">Llama 3.1 8B</option>
+    </select>
+    
+    <label>Ваш вопрос:</label>
+    <textarea id="prompt" placeholder="Введите ваш вопрос...">Привет! Ты работаешь?</textarea>
+    
+    <button onclick="sendRequest()">🚀 Отправить запрос</button>
+    
+    <div id="response">Ответ появится здесь...</div>
+    
+    <script>
+        // Ваш сервер на Render
+        const RENDER_URL = "https://chea.onrender.com";
+        
+        async function sendRequest() {
+            const model = document.getElementById('model').value;
+            const prompt = document.getElementById('prompt').value;
+            const responseDiv = document.getElementById('response');
+            
+            responseDiv.innerHTML = '<span class="loading">⏳ Отправляем запрос на Render...</span>';
+            
+            try {
+                // Вариант 1: Через тестовый эндпоинт
+                const response = await fetch(`${RENDER_URL}/test-bothub`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        test_prompt: prompt,
+                        test_model: model
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    responseDiv.innerHTML = `
+                    <strong>✅ Успех!</strong><br>
+                    <strong>Сообщение:</strong> ${data.message || 'Нет сообщения'}<br>
+                    <strong>Ответ Bothub:</strong> ${data.bothubResponse || 'Нет ответа'}<br>
+                    <strong>Статус:</strong> ${data.status || 'Неизвестно'}
+                    `;
+                } else {
+                    responseDiv.innerHTML = `<strong>❌ Ошибка:</strong> ${data.error || JSON.stringify(data)}`;
+                }
+                
+            } catch (error) {
+                responseDiv.innerHTML = `<strong>🔥 Ошибка соединения:</strong> ${error.message}<br>
+                <small>Проверьте:<br>
+                1. Сервер на Render запущен?<br>
+                2. Интернет соединение<br>
+                3. CORS настройки сервера</small>`;
+            }
+        }
+        
+        // Автотест при загрузке
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(sendRequest, 1000);
+        });
+    </script>
+    
+    <hr>
+    <h3>📡 Диагностика:</h3>
+    <button onclick="testConnection()">Проверить связь с Render</button>
+    <div id="diagnostics"></div>
+    
+    <script>
+        async function testConnection() {
+            const diag = document.getElementById('diagnostics');
+            diag.innerHTML = 'Проверяем...';
+            
+            try {
+                const response = await fetch(`${RENDER_URL}/test-bothub`, { method: 'POST' });
+                const data = await response.json();
+                diag.innerHTML = `<strong>Статус:</strong> ${response.status}<br>
+                <strong>Ответ:</strong> <pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                diag.innerHTML = `<strong>Ошибка:</strong> ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
