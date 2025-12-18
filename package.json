@@ -2,7 +2,14 @@
   "name": "amg-access",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node netlify/functions/server.js"
+  },
   "dependencies": {
+    "express": "^4.18.2",
     "@supabase/supabase-js": "^2.49.1"
   }
 }
