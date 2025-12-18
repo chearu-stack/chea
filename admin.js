@@ -1,7 +1,7 @@
 /**
  * АДМИН-ПАНЕЛЬ — работа с реальной БД
  */
-const API_BASE = 'https://chea.onrender.com'; // ✅ ИЗМЕНЕНО: новый адрес Render
+const API_BASE = 'https://chea.onrender.com';
 const ADMIN_PASS = "amg2025";
 let isAuthenticated = sessionStorage.getItem('adminAuth') === 'true';
 
@@ -44,7 +44,7 @@ async function loadOrders() {
     tbody.innerHTML = '<tr><td colspan="6" class="loading-row">Загрузка данных...</td></tr>';
 
     try {
-        const response = await fetch(`${API_BASE}/get-pending`); // ✅ Теперь запрос идёт на Render
+        const response = await fetch(`${API_BASE}/get-pending`);
         
         if (!response.ok) {
             throw new Error(`Ошибка сервера: ${response.status}`);
@@ -68,7 +68,7 @@ async function loadOrders() {
             return;
         }
         
-        // Заполняем таблицу (6 колонок!)
+        // Заполняем таблицу
         orders.forEach(order => {
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -101,19 +101,15 @@ async function loadOrders() {
     }
 }
 
-// Активация кода (реальная функция)
+// Активация кода (ИСПРАВЛЕННАЯ ФУНКЦИЯ - GET запрос)
 async function activateCode(code) {
     if (!confirm(`Активировать доступ для кода:\n${code}\n\nПосле активации клиент получит доступ к чату.`)) {
         return;
     }
     
     try {
-        // ✅ ИЗМЕНЕНО: Теперь POST-запрос с телом в формате JSON
-        const response = await fetch(`${API_BASE}/activate-code`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: code })
-        });
+        // ✅ КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: GET-запрос с параметром в URL
+        const response = await fetch(`${API_BASE}/activate-code?code=${encodeURIComponent(code)}`);
         const result = await response.json();
         
         if (result.success) {
