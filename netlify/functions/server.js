@@ -2,7 +2,16 @@ const express = require('express');
 const app = express();
 app.use(express.json());
 
-// ===== ОБЩИЙ CORS (для основного проекта) =====
+// ===== СПЕЦИАЛЬНЫЙ CORS ТОЛЬКО ДЛЯ /proxy (ДОЛЖЕН БЫТЬ ПЕРВЫМ!) =====
+app.use('/proxy', (req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    next();
+});
+
+// ===== ОБЩИЙ CORS (для остального проекта) =====
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', 'https://chearu-stack.github.io');
     res.header('Access-Control-Allow-Headers', 'Content-Type');
@@ -11,15 +20,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// ===== СПЕЦИАЛЬНЫЙ CORS ТОЛЬКО ДЛЯ /proxy (как в Netlify) =====
-app.use('/proxy', (req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*'); // Разрешаем ВСЕ источники
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
-    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    if (req.method === 'OPTIONS') return res.status(200).end();
-    next();
-});
-
+// ... остальной код (импорты, маршруты) без изменений ...
 // Импортируем ваши функции
 const generateCode = require('./generate-code');
 const getPending = require('./get-pending');
