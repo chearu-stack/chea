@@ -73,6 +73,18 @@ app.post('/verify-code', async (req, res) => {
   }
 });
 
+// ===== ТЕСТОВЫЙ МАРШРУТ ДЛЯ BOTHUB =====
+const testBothub = require('./test-bothub');
+app.post('/test-bothub', async (req, res) => {
+    try {
+        const event = createNetlifyEvent(req);
+        const result = await testBothub.handler(event);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`API запущен на порту ${PORT}`);
