@@ -1,11 +1,7 @@
-/**
- * АДМИН-ПАНЕЛЬ — Полная исправленная версия
- */
 const API_BASE = 'https://chea.onrender.com';
 const ADMIN_PASS = "amg2025";
 let isAuthenticated = sessionStorage.getItem('adminAuth') === 'true';
 
-// Проверка авторизации
 if (isAuthenticated) {
     document.getElementById('loginOverlay').style.display = 'none';
     document.getElementById('adminPage').style.display = 'block';
@@ -33,102 +29,80 @@ async function loadOrders() {
     const tbody = document.getElementById('ordersBody');
     const pendingEl = document.getElementById('pendingCount');
     const activeEl = document.getElementById('activeCount');
-    const updateTime = document.getElementById('lastUpdate');
     
-    tbody.innerHTML = '<tr><td colspan="6" class="loading-row">Загрузка данных...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="loading-row">Загрузка...</td></tr>';
 
     try {
         const response = await fetch(`${API_BASE}/get-pending`);
-        const result = await response.json();
+        const orders = await response.json();
         
-        let orders = result;
-        if (result.body !== undefined) {
-            orders = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
-        }
-        
-        if (!Array.isArray(orders)) throw new Error('Некорректный формат данных');
-        
+        // Статистика
         pendingEl.textContent = orders.filter(o => o.status === 'pending').length;
         activeEl.textContent = orders.filter(o => o.status === 'active').length;
-        updateTime.textContent = new Date().toLocaleTimeString();
         
         tbody.innerHTML = '';
         
-        if (orders.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="empty-row">Нет заявок</td></tr>';
-            return;
-        }
-        
         orders.forEach(order => {
             const row = document.createElement('tr');
-            const tariffName = (order.tariff || order.package || 'basic').toLowerCase();
+            // Исправляем прочерки: берем tariff, если нет - package
+            const displayTariff = (order.tariff || order.package || '—').toUpperCase();
             
             row.innerHTML = `
-                <td><strong class="order-code">${order.code}</strong></td>
-                <td><span class="package-badge">${tariffName.toUpperCase()}</span></td>
+                <td><strong>${order.code}</strong></td>
+                <td><span class="package-badge">${displayTariff}</span></td>
                 <td>${formatDate(order.created_at || order.date)}</td>
                 <td>${getStatusBadge(order.status)}</td>
-                <td>${order.caps_limit ? `${(order.remaining || order.caps_used || 0)} / ${order.caps_limit}` : '—'}</td>
+                <td>${order.caps_limit ? `${order.remaining || 0} / ${order.caps_limit}` : '—'}</td>
                 <td>
-                    <div class="action-cell">
-                        ${order.status === 'pending' 
-                            ? `<button onclick="activateCode('${order.code}', '${tariffName}')" class="btn-activate">Активировать</button>` 
-                            : '<span class="status-active">Активен</span>'}
-                    </div>
+                    ${order.status === 'pending' 
+                        ? `<button onclick="activateCode('${order.code}')" class="btn-activate">Активировать</button>` 
+                        : '—'}
                 </td>
             `;
             tbody.appendChild(row);
         });
-        
-    } catch (error) {
-        tbody.innerHTML = `<tr><td colspan="6" class="error-row">Ошибка: ${error.message}</td></tr>`;
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6">Ошибка: ${e.message}</td></tr>`;
     }
 }
 
-async function activateCode(code, tariff) {
-    if (!confirm(`Активировать ${code} (${tariff.toUpperCase()})?`)) return;
+async function activateCode(code) {
+    // Вычисляем лимит по старинке, чтобы не ломать логику
+    const rows = Array.from(document.querySelectorAll('tr'));
+    const row = rows.find(r => r.innerText.includes(code));
+    const tariff = row ? row.querySelector('.package-badge').innerText.toLowerCase() : 'basic';
     
+    const caps = { 'basic': 30000, 'pro': 60000, 'premium': 90000 };
+    const limit = caps[tariff] || 30000;
+
+    if (!confirm(`Активировать ${code} на ${limit} капсов?`)) return;
+
     try {
-        const capsMap = { 'basic': 30000, 'pro': 60000, 'premium': 90000 };
-        const limit = capsMap[tariff] || 30000;
-        const url = `${API_BASE}/activate-code?code=${encodeURIComponent(code)}&limit=${limit}&active=true`;
+        // ТВОЙ рабочий URL (проверь его еще раз)
+        const res = await fetch(`${API_BASE}/activate-code?code=${code}&limit=${limit}&active=true`);
+        const data = await res.json();
         
-        const response = await fetch(url);
-        const result = await response.json();
-        
-        if (result.success) {
-            showNotification(`✅ Код активирован! Лимит: ${limit}`);
+        if (data.success) {
+            alert('Успешно активировано!');
             loadOrders();
         } else {
-            showNotification(`❌ Ошибка: ${result.error}`, 'error');
+            alert('Ошибка: ' + data.error);
         }
-    } catch (error) {
-        showNotification(`❌ Ошибка сети`, 'error');
+    } catch (e) {
+        alert('Ошибка сети');
     }
 }
 
-function formatDate(dateString) {
-    if (!dateString) return '—';
-    const date = new Date(dateString);
-    return date.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+function formatDate(d) {
+    if (!d) return '—';
+    const date = new Date(d);
+    return date.toLocaleString('ru-RU');
 }
 
-function getStatusBadge(status) {
-    const s = String(status).toLowerCase();
-    const badges = {
-        'pending': '<span class="status-badge status-pending">Ожидает чека</span>',
-        'active': '<span class="status-badge status-active">Активен</span>'
-    };
-    return badges[s] || `<span>${s}</span>`;
+function getStatusBadge(s) {
+    if (s === 'pending') return '<span style="color: orange">Ожидает</span>';
+    if (s === 'active') return '<span style="color: green">Активен</span>';
+    return s;
 }
 
-function showNotification(message, type = 'success') {
-    const notification = document.createElement('div');
-    notification.className = `admin-notification admin-notification-${type}`;
-    notification.innerHTML = `<div class="notification-content">${message}</div>`;
-    document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 5000);
-}
-
-document.getElementById('adminPass')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkAuth(); });
-setInterval(() => { if (sessionStorage.getItem('adminAuth') === 'true') loadOrders(); }, 30000);
+setInterval(() => { if(isAuthenticated) loadOrders(); }, 30000);
