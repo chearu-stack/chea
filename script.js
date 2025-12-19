@@ -120,25 +120,29 @@ async function sendCodeToBackend(orderID, planKey) {
         return orderID;
     }
 }
-    // ===== 6. ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ =====
-    const tariffButtons = document.querySelectorAll('.pricing-card .btn');
-    tariffButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            if (!this.hasAttribute('data-no-scroll')) {
-                e.preventDefault(); 
-                const card = this.closest('.pricing-card');
-                const planName = card.querySelector('h3').innerText;
-                const plan = planName.includes('Базовый') ? 'basic' : 
-                             planName.includes('Расширенный') ? 'extended' : 'subscription';
-                const price = card.querySelector('.price-amount').innerText.replace(/\s/g, '');
-                
-                const newID = generateOrderIdentifier();
-                localStorage.setItem('lastOrderID', newID);
-                
-                window.location.href = `payment.html?plan=${plan}&price=${price}`;
-            }
-        });
+    // ===== 6. ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ (ИСПРАВЛЕНО) =====
+const tariffButtons = document.querySelectorAll('.pricing-card .btn');
+tariffButtons.forEach(button => {
+    button.addEventListener('click', function(e) {
+        if (!this.hasAttribute('data-no-scroll')) {
+            e.preventDefault(); 
+            const card = this.closest('.pricing-card');
+            const planName = card.querySelector('h3').innerText;
+            
+            // Определяем тариф по заголовку
+            const plan = planName.includes('Базовый') ? 'basic' : 
+                         planName.includes('Расширенный') ? 'extended' : 'subscription';
+            
+            const price = card.querySelector('.price-amount').innerText.replace(/\s/g, '');
+            
+            // ПЕРЕДАЕМ plan, чтобы буква в ID сменилась (E, S или V)
+            const newID = generateOrderIdentifier(plan); 
+            localStorage.setItem('lastOrderID', newID);
+            
+            window.location.href = `payment.html?plan=${plan}&price=${price}`;
+        }
     });
+});
 
     // ===== 7. ЛОГИКА СТРАНИЦЫ ОПЛАТЫ (PAYMENT.HTML) =====
     if (window.location.pathname.includes('payment.html')) {
