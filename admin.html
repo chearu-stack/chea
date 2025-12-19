@@ -3,41 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Админ-панель — Активация кодов</title>
+    <title>AMG — Панель заявок</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="admin-body">
     <div id="loginOverlay" class="admin-login-overlay">
         <div class="admin-login-box">
-            <h2>Вход в панель управления</h2>
+            <h2>Вход в панель</h2>
             <input type="password" id="adminPass" placeholder="Пароль" class="admin-pass-input">
             <button onclick="checkAuth()" class="btn btn-primary admin-login-btn">Войти</button>
-            <p id="errorMsg" class="admin-error-msg">Неверный пароль</p>
         </div>
     </div>
 
     <div id="adminPage" class="admin-content" style="display: none;">
         <header class="admin-header">
-            <h1>Заявки на активацию</h1>
+            <h1>Входящие заявки</h1>
             <button onclick="logout()" class="admin-logout-btn">Выйти</button>
         </header>
 
-        <div class="admin-stats-grid">
-            <div class="admin-stat-card">
-                <h3>Ожидают</h3>
-                <p id="pendingCount">0</p>
-            </div>
-            <div class="admin-stat-card">
-                <h3>Активны</h3>
-                <p id="activeCount">0</p>
-            </div>
-        </div>
-
         <div class="admin-table-container">
             <div class="admin-table-actions">
-                <button onclick="loadOrders()" class="btn btn-secondary">Обновить</button>
-                <span id="lastUpdate" class="admin-update-time"></span>
+                <button onclick="loadOrders()" class="btn btn-secondary">Обновить список</button>
             </div>
 
             <table class="admin-orders-table">
@@ -45,19 +31,16 @@
                     <tr>
                         <th>Код доступа</th>
                         <th>Тариф</th>
-                        <th>Дата</th>
-                        <th>Статус</th>
-                        <th>Расход (БД)</th>
+                        <th>Дата заявки</th>
                         <th>Действие</th>
                     </tr>
                 </thead>
                 <tbody id="ordersBody">
-                    <tr><td colspan="6" class="loading-row">Загрузка...</td></tr>
+                    <tr><td colspan="4" class="loading-row">Загрузка...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
-
     <script src="admin.js"></script>
 </body>
 </html>
