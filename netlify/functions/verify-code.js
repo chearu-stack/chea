@@ -1,40 +1,26 @@
 const { createClient } = require('@supabase/supabase-js');
 
 exports.handler = async (event, context) => {
-  // CORS headers for GitHub Pages
   const headers = {
     'Access-Control-Allow-Origin': 'https://chearu-stack.github.io',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   };
 
-  // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
   }
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
-  if (!supabaseUrl || !supabaseKey) {
-    return { 
-      statusCode: 500, 
-      headers, // ✅
-      body: JSON.stringify({ error: 'Supabase credentials not configured' }) 
-    };
-  }
-
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    const { code, usage = 100 } = event.queryStringParameters || {};
+    // Теперь по умолчанию usage = 0, никакого жлобства!
+    const { code, usage = 0 } = event.queryStringParameters || {};
     
     if (!code) {
-      return { 
-        statusCode: 400, 
-        headers, // ✅
-        body: JSON.stringify({ error: 'Missing code parameter' }) 
-      };
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Нужен код' }) };
     }
 
     const { data: accessData, error: fetchError } = await supabase
@@ -44,42 +30,33 @@ exports.handler = async (event, context) => {
       .single();
 
     if (fetchError || !accessData) {
-      return {
-        statusCode: 404,
-        headers, // ✅
-        body: JSON.stringify({ error: 'Code not found' })
-      };
+      return { statusCode: 404, headers, body: JSON.stringify({ error: 'Код не найден' }) };
     }
 
-    if (accessData.status !== 'active') {
+    // Проверка активации (то, что ты делаешь в админке)
+    if (accessData.status !== 'active' || !accessData.is_active) {
       return {
         statusCode: 403,
-        headers, // ✅
-        body: JSON.stringify({ 
-          error: 'Access not activated',
-          status: accessData.status
-        })
+        headers,
+        body: JSON.stringify({ error: 'Код еще не активирован владельцем' })
       };
     }
 
     const capsLimit = accessData.caps_limit || 0;
     const capsUsed = accessData.caps_used || 0;
-    const requestedUsage = parseInt(usage, 10) || 100;
+    const requestedUsage = parseInt(usage, 10) || 0;
     
+    // Проверяем, хватит ли капсов на запрос
     if (capsUsed + requestedUsage > capsLimit) {
       return {
         statusCode: 403,
-        headers, // ✅
-        body: JSON.stringify({ 
-          error: 'Caps limit exceeded',
-          caps_used: capsUsed,
-          caps_limit: capsLimit,
-          remaining: capsLimit - capsUsed
-        })
+        headers,
+        body: JSON.stringify({ error: 'Лимит капсов исчерпан', remaining: capsLimit - capsUsed })
       };
     }
 
-    let updatedCapsUsed = capsUsed;
+    // СПИСАНИЕ ПРОИСХОДИТ ТОЛЬКО ЕСЛИ usage > 0
+    let currentCapsUsed = capsUsed;
     if (requestedUsage > 0) {
       const { error: updateError } = await supabase
         .from('access_codes')
@@ -87,33 +64,23 @@ exports.handler = async (event, context) => {
         .eq('code', code);
 
       if (updateError) throw updateError;
-      updatedCapsUsed = capsUsed + requestedUsage;
+      currentCapsUsed = capsUsed + requestedUsage;
     }
 
+    // Возвращаем честный ответ
     return {
       statusCode: 200,
-      headers: { ...headers, 'Content-Type': 'application/json' }, // ✅ Объединил
+      headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         success: true,
-        access: 'granted',
-        code: accessData.code,
-        package: accessData.package,
-        caps_used: updatedCapsUsed,
+        message: requestedUsage > 0 ? 'Капсы списаны' : 'Код валиден, лимит есть',
+        remaining: capsLimit - currentCapsUsed,
         caps_limit: capsLimit,
-        remaining: capsLimit - updatedCapsUsed,
-        status: accessData.status
+        caps_used: currentCapsUsed
       })
     };
 
   } catch (error) {
-    console.error('Function error:', error);
-    return {
-      statusCode: 500,
-      headers, // ✅
-      body: JSON.stringify({ 
-        error: 'Internal server error', 
-        details: error.message 
-      })
-    };
+    return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
   }
 };
