@@ -1,6 +1,10 @@
 const express = require('express');
+const { createClient } = require('@supabase/supabase-js'); // Добавили для проверки
 const app = express();
 app.use(express.json());
+
+// Инициализация Supabase для внутренней проверки
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 // ===== УНИВЕРСАЛЬНЫЙ CORS ДЛЯ ВСЕХ МАРШРУТОВ =====
 app.use((req, res, next) => {
@@ -41,49 +45,61 @@ const createNetlifyEvent = (req) => {
     };
 };
 
-// УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК (Исправляет выдачу данных)
+// УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК
 const handleRequest = (handler) => async (req, res) => {
     try {
         const event = createNetlifyEvent(req);
         const result = await handler.handler(event);
-        
-        // Устанавливаем статус и заголовки из функции, отправляем тело
         res.status(result.statusCode || 200)
            .set(result.headers || {})
            .send(result.body);
-           
     } catch (error) {
         console.error(`❌ Ошибка в маршруте ${req.path}:`, error.message);
         res.status(500).json({ error: error.message });
     }
 };
 
-// МАРШРУТЫ (С поддержкой коротких и длинных путей)
+// МАРШРУТЫ
+
+// --- НОВЫЙ МАРШРУТ: ПРОВЕРКА АКТИВАЦИИ (БОДРЯЧОК) ---
+app.get('/check-status', async (req, res) => {
+    const { fp } = req.query;
+    if (!fp) return res.json({ active: false });
+
+    try {
+        // Ищем в базе по отпечатку и проверяем флаг активации
+        const { data, error } = await supabase
+            .from('access_codes')
+            .select('is_active')
+            .eq('fingerprint', fp)
+            .eq('is_active', true)
+            .maybeSingle();
+
+        if (error) throw error;
+        res.json({ active: !!data });
+    } catch (err) {
+        console.error("Ошибка Бодрячка:", err.message);
+        res.json({ active: false });
+    }
+});
 
 // 1. Генерация кода
 app.post('/generate-code', handleRequest(generateCode));
-app.post('/.netlify/functions/generate-code', handleRequest(generateCode));
-app.post('/.netlify/functions/server/generate-code', handleRequest(generateCode));
 
 // 2. Ожидающие коды
 app.get('/get-pending', handleRequest(getPending));
-app.get('/.netlify/functions/get-pending', handleRequest(getPending));
 
-// 3. Активация (Исправлено: теперь принимает и GET, и POST)
+// 3. Активация
 app.all('/activate-code', handleRequest(activateCode));
-app.all('/.netlify/functions/activate-code', handleRequest(activateCode));
 
 // 4. Проверка
 app.post('/verify-code', handleRequest(verifyCode));
-app.post('/.netlify/functions/verify-code', handleRequest(verifyCode));
 
 // 5. Тест Bothub
 app.post('/test-bothub', handleRequest(testBothub));
-app.post('/.netlify/functions/test-bothub', handleRequest(testBothub));
 
 // 6. Прокси
 app.post('/proxy', handleRequest(proxy));
-app.post('/.netlify/functions/proxy', handleRequest(proxy));
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
