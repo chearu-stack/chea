@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const planMap = { 'basic': 'basic', 'extended': 'pro', 'subscription': 'premium' };
             const backendPlan = planMap[planKey] || 'basic';
-            const capsLimits = { 'basic': 30000, 'pro': 100000, 'premium': 300000 };
+            const capsLimits = { 'basic': 30000, 'pro': 60000, 'premium': 90000 };
 
             const response = await fetch('https://chea.onrender.com/generate-code', {
                 method: 'POST',
