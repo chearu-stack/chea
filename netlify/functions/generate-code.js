@@ -27,8 +27,8 @@ exports.handler = async (event, context) => {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    // ПРИНИМАЕМ ДАННЫЕ ОТ ОБНОВЛЕННОГО ФРОНТЕНДА
-    const { code, package: packageType, caps_limit } = JSON.parse(event.body || '{}');
+    // ПРИНИМАЕМ ДАННЫЕ (Добавили fingerprint)
+    const { code, package: packageType, caps_limit, fingerprint } = JSON.parse(event.body || '{}');
     
     if (!code || !packageType) {
       return { 
@@ -38,9 +38,9 @@ exports.handler = async (event, context) => {
       };
     }
 
-    console.log(`📡 Попытка регистрации кода: ${code}, Пакет: ${packageType}, Лимит: ${caps_limit}`);
+    console.log(`📡 Регистрация: ${code}, FP: ${fingerprint}, Пакет: ${packageType}`);
 
-    // Записываем в БД
+    // Записываем в БД (Добавили поля fingerprint и is_active)
     const { data, error: insertError } = await supabase
       .from('access_codes')
       .insert([
@@ -48,7 +48,9 @@ exports.handler = async (event, context) => {
           code: code,
           package: packageType,
           status: 'pending',
-          caps_limit: caps_limit || 30000, // Если фронт не прислал, ставим минимум
+          is_active: false, // Всегда FALSE при создании
+          fingerprint: fingerprint || 'unknown', // Сохраняем отпечаток
+          caps_limit: caps_limit || 30000,
           caps_used: 0,
           ip_address: event.headers['x-forwarded-for'] || 'unknown'
         }
@@ -57,37 +59,28 @@ exports.handler = async (event, context) => {
       .single();
 
     if (insertError) {
-      // Обработка дубликата кода
       if (insertError.code === '23505') {
         return {
             statusCode: 409,
             headers,
-            body: JSON.stringify({ error: 'Этот код уже зарегистрирован. Попробуйте обновить страницу.' })
+            body: JSON.stringify({ error: 'Код уже существует' })
         };
       }
       throw insertError;
     }
 
-    // Успех
     return {
       statusCode: 200,
       headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        success: true, 
-        code: data.code,
-        caps_limit: data.caps_limit
-      })
+      body: JSON.stringify({ success: true, code: data.code })
     };
 
   } catch (error) {
-    console.error('Критическая ошибка бэкенда:', error);
+    console.error('Ошибка:', error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ 
-        error: 'Internal server error', 
-        details: error.message 
-      })
+      body: JSON.stringify({ error: error.message })
     };
   }
 };
