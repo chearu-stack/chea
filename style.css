@@ -1562,3 +1562,28 @@ h1, h2, h3, h4 {
     50% { opacity: 0.4; }
     100% { opacity: 1; }
 }
+
+/* Контейнер ресурса в навигации */
+.res-widget {
+    min-width: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.res-bar-bg {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1); /* Прозрачная подложка */
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 4px;
+    border: none !important; /* Убираем ту самую двойную линию */
+}
+
+.res-bar-fill {
+    height: 100%;
+    width: 0%; 
+    background: #38a169; /* Зеленый по умолчанию */
+    box-shadow: 0 0 8px rgba(56, 161, 105, 0.5); /* Мягкое свечение */
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); /* Плавный ход стрелки */
+}
