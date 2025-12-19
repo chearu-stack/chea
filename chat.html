@@ -72,7 +72,7 @@
     <div class="main-container">
         <div id="chat-window">
             <div class="message bot">
-                Система готова к анализу. Опишите обстоятельства дела или предоставьте текст отказа контрагента. Мы выявим правовые зацепки.
+                Система готова к анализу. Опишите обстоятельства дела. Мы выявим правовые зацепки.
             </div>
         </div>
         
@@ -82,26 +82,98 @@
         </div>
     </div>
 
-   async function syncCaps() {
-    if (!code) return 0;
-    try {
-        // Делаем POST вместо GET, чтобы сервер не ругался
-        const r = await fetch(CHEA_API, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: code }) // Передаем код в теле
-        });
+    <script>
+        const CHEA_API = 'https://chea.onrender.com/verify-code';
+        const BRIDGE_URL = 'https://bothub-bridge.onrender.com/api/chat';
         
-        const d = await r.json();
-        if (d.success) {
-            const el = document.getElementById('caps-counter');
-            if(el) el.innerText = `Лимит: ${d.remaining}`;
-            return d.remaining;
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('access_code');
+
+        const chatWindow = document.getElementById('chat-window');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const capsInfo = document.getElementById('caps-counter');
+
+        // Функция добавления сообщений на экран
+        function addMessage(text, role) {
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            div.innerText = text;
+            chatWindow.appendChild(div);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
         }
-    } catch (e) { 
-        console.error("Связь с сервером не установлена"); 
-    }
-    return 0;
-}
+
+        // 1. СИНХРОНИЗАЦИЯ ЛИМИТОВ (POST)
+        async function syncCaps() {
+            if (!code) {
+                capsInfo.innerText = "Код не найден";
+                return 0;
+            }
+            try {
+                const r = await fetch(CHEA_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
+                });
+                const d = await r.json();
+                if (d.success) {
+                    capsInfo.innerText = `Лимит: ${d.remaining} капсов`;
+                    return d.remaining;
+                }
+            } catch (e) {
+                console.error("Ошибка связи");
+                capsInfo.innerText = "Ошибка сервера";
+            }
+            return 0;
+        }
+
+        // 2. ЛОГИКА ОТПРАВКИ
+        sendBtn.onclick = async () => {
+            const text = userInput.value.trim();
+            if (!text || !code) return;
+
+            // Сначала проверяем лимит
+            const limit = await syncCaps();
+            if (limit <= 0) {
+                alert("Недостаточно средств или сервер недоступен.");
+                return;
+            }
+
+            addMessage(text, 'user');
+            userInput.value = '';
+            sendBtn.disabled = true;
+
+            try {
+                // Запрос в AI Мост
+                const res = await fetch(BRIDGE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: [{role: 'user', content: text}] })
+                });
+                const data = await res.json();
+                const aiMsg = data.choices[0].message.content;
+
+                addMessage(aiMsg, 'bot');
+
+                // Списываем капсы
+                await fetch(CHEA_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code, usage: aiMsg.length })
+                });
+
+                // Обновляем счетчик
+                syncCaps();
+
+            } catch (err) {
+                addMessage("Ошибка связи с Адвокатом.", "bot");
+            } finally {
+                sendBtn.disabled = false;
+            }
+        };
+
+        // Запуск при загрузке страницы
+        syncCaps();
+    </script>
 </body>
 </html>
