@@ -1,12 +1,12 @@
 /**
  * АДВОКАТ МЕДНОГО ГРОША — script.js
- * ВЕРСИЯ: ПРИВЯЗКА К ЦЕНЕ + ОТПРАВКА ТОЛЬКО С PAYMENT
+ * ВЕРСИЯ: ПОЛНАЯ (135+ строк) С ИСПРАВЛЕНИЕМ ЗАЛИПАНИЯ
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 Система АМГ: Режим экономной отправки (только с Payment) активен.");
+    console.log("🚀 Система АМГ запущена.");
 
-    // 1. ГЕНЕРАТОР ID (Без изменений)
+    // 1. ФУНКЦИЯ ГЕНЕРАЦИИ ID (Без изменений)
     function generateOrderIdentifier(planKey) {
         const now = new Date();
         const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -30,6 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (nextCharCode > 90) nextCharCode = 65; 
         const nextLetter = String.fromCharCode(nextCharCode);
         localStorage.setItem('lastUsedLetter', nextLetter);
+        
+        // КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: сохраняем минуту генерации отдельно
+        localStorage.setItem('lastGenMinute', hh + min);
         
         return `AMG25-${mm}${dd}${hh}${min}-${planLetter}${nextLetter}`;
     }
@@ -56,54 +59,55 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 3. ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ (УБРАЛИ ЛИШНЕЕ)
+    // 3. ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ (ОПРЕДЕЛЕНИЕ ПО ЦЕНЕ)
     const tariffButtons = document.querySelectorAll('.pricing-card .btn');
     tariffButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             if (!this.hasAttribute('data-no-scroll')) {
-                // e.preventDefault(); // Если хочешь, чтобы переход был через JS, оставь. Если ссылка прямая — можно убрать.
+                // Мы НЕ отменяем переход, просто готовим данные
                 const card = this.closest('.pricing-card');
-                
-                // Читаем цену напрямую из карточки (твой метод)
-                const priceText = card.querySelector('.price').innerText.replace(/\s/g, ''); 
+                const priceText = card.querySelector('.price').innerText.replace(/\s/g, '');
                 const priceInt = parseInt(priceText);
                 
                 let plan = 'basic';
-                if (priceInt >= 2000) { plan = 'subscription'; } 
-                else if (priceInt >= 1000) { plan = 'extended'; } 
-                else { plan = 'basic'; }
+                if (priceInt >= 2000) plan = 'subscription';
+                else if (priceInt >= 1000) plan = 'extended';
+                else plan = 'basic';
                 
-                console.log(`🎯 Индекс: сгенерирован ID для цены ${priceInt}`);
-
+                // Генерируем ID сразу
                 const newID = generateOrderIdentifier(plan); 
                 localStorage.setItem('lastOrderID', newID);
                 
-                // Раньше тут была отправка в базу. ТЕПЕРЬ ЕЁ ТУТ НЕТ.
-                // Просто переходим на страницу оплаты.
+                // Переход на payment.html с параметрами
                 window.location.href = `payment.html?plan=${plan}&price=${priceInt}`;
             }
         });
     });
 
-    // 4. ЛОГИКА СТРАНИЦЫ ОПЛАТЫ (ДОБАВИЛИ ОТПРАВКУ ТУТ)
+    // 4. ЛОГИКА СТРАНИЦЫ ОПЛАТЫ (ВОЗВРАЩЕНА ПОЛНОСТЬЮ)
     if (window.location.pathname.includes('payment.html')) {
         const urlParams = new URLSearchParams(window.location.search);
         const planKey = urlParams.get('plan') || 'extended';
         const price = urlParams.get('price') || '1200';
         
+        const now = new Date();
+        const currentMinute = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+        
         let orderID = localStorage.getItem('lastOrderID');
+        let savedMinute = localStorage.getItem('lastGenMinute');
 
-        // Страховка
-        if (!orderID) {
+        // ЛЕЧИМ ЗАЛИПАНИЕ: если минута в памяти не совпадает с текущей — обновляем ID
+        if (!orderID || savedMinute !== currentMinute) {
             orderID = generateOrderIdentifier(planKey);
             localStorage.setItem('lastOrderID', orderID);
         }
 
+        // Асинхронный блок для работы с базой и DOM
         (async () => {
-            // ВОТ ОНО: отправка в базу происходит только здесь!
-            console.log("📡 Паймент: отправка ID в базу...");
+            // ОТПРАВЛЯЕМ В БАЗУ ТОЛЬКО ТУТ
             await sendCodeToBackend(orderID, planKey);
             
+            // ВЫЗЫВАЕМ ОБНОВЛЕНИЕ СТРАНИЦЫ (Твоя полная функция контента)
             updatePageContent(orderID, planKey, price);
         })();
 
@@ -115,6 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             const current = planDetails[planKey] || planDetails['extended'];
 
+            // Возвращаем все твои проверки элементов
             if (document.getElementById('selectedPlanName')) document.getElementById('selectedPlanName').textContent = current.name;
             if (document.getElementById('selectedPlanDesc')) document.getElementById('selectedPlanDesc').textContent = current.desc;
             
@@ -127,6 +132,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (qrImg) {
                 const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
                 qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(baseQR + '&sum=' + price + '&label=' + orderID)}`;
+            }
+            
+            // Ссылка в ТГ (чтобы тоже была актуальной)
+            const tgLink = document.querySelector('a[href*="t.me/chearu252"]');
+            if (tgLink) {
+                const msg = encodeURIComponent(`Здравствуйте! Мой ID: ${orderID}. Оплатил ${price} ₽.`);
+                tgLink.href = `https://t.me/chearu252?text=${msg}`;
             }
         }
     }
