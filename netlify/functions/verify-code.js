@@ -7,73 +7,71 @@ exports.handler = async (event, context) => {
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   };
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
-  }
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   try {
-    // Теперь по умолчанию usage = 0, никакого жлобства!
-    const { code, usage = 0 } = event.queryStringParameters || {};
+    // ЛК теперь присылает данные в теле (body) POST-запроса
+    const { code, fingerprint, usage = 0 } = JSON.parse(event.body || '{}');
+
+    // 1. Ищем запись: приоритет отпечатку (FP), если нет — по коду
+    let query = supabase.from('access_codes').select('*');
     
-    if (!code) {
-      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Нужен код' }) };
+    if (fingerprint) {
+      query = query.eq('fingerprint', fingerprint);
+    } else if (code) {
+      query = query.eq('code', code);
+    } else {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Нужен код или FP' }) };
     }
 
-    const { data: accessData, error: fetchError } = await supabase
-      .from('access_codes')
-      .select('*')
-      .eq('code', code)
-      .single();
+    const { data: accessData, error: fetchError } = await query.maybeSingle();
 
     if (fetchError || !accessData) {
-      return { statusCode: 404, headers, body: JSON.stringify({ error: 'Код не найден' }) };
+      return { statusCode: 404, headers, body: JSON.stringify({ error: 'Доступ не найден' }) };
     }
 
-    // Проверка активации (то, что ты делаешь в админке)
-    if (accessData.status !== 'active' || !accessData.is_active) {
+    // 2. Проверка активации (галочка в Supabase)
+    if (!accessData.is_active) {
       return {
         statusCode: 403,
         headers,
-        body: JSON.stringify({ error: 'Код еще не активирован владельцем' })
+        body: JSON.stringify({ error: 'Доступ еще не активирован', is_active: false })
       };
     }
 
     const capsLimit = accessData.caps_limit || 0;
     const capsUsed = accessData.caps_used || 0;
     const requestedUsage = parseInt(usage, 10) || 0;
-    
-    // Проверяем, хватит ли капсов на запрос
+
+    // 3. Проверка лимитов
     if (capsUsed + requestedUsage > capsLimit) {
       return {
         statusCode: 403,
         headers,
-        body: JSON.stringify({ error: 'Лимит капсов исчерпан', remaining: capsLimit - capsUsed })
+        body: JSON.stringify({ error: 'Лимит исчерпан', remaining: capsLimit - capsUsed })
       };
     }
 
-    // СПИСАНИЕ ПРОИСХОДИТ ТОЛЬКО ЕСЛИ usage > 0
+    // 4. Списание капсов
     let currentCapsUsed = capsUsed;
     if (requestedUsage > 0) {
       const { error: updateError } = await supabase
         .from('access_codes')
         .update({ caps_used: capsUsed + requestedUsage })
-        .eq('code', code);
+        .eq('id', accessData.id);
 
       if (updateError) throw updateError;
       currentCapsUsed = capsUsed + requestedUsage;
     }
 
-    // Возвращаем честный ответ
     return {
       statusCode: 200,
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         success: true,
-        message: requestedUsage > 0 ? 'Капсы списаны' : 'Код валиден, лимит есть',
+        code: accessData.code, // Возвращаем код, чтобы ЛК его знал
         remaining: capsLimit - currentCapsUsed,
         caps_limit: capsLimit,
         caps_used: currentCapsUsed
@@ -81,6 +79,7 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
+    console.error("Ошибка верификации:", error.message);
     return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
   }
 };
