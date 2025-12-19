@@ -1,14 +1,14 @@
 const { createClient } = require('@supabase/supabase-js');
 
 exports.handler = async (event, context) => {
-  // CORS headers for GitHub Pages
+  // CORS заголовки для GitHub Pages
   const headers = {
     'Access-Control-Allow-Origin': 'https://chearu-stack.github.io',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   };
 
-  // Handle preflight requests
+  // Обработка preflight запросов
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
   }
@@ -19,7 +19,7 @@ exports.handler = async (event, context) => {
   if (!supabaseUrl || !supabaseKey) {
     return { 
       statusCode: 500, 
-      headers, // ✅ Добавил здесь
+      headers, 
       body: JSON.stringify({ error: 'Supabase credentials not configured' }) 
     };
   }
@@ -27,53 +27,28 @@ exports.handler = async (event, context) => {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    const { package: packageType, baseCode } = JSON.parse(event.body || '{}');
+    // ПРИНИМАЕМ ДАННЫЕ ОТ ОБНОВЛЕННОГО ФРОНТЕНДА
+    const { code, package: packageType, caps_limit } = JSON.parse(event.body || '{}');
     
-    if (!packageType || !baseCode) {
+    if (!code || !packageType) {
       return { 
         statusCode: 400, 
-        headers, // ✅ Добавил здесь
-        body: JSON.stringify({ error: 'Missing package or baseCode' }) 
+        headers, 
+        body: JSON.stringify({ error: 'Missing code or package' }) 
       };
     }
 
-    // Лимиты капсов по пакетам
-    const capsLimitMap = {
-      basic: 30000,
-      pro: 50000,
-      premium: 90000
-    };
-    const caps_limit = capsLimitMap[packageType] || 30000;
+    console.log(`📡 Попытка регистрации кода: ${code}, Пакет: ${packageType}, Лимит: ${caps_limit}`);
 
-    // Ищем последний код для этой минуты
-    const { data: existingCodes, error: fetchError } = await supabase
-      .from('access_codes')
-      .select('code')
-      .like('code', `${baseCode}-%`)
-      .order('code', { ascending: false })
-      .limit(1);
-
-    if (fetchError) throw fetchError;
-
-    // Определяем следующую букву
-    let nextLetter = 'A';
-    if (existingCodes && existingCodes.length > 0) {
-      const lastCode = existingCodes[0].code;
-      const lastLetter = lastCode.split('-').pop();
-      nextLetter = getNextExcelColumn(lastLetter);
-    }
-
-    const finalCode = `${baseCode}-${nextLetter}`;
-
-    // Записываем в БД с лимитом
+    // Записываем в БД
     const { data, error: insertError } = await supabase
       .from('access_codes')
       .insert([
         {
-          code: finalCode,
+          code: code,
           package: packageType,
           status: 'pending',
-          caps_limit: caps_limit,
+          caps_limit: caps_limit || 30000, // Если фронт не прислал, ставим минимум
           caps_used: 0,
           ip_address: event.headers['x-forwarded-for'] || 'unknown'
         }
@@ -82,12 +57,13 @@ exports.handler = async (event, context) => {
       .single();
 
     if (insertError) {
+      // Обработка дубликата кода
       if (insertError.code === '23505') {
-        const newBaseCode = `${baseCode}-${nextLetter}`;
-        return exports.handler({
-          ...event,
-          body: JSON.stringify({ package: packageType, baseCode: newBaseCode })
-        }, context);
+        return {
+            statusCode: 409,
+            headers,
+            body: JSON.stringify({ error: 'Этот код уже зарегистрирован. Попробуйте обновить страницу.' })
+        };
       }
       throw insertError;
     }
@@ -95,20 +71,19 @@ exports.handler = async (event, context) => {
     // Успех
     return {
       statusCode: 200,
-      headers: { ...headers, 'Content-Type': 'application/json' }, // ✅ Добавил headers
+      headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         success: true, 
-        code: finalCode,
-        id: data.id,
-        caps_limit: caps_limit
+        code: data.code,
+        caps_limit: data.caps_limit
       })
     };
 
   } catch (error) {
-    console.error('Function error:', error);
+    console.error('Критическая ошибка бэкенда:', error);
     return {
       statusCode: 500,
-      headers, // ✅ Добавил здесь
+      headers,
       body: JSON.stringify({ 
         error: 'Internal server error', 
         details: error.message 
@@ -116,22 +91,3 @@ exports.handler = async (event, context) => {
     };
   }
 };
-
-// Вспомогательная функция для Excel-стиля колонок
-function getNextExcelColumn(current) {
-  if (!current || current === '') return 'A';
-  
-  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  let arr = current.split('').reverse();
-  
-  for (let i = 0; i < arr.length; i++) {
-    const idx = letters.indexOf(arr[i]);
-    if (idx < 25) {
-      arr[i] = letters[idx + 1];
-      return arr.reverse().join('');
-    }
-    arr[i] = 'A';
-  }
-  
-  return 'A' + 'A'.repeat(arr.length);
-}
