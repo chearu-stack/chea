@@ -1,13 +1,12 @@
 /**
  * АДВОКАТ МЕДНОГО ГРОША — script.js
- * ФИНАЛЬНАЯ ВЕРСИЯ: ПОЛНАЯ БЛОКИРОВКА ДУБЛЕЙ И ОБНОВЛЕНИЕ ВРЕМЕНИ
+ * ВЕРСИЯ: ПРИВЯЗКА К ЦЕНЕ (ИСКЛЮЧАЕМ ОШИБКИ ТАРИФОВ)
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("🚀 Система АМГ: Определение тарифа по цене включено.");
 
-    console.log("🚀 Система АМГ запущена. Контроль времени активен.");
-
-    // ===== 1. ГЕНЕРАТОР ID (Генерирует время СТРОГО на момент вызова) =====
+    // 1. ГЕНЕРАТОР ID
     function generateOrderIdentifier(planKey) {
         const now = new Date();
         const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -15,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const hh = String(now.getHours()).padStart(2, '0');
         const min = String(now.getMinutes()).padStart(2, '0');
         
+        // Буквы: E (500), S (1200), V (2500)
         const planLetters = { 'basic': 'E', 'extended': 'S', 'subscription': 'V' };
         const planLetter = planLetters[planKey] || 'X';
 
@@ -29,14 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let nextCharCode = lastLetter.charCodeAt(0) + 1;
         if (nextCharCode > 90) nextCharCode = 65; 
-
         const nextLetter = String.fromCharCode(nextCharCode);
         localStorage.setItem('lastUsedLetter', nextLetter);
         
         return `AMG25-${mm}${dd}${hh}${min}-${planLetter}${nextLetter}`;
     }
 
-    // ===== 2. ОТПРАВКА В БАЗУ (RENDER API) =====
+    // 2. ОТПРАВКА В БАЗУ
     async function sendCodeToBackend(orderID, planKey) {
         try {
             const planMap = { 'basic': 'basic', 'extended': 'pro', 'subscription': 'premium' };
@@ -52,85 +51,80 @@ document.addEventListener('DOMContentLoaded', () => {
                     caps_limit: capsLimits[backendPlan]
                 })
             });
-
-            const result = await response.json();
-            return result.success ? result.code : orderID;
+            return await response.json();
         } catch (error) {
-            console.error('❌ Ошибка сети:', error);
-            return orderID;
+            return { success: false };
         }
     }
 
-    // ===== 3. ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ =====
+    // 3. ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ (ОПРЕДЕЛЕНИЕ ПО ЦЕНЕ)
     const tariffButtons = document.querySelectorAll('.pricing-card .btn');
     tariffButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             if (!this.hasAttribute('data-no-scroll')) {
                 e.preventDefault(); 
                 const card = this.closest('.pricing-card');
-                const title = card.querySelector('h3').innerText.toLowerCase();
+                
+                // Читаем цену напрямую из карточки
+                const priceText = card.querySelector('.price-amount').innerText.replace(/\s/g, '');
+                const priceInt = parseInt(priceText);
                 
                 let plan = 'basic';
-                if (title.includes('расширенный')) plan = 'extended';
-                if (title.includes('профессиональный') || title.includes('сложный')) plan = 'subscription';
+                if (priceInt >= 2000) {
+                    plan = 'subscription'; // Профессиональный (2500)
+                } else if (priceInt >= 1000) {
+                    plan = 'extended'; // Расширенный (1200)
+                } else {
+                    plan = 'basic'; // Базовый (500)
+                }
                 
-                const price = card.querySelector('.price-amount').innerText.replace(/\s/g, '');
-                
-                // Генерируем новый ID прямо сейчас
+                console.log(`✅ Нажата цена ${priceInt}. Определен план: ${plan}`);
+
                 const newID = generateOrderIdentifier(plan); 
                 localStorage.setItem('lastOrderID', newID);
                 
-                window.location.href = `payment.html?plan=${plan}&price=${price}`;
+                window.location.href = `payment.html?plan=${plan}&price=${priceInt}`;
             }
         });
     });
 
-    // ===== 4. ЛОГИКА СТРАНИЦЫ ОПЛАТЫ (БЛОКИРОВКА СТАРЬЯ) =====
+    // 4. ЛОГИКА СТРАНИЦЫ ОПЛАТЫ
     if (window.location.pathname.includes('payment.html')) {
         const urlParams = new URLSearchParams(window.location.search);
         const planKey = urlParams.get('plan') || 'extended';
         const price = urlParams.get('price') || '1200';
         
         const now = new Date();
-        const currentMinuteStr = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+        const currentMinute = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
         
         let orderID = localStorage.getItem('lastOrderID');
 
-        // ЖЕСТКАЯ ПРОВЕРКА: Если в коде время НЕ СОВПАДАЕТ с текущим (или старый формат XA), пересоздаем
-        if (!orderID || !orderID.includes(currentMinuteStr) || orderID.includes('-XA')) {
-            console.log("⚠️ Обнаружен старый код. Принудительное обновление времени.");
+        // Если время не совпадает или буква "X" — пересоздаем по текущему времени
+        if (!orderID || !orderID.includes(currentMinute) || orderID.includes('-X')) {
             orderID = generateOrderIdentifier(planKey);
             localStorage.setItem('lastOrderID', orderID);
         }
 
         (async () => {
-            // Отправляем в базу ТОЛЬКО один раз после всех проверок
-            const finalCode = await sendCodeToBackend(orderID, planKey);
-            updatePageContent(finalCode, planKey, price);
+            await sendCodeToBackend(orderID, planKey);
+            updatePageContent(orderID, planKey, price);
         })();
 
         function updatePageContent(orderID, planKey, price) {
             const planDetails = {
-                'basic': { name: 'Базовый пакет помощи', desc: 'Диагноз ситуации + план + 1 документ' },
-                'extended': { name: 'Расширенный пакет помощи', desc: 'Расчёт неустойки + 3 документа' },
-                'subscription': { name: 'Профессиональный пакет', desc: 'Сложные споры + стратегия «ломаем отписки»' }
+                'basic': { name: 'Базовый пакет', desc: 'Анализ ситуации + 1 документ' },
+                'extended': { name: 'Расширенный пакет', desc: 'Расчёт неустойки + 3 документа' },
+                'subscription': { name: 'Профессиональный пакет', desc: 'Сложные споры + стратегия' }
             };
             const current = planDetails[planKey] || planDetails['extended'];
 
             if (document.getElementById('selectedPlanName')) document.getElementById('selectedPlanName').textContent = current.name;
             if (document.getElementById('selectedPlanDesc')) document.getElementById('selectedPlanDesc').textContent = current.desc;
-            if (document.getElementById('stepAmount')) document.getElementById('stepAmount').textContent = price;
-            if (document.getElementById('instructionAmount')) document.getElementById('instructionAmount').textContent = price;
-
+            
             const priceEl = document.getElementById('selectedPlanPrice');
             if (priceEl) {
                 priceEl.innerHTML = `${price} ₽ <br> <span style="font-size: 1.1rem; color: #e53e3e; display:block; margin-top:5px;">ID: ${orderID}</span>`;
             }
-
-            const tgMsg = encodeURIComponent(`Здравствуйте! Мой ID: ${orderID}. Оплатил ${price} ₽. Прилагаю чек.`);
-            document.querySelectorAll('a[href*="t.me/chearu252"]').forEach(link => {
-                link.href = `https://t.me/chearu252?text=${tgMsg}`;
-            });
 
             const qrImg = document.getElementById('qrCodeImage');
             if (qrImg) {
@@ -139,16 +133,4 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-
-    // ===== 5. ПЛАВНАЯ АНИМАЦИЯ =====
-    const animElements = document.querySelectorAll('.feature-card, .step, .pricing-card');
-    const scrollObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('animated');
-                scrollObserver.unobserve(entry.target); 
-            }
-        });
-    }, { threshold: 0.1 });
-    animElements.forEach(el => scrollObserver.observe(el));
 });
