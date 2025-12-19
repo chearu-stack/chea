@@ -1,5 +1,5 @@
 /**
- * АДВОКАТ МЕДНОГО ГРОША — chat-logic.js (Ferrari Edition)
+ * АДВОКАТ МЕДНОГО ГРОША — chat-logic.js (Ferrari Edition + Auto-Resize)
  */
 document.addEventListener('DOMContentLoaded', () => {
     const API_STATUS = 'https://chea.onrender.com/check-status';
@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fp = getFP();
     
     let activeCode = null;
-    let history = []; // ПАМЯТЬ БОТА
+    let history = []; 
 
     const steps = [
         "🔍 Изучение правового поля...",
@@ -20,7 +20,16 @@ document.addEventListener('DOMContentLoaded', () => {
         "📝 Формирование документа..."
     ];
 
-    // 1. СИНХРОНИЗАЦИЯ РЕСУРСОВ
+    // --- ЛОГИКА АВТОРЕСАЙЗА ПОЛЯ ВВОДА ---
+    const inputField = document.getElementById('user-input');
+    if (inputField) {
+        inputField.addEventListener('input', function() {
+            this.style.height = 'auto'; // Сброс для пересчета
+            const newHeight = Math.min(this.scrollHeight, 200); // Лимит 200px
+            this.style.height = newHeight + 'px';
+        });
+    }
+
     async function sync() {
         try {
             const res = await fetch(`${API_STATUS}?fp=${fp}`);
@@ -39,12 +48,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(bar) bar.style.width = pct + '%';
                 }
             } else {
-                window.location.href = 'index.html'; // Выкидываем, если не оплачено
+                window.location.href = 'index.html';
             }
         } catch (e) { console.error("Sync failed"); }
     }
 
-    // 2. ОТПРАВКА СООБЩЕНИЯ
     const sendMessage = async () => {
         const input = document.getElementById('user-input');
         const win = document.getElementById('chat-window');
@@ -52,14 +60,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!text || !activeCode) return;
 
+        // СБРОС ПОЛЯ (Текст + Высота)
         input.value = '';
+        input.style.height = '45px'; 
+        
         win.innerHTML += `<div class="msg msg-user">${text}</div>`;
         win.scrollTop = win.scrollHeight;
 
-        // Добавляем в историю
         history.push({role: 'user', content: text});
 
-        // СОЗДАЕМ ИНДИКАТОР МЫСЛИ (Ferrari Mode)
         const loader = document.createElement('div');
         loader.className = 'msg msg-bot msg-bot-loading';
         loader.innerHTML = `
@@ -71,7 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
         win.appendChild(loader);
         win.scrollTop = win.scrollHeight;
 
-        // Запускаем смену статусов
         let stepIdx = 0;
         const statusEl = loader.querySelector('#dynamic-status');
         const stepInterval = setInterval(() => {
@@ -85,19 +93,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(BRIDGE, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ messages: history }) // ОТПРАВЛЯЕМ ВСЮ ИСТОРИЮ
+                body: JSON.stringify({ messages: history })
             });
             const d = await response.json();
             const aiText = d.choices[0].message.content;
             
             clearInterval(stepInterval);
             
-            // Выводим ответ
             loader.innerHTML = aiText.replace(/\n/g, '<br>');
             history.push({role: 'assistant', content: aiText});
             win.scrollTop = win.scrollHeight;
 
-            // Списание ресурса (с коэффициентом сложности)
             await fetch(API_VERIFY, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
