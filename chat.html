@@ -6,78 +6,35 @@
     <title>Личный Кабинет | Адвокат Медного Гроша</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --gold: #d4af37;
-            --dark: #1a1a1a;
-            --bg: #f9f7f2;
-            --bot-msg: #e3dec9;
-        }
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); }
-        
-        /* Шапка */
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 30px; background: #fff; border-bottom: 2px solid var(--gold);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
+        :root { --gold: #d4af37; --bg: #f9f7f2; --bot-msg: #e3dec9; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif; background: var(--bg); }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: #fff; border-bottom: 2px solid var(--gold); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .logo { color: #b22222; font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
         .caps-info { background: #eee; padding: 8px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; color: #555; }
-
-        /* Контейнер чата */
-        .main-container {
-            max-width: 1000px; margin: 20px auto; height: calc(100vh - 120px);
-            display: flex; flex-direction: column; background: #fff;
-            border: 1px solid #ddd; border-radius: 8px; overflow: hidden;
-        }
-
-        #chat-window {
-            flex: 1; overflow-y: auto; padding: 30px;
-            display: flex; flex-direction: column; gap: 20px;
-            background-image: linear-gradient(rgba(227, 222, 201, 0.05) 1px, transparent 1px);
-            background-size: 100% 30px;
-        }
-
-        /* Сообщения */
-        .message { max-width: 80%; padding: 15px; border-radius: 10px; line-height: 1.5; position: relative; }
-        .bot { align-self: flex-start; background: var(--bot-msg); border-left: 5px solid var(--gold); color: #333; }
-        .user { align-self: flex-end; background: #fff; border: 1px solid #ddd; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
-
-        /* Поле ввода */
-        .input-area {
-            padding: 20px; border-top: 1px solid #eee; display: flex; gap: 15px; background: #fff;
-        }
-        textarea {
-            flex: 1; border: 1px solid #ccc; border-radius: 5px; padding: 12px;
-            resize: none; font-size: 1rem; outline: none; transition: border 0.3s;
-        }
-        textarea:focus { border-color: var(--gold); }
-        
-        .send-btn {
-            background: #d35400; color: white; border: none; padding: 0 30px;
-            border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s;
-        }
-        .send-btn:hover { background: #e67e22; }
-        .send-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .main-container { max-width: 1000px; margin: 20px auto; height: calc(100vh - 120px); display: flex; flex-direction: column; background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+        #chat-window { flex: 1; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; gap: 20px; }
+        .message { max-width: 80%; padding: 15px; border-radius: 10px; line-height: 1.5; }
+        .bot { align-self: flex-start; background: var(--bot-msg); border-left: 5px solid var(--gold); }
+        .user { align-self: flex-end; background: #eee; border: 1px solid #ddd; }
+        .input-area { padding: 20px; border-top: 1px solid #eee; display: flex; gap: 15px; }
+        textarea { flex: 1; border: 1px solid #ccc; border-radius: 5px; padding: 12px; resize: none; outline: none; }
+        .send-btn { background: #d35400; color: white; border: none; padding: 0 30px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .send-btn:disabled { background: #ccc; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="logo">
-            <i class="fas fa-balance-scale"></i> Адвокат Медного Гроша
-        </div>
+        <div class="logo"><i class="fas fa-balance-scale"></i> Адвокат Медного Гроша</div>
         <div id="caps-counter" class="caps-info">Загрузка лимита...</div>
     </div>
 
     <div class="main-container">
         <div id="chat-window">
-            <div class="message bot">
-                Система готова к анализу. Опишите обстоятельства дела. Мы выявим правовые зацепки.
-            </div>
+            <div class="message bot">Система готова. Введите ваш вопрос для анализа.</div>
         </div>
-        
         <div class="input-area">
-            <textarea id="user-input" rows="2" placeholder="Введите ваш вопрос здесь..."></textarea>
+            <textarea id="user-input" rows="2" placeholder="Ваш вопрос..."></textarea>
             <button id="send-btn" class="send-btn">Отправить</button>
         </div>
     </div>
@@ -85,79 +42,44 @@
     <script>
         const CHEA_API = 'https://chea.onrender.com/verify-code';
         const BRIDGE_URL = 'https://bothub-bridge.onrender.com/api/chat';
-        
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('access_code');
 
-        const chatWindow = document.getElementById('chat-window');
-        const userInput = document.getElementById('user-input');
-        const sendBtn = document.getElementById('send-btn');
         const capsInfo = document.getElementById('caps-counter');
+        const sendBtn = document.getElementById('send-btn');
 
-        // Функция добавления сообщений на экран
-        function addMessage(text, role) {
-            const div = document.createElement('div');
-            div.className = `message ${role}`;
-            div.innerText = text;
-            chatWindow.appendChild(div);
-            chatWindow.scrollTop = chatWindow.scrollHeight;
-        }
-
-        // 1. СИНХРОНИЗАЦИЯ ЛИМИТОВ (POST)
-       async function syncCaps() {
-            if (!code) {
-                capsInfo.innerText = "Код не найден";
-                return 0;
-            }
+        async function syncCaps() {
+            if (!code) { capsInfo.innerText = "Код не найден"; return 0; }
             try {
                 const r = await fetch(CHEA_API, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json' 
-                    },
-                    // Убедимся, что передаем ЧИСТЫЙ объект
-                    body: JSON.stringify({ "code": code }) 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
                 });
                 
-                // Если сервер вернул ошибку, посмотрим что внутри
-                if (!r.ok) {
-                    const errorText = await r.text();
-                    console.error("Сервер ругается:", errorText);
-                    capsInfo.innerText = "Ошибка 400: проверьте код";
-                    return 0;
-                }
-
                 const d = await r.json();
                 if (d.success) {
                     capsInfo.innerText = `Лимит: ${d.remaining} капсов`;
                     return d.remaining;
+                } else {
+                    capsInfo.innerText = "Ошибка кода";
                 }
             } catch (e) {
-                console.error("Критическая ошибка fetch:", e);
-                capsInfo.innerText = "Ошибка сети";
+                capsInfo.innerText = "Ошибка связи";
             }
             return 0;
         }
 
-        // 2. ЛОГИКА ОТПРАВКИ
         sendBtn.onclick = async () => {
-            const text = userInput.value.trim();
+            const text = document.getElementById('user-input').value.trim();
             if (!text || !code) return;
 
-            // Сначала проверяем лимит
-            const limit = await syncCaps();
-            if (limit <= 0) {
-                alert("Недостаточно средств или сервер недоступен.");
-                return;
-            }
-
-            addMessage(text, 'user');
-            userInput.value = '';
             sendBtn.disabled = true;
+            const win = document.getElementById('chat-window');
+            win.innerHTML += `<div class="message user">${text}</div>`;
+            document.getElementById('user-input').value = '';
 
             try {
-                // Запрос в AI Мост
                 const res = await fetch(BRIDGE_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -166,26 +88,22 @@
                 const data = await res.json();
                 const aiMsg = data.choices[0].message.content;
 
-                addMessage(aiMsg, 'bot');
+                win.innerHTML += `<div class="message bot">${aiMsg}</div>`;
+                win.scrollTop = win.scrollHeight;
 
-                // Списываем капсы
                 await fetch(CHEA_API, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ code: code, usage: aiMsg.length })
                 });
-
-                // Обновляем счетчик
                 syncCaps();
-
             } catch (err) {
-                addMessage("Ошибка связи с Адвокатом.", "bot");
+                alert("Ошибка моста или лимита");
             } finally {
                 sendBtn.disabled = false;
             }
         };
 
-        // Запуск при загрузке страницы
         syncCaps();
     </script>
 </body>
