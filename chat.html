@@ -104,7 +104,7 @@
         }
 
         // 1. СИНХРОНИЗАЦИЯ ЛИМИТОВ (POST)
-        async function syncCaps() {
+       async function syncCaps() {
             if (!code) {
                 capsInfo.innerText = "Код не найден";
                 return 0;
@@ -112,17 +112,30 @@
             try {
                 const r = await fetch(CHEA_API, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: code })
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json' 
+                    },
+                    // Убедимся, что передаем ЧИСТЫЙ объект
+                    body: JSON.stringify({ "code": code }) 
                 });
+                
+                // Если сервер вернул ошибку, посмотрим что внутри
+                if (!r.ok) {
+                    const errorText = await r.text();
+                    console.error("Сервер ругается:", errorText);
+                    capsInfo.innerText = "Ошибка 400: проверьте код";
+                    return 0;
+                }
+
                 const d = await r.json();
                 if (d.success) {
                     capsInfo.innerText = `Лимит: ${d.remaining} капсов`;
                     return d.remaining;
                 }
             } catch (e) {
-                console.error("Ошибка связи");
-                capsInfo.innerText = "Ошибка сервера";
+                console.error("Критическая ошибка fetch:", e);
+                capsInfo.innerText = "Ошибка сети";
             }
             return 0;
         }
