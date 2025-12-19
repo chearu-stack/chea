@@ -87,123 +87,22 @@ async function loadOrders() {
         
         // Заполняем таблицу
         orders.forEach(order => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><strong class="order-code">${order.code}</strong></td>
-                <td><span class="package-badge">${order.package}</span></td>
-                <td>${formatDate(order.created_at)}</td>
-                <td>${getStatusBadge(order.status)}</td>
-                <td>${order.caps_limit ? `${(order.caps_used || 0)} / ${order.caps_limit}` : '—'}</td>
-                <td>
-                    ${order.status === 'pending' 
-                        ? `<button onclick="activateCode('${order.code}')" class="btn-activate">
-                            <i class="fas fa-check"></i> Активировать
-                           </button>`
-                        : '<span class="no-action">—</span>'}
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
-        
-    } catch (error) {
-        console.error('Ошибка загрузки:', error);
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" class="error-row">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    Ошибка загрузки: ${error.message}
-                </td>
-            </tr>
-        `;
-    }
-}
-
-// Активация кода (ИСПРАВЛЕННАЯ ФУНКЦИЯ - GET запрос)
-// Активация кода (УМНАЯ ФУНКЦИЯ — заправляет капсы по тарифу)
-async function activateCode(code) {
-    // 1. Пытаемся найти строку в таблице, чтобы вытащить название тарифа
-    const rows = Array.from(document.querySelectorAll('#ordersBody tr'));
-    const targetRow = rows.find(r => r.innerText.includes(code));
-    const packageName = targetRow ? targetRow.querySelector('.package-badge').innerText.toLowerCase() : 'basic';
-
-    if (!confirm(`Активировать доступ для кода:\n${code}\nТариф: ${packageName.toUpperCase()}\n\nПосле активации клиент получит доступ к чату.`)) {
-        return;
-    }
+    const row = document.createElement('tr');
+    // Используем order.tariff, так как в БД именно это имя
+    const tariffName = order.tariff || order.package || 'basic'; 
     
-    try {
-        // Определяем лимит согласно нашей "Адвокатской" сетке
-        const capsMap = { 'basic': 30000, 'pro': 60000, 'premium': 90000 };
-        const limit = capsMap[packageName] || 30000;
-
-        // ✅ КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Передаем и код, и лимит, и флаг активации
-        const url = `${API_BASE}/activate-code?code=${encodeURIComponent(code)}&limit=${limit}&active=true`;
-        
-        const response = await fetch(url);
-        const result = await response.json();
-        
-        if (result.success) {
-            showNotification(`✅ Код ${code} активирован! Залито ${limit} капсов.`);
-            loadOrders(); // Обновляем список
-        } else {
-            showNotification(`❌ Ошибка: ${result.error || 'Неизвестная ошибка'}`, 'error');
-        }
-    } catch (error) {
-        showNotification(`❌ Ошибка сети: ${error.message}`, 'error');
-    }
-}
-// Уведомления
-function showNotification(message, type = 'success') {
-    const notification = document.createElement('div');
-    notification.className = `admin-notification admin-notification-${type}`;
-    notification.innerHTML = `
-        <div class="notification-content">
-            ${message}
-            <button onclick="this.parentElement.parentElement.remove()" class="notification-close">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
+    row.innerHTML = `
+        <td><strong class="order-code">${order.code}</strong></td>
+        <td><span class="package-badge">${tariffName}</span></td>
+        <td>${formatDate(order.created_at || order.date)}</td> 
+        <td>${getStatusBadge(order.status)}</td>
+        <td>
+            <div class="action-cell">
+                ${order.status === 'pending' 
+                    ? `<button onclick="activateCode('${order.code}')" class="btn-activate">Активировать</button>` 
+                    : `<small>${order.remaining || 0} / ${order.caps_limit || 0}</small>`}
+            </div>
+        </td>
     `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 5000);
-}
-
-// Форматирование даты
-function formatDate(dateString) {
-    if (!dateString) return '—';
-    const date = new Date(dateString);
-    return date.toLocaleString('ru-RU', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
-// Бейджи статусов
-function getStatusBadge(status) {
-    const badges = {
-        'pending': '<span class="status-badge status-pending">Ожидает чека</span>',
-        'active': '<span class="status-badge status-active">Активен</span>',
-        'used': '<span class="status-badge status-used">Использован</span>'
-    };
-    return badges[status] || `<span class="status-badge">${status}</span>`;
-}
-
-// Enter для входа
-document.getElementById('adminPass')?.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') checkAuth();
+    tbody.appendChild(row);
 });
-
-// Автообновление каждые 30 секунд
-setInterval(() => {
-    if (sessionStorage.getItem('adminAuth') === 'true') {
-        loadOrders();
-    }
-}, 30000);
