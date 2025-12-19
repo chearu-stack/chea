@@ -1500,3 +1500,32 @@ h1, h2, h3, h4 {
     background: linear-gradient(90deg, #c53030, #dd6b20);
     transition: width 0.5s ease;
 }
+
+/* Анимация вращения молотка */
+.fa-spin {
+    animation: gavel-rotate 1.2s infinite linear;
+    display: inline-block;
+}
+
+@keyframes gavel-rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Мерцание текста статуса */
+.blink-status {
+    animation: text-blink 1.5s infinite ease-in-out;
+    color: #e67e22;
+    font-weight: bold;
+}
+
+@keyframes text-blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+
+.msg-bot-loading {
+    background: rgba(230, 126, 34, 0.05) !important;
+    border-left: 3px solid #e67e22 !important;
+}
