@@ -2,70 +2,24 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Кабинет Господина Адвоката</title>
+    <title>Приемная Господина Адвоката</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Минимальные стили для чата, чтобы не ломать твой style.css */
-        .chat-container { max-width: 800px; margin: 20px auto; display: flex; flex-direction: column; height: 80vh; border: 1px solid #d4af37; border-radius: 8px; background: #fff; }
-        #chat-window { flex-grow: 1; overflow-y: auto; padding: 20px; background: #f9f7f2; }
-        .message { margin-bottom: 15px; padding: 10px 15px; border-radius: 8px; max-width: 80%; }
-        .bot { background: #e3dec9; align-self: flex-start; border-left: 4px solid #d4af37; }
-        .user { background: #fff; align-self: flex-end; border: 1px solid #ccc; margin-left: auto; }
-        .chat-footer { padding: 20px; border-top: 1px solid #eee; display: flex; gap: 10px; }
-        #user-input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; resize: none; }
-        .caps-info { padding: 5px 20px; font-size: 0.8em; color: #666; background: #eee; text-align: right; }
+        body { background: #1a1a1a; color: #d4af37; font-family: 'Georgia', serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .welcome-cabinet { text-align: center; border: 1px solid #d4af37; padding: 40px; border-radius: 15px; background: rgba(255,255,255,0.05); }
+        h1 { font-weight: normal; letter-spacing: 2px; }
+        p { color: #ccc; font-style: italic; }
     </style>
 </head>
 <body>
-    <nav class="main-nav">
-        <div class="nav-container">
-            <div class="nav-logo">
-                <i class="fas fa-balance-scale"></i>
-                <span>Адвокат Медного Гроша</span>
-            </div>
-            <div id="caps-counter" class="caps-info">Загрузка лимита...</div>
-        </div>
-    </nav>
 
-    <div class="chat-container">
-        <div id="chat-window">
-            <div class="message bot">Слушаю вас внимательно. На какой медяк сегодня наторговали ваши оппоненты?</div>
-        </div>
-        <div class="chat-footer">
-            <textarea id="user-input" placeholder="Опишите ситуацию..." rows="2"></textarea>
-            <button id="send-btn" class="btn btn-primary">Отправить</button>
-        </div>
+    <div class="welcome-cabinet">
+        <h1>КРАСНАЯ ПЕЧАТЬ</h1>
+        <p>Юридическая нейросеть активирована.</p>
+        <p style="font-size: 0.8em; margin-top: 20px;">Используйте окно чата справа для взаимодействия с системой.</p>
     </div>
 
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const accessCode = urlParams.get('access_code');
-        const VERIFY_URL = 'https://chea.onrender.com/verify-code';
-        const BRIDGE_URL = 'ТВОЙ_URL_BOTHUB_BRIDGE'; // Сюда впишем адрес твоего моста
+    <script src="https://chearu-stack.github.io/bothub-bridge-service/public/widget.js" defer></script>
 
-        if (!accessCode) {
-            alert("Код доступа не найден!");
-            window.location.href = 'index.html';
-        }
-
-        // 1. Проверка лимита при входе
-        async function checkLimit() {
-            const res = await fetch(`${VERIFY_URL}?code=${accessCode}`);
-            const data = await res.json();
-            if (data.success) {
-                document.getElementById('caps-counter').innerText = `Остаток лимита: ${data.remaining} капсов`;
-                return data.remaining;
-            } else {
-                alert("Доступ закрыт!");
-                window.location.href = 'index.html';
-            }
-        }
-
-        checkLimit();
-
-        // Тут будет логика отправки сообщения в Bothub и списания капсов
-        // ... (допишем, когда будем настраивать bridge)
-    </script>
 </body>
 </html>
