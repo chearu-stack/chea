@@ -4,20 +4,15 @@ app.use(express.json());
 
 // ===== УНИВЕРСАЛЬНЫЙ CORS ДЛЯ ВСЕХ МАРШРУТОВ =====
 app.use((req, res, next) => {
-    // Определяем, какой Origin разрешить
     let allowedOrigin;
-    
-    // Если запрос идёт на /proxy — разрешаем ВСЕ (как Netlify)
     if (req.path.startsWith('/proxy')) {
         allowedOrigin = '*';
-    } 
-    // Для всех остальных маршрутов — только GitHub Pages
-    else {
+    } else {
         allowedOrigin = 'https://chearu-stack.github.io';
     }
     
     res.header('Access-Control-Allow-Origin', allowedOrigin);
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     
     if (req.method === 'OPTIONS') {
@@ -26,12 +21,13 @@ app.use((req, res, next) => {
     next();
 });
 
-// ... остальной код (импорты, маршруты) без изменений ...
-// Импортируем ваши функции
+// Импортируем твои функции
 const generateCode = require('./generate-code');
 const getPending = require('./get-pending');
 const activateCode = require('./activate-code');
 const verifyCode = require('./verify-code');
+const testBothub = require('./test-bothub');
+const proxy = require('./proxy');
 
 // Вспомогательная функция для создания "event" из запроса Express
 const createNetlifyEvent = (req) => {
@@ -45,72 +41,51 @@ const createNetlifyEvent = (req) => {
     };
 };
 
-// Маршруты основного проекта
-app.post('/generate-code', async (req, res) => {
+// УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК (Исправляет выдачу данных)
+const handleRequest = (handler) => async (req, res) => {
     try {
         const event = createNetlifyEvent(req);
-        const result = await generateCode.handler(event);
-        res.json(result);
+        const result = await handler.handler(event);
+        
+        // Устанавливаем статус и заголовки из функции, отправляем тело
+        res.status(result.statusCode || 200)
+           .set(result.headers || {})
+           .send(result.body);
+           
     } catch (error) {
+        console.error(`❌ Ошибка в маршруте ${req.path}:`, error.message);
         res.status(500).json({ error: error.message });
     }
-});
+};
 
-app.get('/get-pending', async (req, res) => {
-    try {
-        const event = createNetlifyEvent(req);
-        const result = await getPending.handler(event);
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+// МАРШРУТЫ (С поддержкой коротких и длинных путей)
 
-app.post('/activate-code', async (req, res) => {
-    try {
-        const event = createNetlifyEvent(req);
-        const result = await activateCode.handler(event);
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+// 1. Генерация кода
+app.post('/generate-code', handleRequest(generateCode));
+app.post('/.netlify/functions/generate-code', handleRequest(generateCode));
+app.post('/.netlify/functions/server/generate-code', handleRequest(generateCode));
 
-app.post('/verify-code', async (req, res) => {
-    try {
-        const event = createNetlifyEvent(req);
-        const result = await verifyCode.handler(event);
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+// 2. Ожидающие коды
+app.get('/get-pending', handleRequest(getPending));
+app.get('/.netlify/functions/get-pending', handleRequest(getPending));
 
-// ===== ТЕСТОВЫЙ МАРШРУТ ДЛЯ BOTHUB =====
-const testBothub = require('./test-bothub');
-app.post('/test-bothub', async (req, res) => {
-    try {
-        const event = createNetlifyEvent(req);
-        const result = await testBothub.handler(event);
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+// 3. Активация
+app.post('/activate-code', handleRequest(activateCode));
+app.post('/.netlify/functions/activate-code', handleRequest(activateCode));
 
-// ===== ОСНОВНОЙ ПРОКСИ ДЛЯ BOTHUB =====
-const proxy = require('./proxy');
-app.post('/proxy', async (req, res) => {
-    try {
-        const event = createNetlifyEvent(req);
-        const result = await proxy.handler(event);
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+// 4. Проверка
+app.post('/verify-code', handleRequest(verifyCode));
+app.post('/.netlify/functions/verify-code', handleRequest(verifyCode));
+
+// 5. Тест Bothub
+app.post('/test-bothub', handleRequest(testBothub));
+app.post('/.netlify/functions/test-bothub', handleRequest(testBothub));
+
+// 6. Прокси
+app.post('/proxy', handleRequest(proxy));
+app.post('/.netlify/functions/proxy', handleRequest(proxy));
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-    console.log(`API запущен на порту ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ API запущен и слушает порт ${PORT}`);
 });
