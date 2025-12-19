@@ -1529,3 +1529,10 @@ h1, h2, h3, h4 {
     background: rgba(230, 126, 34, 0.05) !important;
     border-left: 3px solid #e67e22 !important;
 }
+
+#user-input {
+    transition: height 0.1s ease; /* Плавный рост */
+    overflow-y: hidden;           /* Прячем скролл, пока не упремся в лимит */
+    line-height: 1.5;
+    resize: none;                 /* Убираем ручное растягивание */
+}
