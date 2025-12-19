@@ -39,40 +39,63 @@
         </div>
     </div>
 
-    <script>
-        const CHEA_API = 'https://chea.onrender.com/verify-code';
+   <script>
+        // --- 1. ГЕНЕРАЦИЯ ОТПЕЧАТКА (FP) ---
+        const getFP = () => {
+            const s = window.screen;
+            const b = navigator.userAgent;
+            return btoa(`${s.width}${s.height}${b}${s.colorDepth}`).substring(0, 12);
+        };
+        const userFP = getFP();
+
+        const CHEA_API_VERIFY = 'https://chea.onrender.com/verify-code';
+        const CHEA_API_STATUS = 'https://chea.onrender.com/check-status';
         const BRIDGE_URL = 'https://bothub-bridge.onrender.com/api/chat';
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('access_code');
 
         const capsInfo = document.getElementById('caps-counter');
         const sendBtn = document.getElementById('send-btn');
+        let activeCode = null; // Сюда подтянем код из базы по отпечатку
 
+        // --- 2. СИНХРОНИЗАЦИЯ ДОСТУПА И КАПСОВ ---
         async function syncCaps() {
-            if (!code) { capsInfo.innerText = "Код не найден"; return 0; }
             try {
-                const r = await fetch(CHEA_API, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: code })
-                });
-                
-                const d = await r.json();
-                if (d.success) {
-                    capsInfo.innerText = `Лимит: ${d.remaining} капсов`;
-                    return d.remaining;
-                } else {
-                    capsInfo.innerText = "Ошибка кода";
+                // Сначала проверяем статус по FP и получаем код
+                const statusRes = await fetch(`${CHEA_API_STATUS}?fp=${userFP}`);
+                const statusData = await statusRes.json();
+
+                if (statusData.active) {
+                    // Если активен, вызываем проверку лимитов
+                    // Мы шлем FP вместо кода, сервер должен это понять
+                    const res = await fetch(CHEA_API_VERIFY, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fingerprint: userFP }) 
+                    });
+                    
+                    const d = await res.json();
+                    if (d.success) {
+                        activeCode = d.code; // Запоминаем код для списания
+                        capsInfo.innerText = `Лимит: ${d.remaining} капсов`;
+                        sendBtn.disabled = false;
+                        return d.remaining;
+                    }
                 }
+                
+                capsInfo.innerText = "Доступ ограничен";
+                sendBtn.disabled = true;
+                return 0;
+
             } catch (e) {
                 capsInfo.innerText = "Ошибка связи";
+                sendBtn.disabled = true;
+                return 0;
             }
-            return 0;
         }
 
+        // --- 3. ОТПРАВКА СООБЩЕНИЯ ---
         sendBtn.onclick = async () => {
             const text = document.getElementById('user-input').value.trim();
-            if (!text || !code) return;
+            if (!text || !activeCode) return;
 
             sendBtn.disabled = true;
             const win = document.getElementById('chat-window');
@@ -91,14 +114,15 @@
                 win.innerHTML += `<div class="message bot">${aiMsg}</div>`;
                 win.scrollTop = win.scrollHeight;
 
-                await fetch(CHEA_API, {
+                // Списание капсов через сервер
+                await fetch(CHEA_API_VERIFY, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: code, usage: aiMsg.length })
+                    body: JSON.stringify({ fingerprint: userFP, usage: aiMsg.length })
                 });
                 syncCaps();
             } catch (err) {
-                alert("Ошибка моста или лимита");
+                alert("Ошибка лимита или связи");
             } finally {
                 sendBtn.disabled = false;
             }
