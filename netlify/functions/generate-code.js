@@ -1,46 +1,34 @@
 const { createClient } = require('@supabase/supabase-js');
 
 exports.handler = async (event, context) => {
-  // CORS заголовки для GitHub Pages
   const headers = {
     'Access-Control-Allow-Origin': 'https://chearu-stack.github.io',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   };
 
-  // Обработка preflight запросов
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
-  }
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
-  if (!supabaseUrl || !supabaseKey) {
-    return { 
-      statusCode: 500, 
-      headers, 
-      body: JSON.stringify({ error: 'Supabase credentials not configured' }) 
-    };
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   try {
-    // ПРИНИМАЕМ ДАННЫЕ (Добавили fingerprint)
-    const { code, package: packageType, caps_limit, fingerprint } = JSON.parse(event.body || '{}');
+    const { code, package: packageType, fingerprint } = JSON.parse(event.body || '{}');
     
     if (!code || !packageType) {
-      return { 
-        statusCode: 400, 
-        headers, 
-        body: JSON.stringify({ error: 'Missing code or package' }) 
-      };
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing code or package' }) };
     }
 
-    console.log(`📡 Регистрация: ${code}, FP: ${fingerprint}, Пакет: ${packageType}`);
+    // --- ЛОГИКА ТАРИФОВ (Защита от подмены лимита) ---
+    const limits = {
+      'base': 30000,
+      'pro': 60000,
+      'vip': 90000
+    };
+    // Если пакет неизвестен — даем минимум, если VIP — 90к
+    const finalLimit = limits[packageType] || 30000;
 
-    // Записываем в БД (Добавили поля fingerprint и is_active)
+    console.log(`📡 Регистрация: ${code}, FP: ${fingerprint}, Пакет: ${packageType}, Лимит: ${finalLimit}`);
+
     const { data, error: insertError } = await supabase
       .from('access_codes')
       .insert([
@@ -48,9 +36,9 @@ exports.handler = async (event, context) => {
           code: code,
           package: packageType,
           status: 'pending',
-          is_active: false, // Всегда FALSE при создании
-          fingerprint: fingerprint || 'unknown', // Сохраняем отпечаток
-          caps_limit: caps_limit || 30000,
+          is_active: false, 
+          fingerprint: fingerprint || 'unknown',
+          caps_limit: finalLimit, // Сервер сам ставит лимит!
           caps_used: 0,
           ip_address: event.headers['x-forwarded-for'] || 'unknown'
         }
@@ -60,11 +48,7 @@ exports.handler = async (event, context) => {
 
     if (insertError) {
       if (insertError.code === '23505') {
-        return {
-            statusCode: 409,
-            headers,
-            body: JSON.stringify({ error: 'Код уже существует' })
-        };
+        return { statusCode: 409, headers, body: JSON.stringify({ error: 'Код уже существует' }) };
       }
       throw insertError;
     }
@@ -72,15 +56,11 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 200,
       headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ success: true, code: data.code })
+      body: JSON.stringify({ success: true, code: data.code, limit_assigned: finalLimit })
     };
 
   } catch (error) {
     console.error('Ошибка:', error);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: error.message })
-    };
+    return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
   }
 };
