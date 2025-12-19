@@ -27,7 +27,6 @@
     </nav>
 
     <div class="payment-container">
-        <!-- Шаги -->
         <div class="payment-steps">
             <h2><i class="fas fa-shoe-prints"></i> 3 шага для оплаты</h2>
             <div class="steps-grid">
@@ -39,7 +38,7 @@
                 <div class="step">
                     <div class="step-icon">2</div>
                     <h4>Совершите перевод</h4>
-                    <p>Введите сумму <strong id="stepAmount">500</strong> ₽. В назначении платежа выберите: <strong>«Личный перевод»</strong> или <strong>«Перевод физическому лицу»</strong>.</p>
+                    <p>Введите сумму <strong id="manualPrice">500</strong> ₽. В назначении платежа выберите: <strong>«Личный перевод»</strong>.</p>
                 </div>
                 <div class="step">
                     <div class="step-icon">3</div>
@@ -49,7 +48,6 @@
             </div>
         </div>
 
-        <!-- Основной блок с информацией о платеже -->
         <div class="qr-main-section">
             <div class="qr-info">
                 <h3><i class="fas fa-qrcode"></i> Перевод по QR-коду</h3>
@@ -61,13 +59,13 @@
                         <div class="plan-details">
                             <div class="plan-name" id="selectedPlanName">Расширенный пакет помощи</div>
                             <div class="plan-price" id="selectedPlanPrice">1 200 ₽</div>
-                            <div class="plan-desc" id="selectedPlanDesc">Расчёт неустойки + 3 шаблона документов + жалоба в Роспотребнадзор</div>
+                            <div class="plan-desc" id="selectedPlanDesc">Расчёт неустойки + 3 шаблона документов</div>
                         </div>
                     </div>
                     
                     <div class="amount-instruction">
                         <p><i class="fas fa-info-circle"></i> <strong>Внимание:</strong> Сумма в QR-коде не проставляется автоматически.</p>
-                        <p><i class="fas fa-pen"></i> Введите сумму <strong id="instructionAmount">1200</strong> ₽ вручную.</p>
+                        <p><i class="fas fa-pen"></i> Введите сумму <strong id="stepAmount">1200</strong> ₽ вручную.</p>
                         <p><i class="fas fa-comment"></i> В назначении платежа укажите: <strong>«Личный перевод»</strong>.</p>
                     </div>
                 </div>
@@ -75,47 +73,17 @@
             
             <div class="qr-code-wrapper">
                 <div class="qr-code-container">
-                    <!-- QR-код будет подставлен скриптом -->
-                    <img src="" 
-                         alt="QR-код для перевода" 
-                         class="qr-code-image" id="qrCodeImage">
+                    <img src="" alt="QR-код для перевода" class="qr-code-image" id="qrCodeImage">
                     <p class="qr-hint"><i class="fas fa-mobile-alt"></i> Наведите камеру телефона</p>
                 </div>
             </div>
         </div>
 
-        <!-- Что делать, если QR не работает -->
         <div class="qr-fallback">
             <h4><i class="fas fa-question-circle"></i> Если QR-код не срабатывает</h4>
-            <p>Напишите в <a href="https://t.me/chearu252" target="_blank">Telegram</a>, и мы вышлем вам:</p>
-            <ul>
-                <li><strong>Реквизиты для перевода</strong> (номер карты)</li>
-                <li><strong>Подробную инструкцию</strong> для вашего банка</li>
-                <li><strong>Помощь</strong> на каждом этапе</li>
-            </ul>
-            <p class="fallback-note">Для вашей безопасности мы не публикуем реквизиты в открытом доступе.</p>
+            <p>Напишите в <a href="https://t.me/chearu252" target="_blank">Telegram</a>, и мы вышлем вам реквизиты.</p>
         </div>
 
-        <!-- Что будет после оплаты -->
-        <div class="payment-after">
-            <h4><i class="fas fa-gift"></i> Что вы получите сразу после оплаты</h4>
-            <div class="benefits-grid">
-                <div class="benefit">
-                    <i class="fas fa-file-contract"></i>
-                    <p><strong>Доступ к документам</strong><br>Шаблоны претензий, расчёты, инструкции</p>
-                </div>
-                <div class="benefit">
-                    <i class="fas fa-headset"></i>
-                    <p><strong>Поддержка в чате</strong><br>Ответы на вопросы в течение 7 дней</p>
-                </div>
-                <div class="benefit">
-                    <i class="fas fa-bolt"></i>
-                    <p><strong>Быстрый старт</strong><br>Всё готово к использованию сразу после проверки платежа</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Кнопки действий -->
         <div class="payment-actions">
             <a href="index.html" class="btn btn-primary">
                 <i class="fas fa-arrow-left"></i> Назад к тарифам
@@ -133,22 +101,10 @@
                     <i class="fas fa-balance-scale"></i>
                     <span>Адвокат Медного Гроша</span>
                 </div>
-                <p class="footer-tagline">Цифровой защитник прав потребителей. Досудебное урегулирование споров.</p>
-                <div class="footer-links">
-                    <a href="index.html">Главная</a>
-                    <a href="#">Конфиденциальность</a>
-                    <a href="#">Контакты</a>
-                </div>
-                <p class="footer-disclaimer">
-                    <strong>Информационное примечание:</strong> Сервис предоставляет автоматизированную помощь. Не является юридической консультацией.
-                </p>
             </div>
         </div>
     </footer>
 
-    <!-- JavaScript для чтения параметров из URL -->
-   
-    
     <script src="script.js"></script>
 </body>
 </html>
