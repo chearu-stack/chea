@@ -69,9 +69,9 @@ app.post('/.netlify/functions/server/generate-code', handleRequest(generateCode)
 app.get('/get-pending', handleRequest(getPending));
 app.get('/.netlify/functions/get-pending', handleRequest(getPending));
 
-// 3. Активация
-app.post('/activate-code', handleRequest(activateCode));
-app.post('/.netlify/functions/activate-code', handleRequest(activateCode));
+// 3. Активация (Исправлено: теперь принимает и GET, и POST)
+app.all('/activate-code', handleRequest(activateCode));
+app.all('/.netlify/functions/activate-code', handleRequest(activateCode));
 
 // 4. Проверка
 app.post('/verify-code', handleRequest(verifyCode));
