@@ -119,18 +119,30 @@ async function loadOrders() {
 }
 
 // Активация кода (ИСПРАВЛЕННАЯ ФУНКЦИЯ - GET запрос)
+// Активация кода (УМНАЯ ФУНКЦИЯ — заправляет капсы по тарифу)
 async function activateCode(code) {
-    if (!confirm(`Активировать доступ для кода:\n${code}\n\nПосле активации клиент получит доступ к чату.`)) {
+    // 1. Пытаемся найти строку в таблице, чтобы вытащить название тарифа
+    const rows = Array.from(document.querySelectorAll('#ordersBody tr'));
+    const targetRow = rows.find(r => r.innerText.includes(code));
+    const packageName = targetRow ? targetRow.querySelector('.package-badge').innerText.toLowerCase() : 'basic';
+
+    if (!confirm(`Активировать доступ для кода:\n${code}\nТариф: ${packageName.toUpperCase()}\n\nПосле активации клиент получит доступ к чату.`)) {
         return;
     }
     
     try {
-        // ✅ КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: GET-запрос с параметром в URL
-        const response = await fetch(`${API_BASE}/activate-code?code=${encodeURIComponent(code)}`);
+        // Определяем лимит согласно нашей "Адвокатской" сетке
+        const capsMap = { 'basic': 30000, 'pro': 60000, 'premium': 90000 };
+        const limit = capsMap[packageName] || 30000;
+
+        // ✅ КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Передаем и код, и лимит, и флаг активации
+        const url = `${API_BASE}/activate-code?code=${encodeURIComponent(code)}&limit=${limit}&active=true`;
+        
+        const response = await fetch(url);
         const result = await response.json();
         
         if (result.success) {
-            showNotification(`✅ Код ${code} активирован! Клиенту открыт доступ.`);
+            showNotification(`✅ Код ${code} активирован! Залито ${limit} капсов.`);
             loadOrders(); // Обновляем список
         } else {
             showNotification(`❌ Ошибка: ${result.error || 'Неизвестная ошибка'}`, 'error');
@@ -139,7 +151,6 @@ async function activateCode(code) {
         showNotification(`❌ Ошибка сети: ${error.message}`, 'error');
     }
 }
-
 // Уведомления
 function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
