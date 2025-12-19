@@ -82,62 +82,26 @@
         </div>
     </div>
 
-    <script>
-    // Настройки — проверь эти ссылки!
-    const CHEA_API = 'https://chea.onrender.com/verify-code'; 
-    const AI_BRIDGE = 'https://bothub-bridge.onrender.com/api/chat';
-    
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('access_code');
-
-    // Функция связи с твоим сервером
-    async function syncCaps() {
-        if (!code) return 0;
-        try {
-            const r = await fetch(`${CHEA_API}?code=${code}`);
-            const d = await r.json();
-            if (d.success) {
-                // Ищем элемент лимита. Убедись, что у него класс .caps-info или id
-                const el = document.querySelector('.caps-info') || document.getElementById('caps-counter');
-                if(el) el.innerText = `Лимит: ${d.remaining}`;
-                return d.remaining;
-            }
-        } catch (e) { console.error("Связь с Render упала"); }
-        return 0;
-    }
-
-    // Логика кнопки
-    document.querySelector('.send-btn').onclick = async () => {
-        const input = document.querySelector('textarea');
-        const val = input.value.trim();
+   async function syncCaps() {
+    if (!code) return 0;
+    try {
+        // Делаем POST вместо GET, чтобы сервер не ругался
+        const r = await fetch(CHEA_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: code }) // Передаем код в теле
+        });
         
-        const currentLimit = await syncCaps(); // Проверка перед выстрелом
-        
-        if (currentLimit <= 0) {
-            alert("Лимит исчерпан или сервер не отвечает");
-            return;
+        const d = await r.json();
+        if (d.success) {
+            const el = document.getElementById('caps-counter');
+            if(el) el.innerText = `Лимит: ${d.remaining}`;
+            return d.remaining;
         }
-
-        // Если лимит есть — шлем в мост
-        try {
-            const res = await fetch(AI_BRIDGE, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ messages: [{role: 'user', content: val}] })
-            });
-            const data = await res.json();
-            
-            // Здесь добавь логику вывода сообщения в твое окно (addMessage)
-            console.log("Адвокат ответил:", data.choices[0].message.content);
-
-            // Списываем капсы по длине ответа
-            await fetch(`${CHEA_API}?code=${code}&usage=${data.choices[0].message.content.length}`);
-            syncCaps(); // Обновляем цифру
-            
-        } catch (e) { alert("Мост Bothub не отвечает"); }
-    };
-
-    syncCaps(); // Запуск при загрузке
-</script>
+    } catch (e) { 
+        console.error("Связь с сервером не установлена"); 
+    }
+    return 0;
+}
 </body>
 </html>
