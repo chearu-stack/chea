@@ -85,24 +85,45 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { console.log("Проверка..."); }
     }
 
-    // --- 3. ОБРАБОТКА ТАРИФОВ ---
+    // --- 3. ОБРАБОТКА ТАРИФОВ (ИСПРАВЛЕНО: ТЕПЕРЬ РЕГИСТРИРУЕМ В БАЗЕ) ---
     const tariffButtons = document.querySelectorAll('.pricing-card .btn');
     tariffButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
+        button.addEventListener('click', async function(e) {
             const card = this.closest('.pricing-card');
             const planKey = this.getAttribute('data-plan');
             const priceText = card.querySelector('.price').textContent.replace(/\s/g, '');
             const priceInt = parseInt(priceText);
             
+            // 1. Генерируем данные локально
             const newID = generateOrderIdentifier(planKey);
             localStorage.setItem('lastOrderID', newID);
             localStorage.setItem('selectedPlan', planKey);
             localStorage.setItem('lockTime', Date.now());
 
-            // Мы НЕ отменяем переход на payment.html, но при возврате всё будет заблокировано
+            // 2. СРАЗУ отправляем "отпечаток" и заказ на сервер
+            try {
+                const capsLimits = { 'basic': 30000, 'extended': 60000, 'subscription': 90000 };
+                
+                // Это заставит сервер создать строку в Supabase
+                fetch('https://chea.onrender.com/generate-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        code: newID,
+                        package: planKey,
+                        caps_limit: capsLimits[planKey] || 30000,
+                        fingerprint: userFP // Тот самый отпечаток!
+                    })
+                });
+                
+                console.log("✅ Заказ предварительно зарегистрирован в БД");
+            } catch (err) {
+                console.error("❌ Ошибка связи с сервером:", err);
+            }
+
+            // Переход на payment.html не прерываем, всё идет штатно
         });
     });
-
     // --- 4. ПРОВЕРКА СОСТОЯНИЯ ПРИ ЗАГРУЗКЕ ---
     const savedPlan = localStorage.getItem('selectedPlan');
     const lockTime = localStorage.getItem('lockTime');
