@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // ОТПРАВЛЯЕМ В БАЗУ ТОЛЬКО ТУТ
             await sendCodeToBackend(orderID, planKey);
             
-            // ВЫЗЫВАЕМ ОБНОВЛЕНИЕ СТРАНИЦЫ (Твоя полная функция контента)
+            // ВЫЗЫВАЕМ ОБНОВЛЕНИЕ СТРАНИЦЫ
             updatePageContent(orderID, planKey, price);
         })();
 
@@ -119,22 +119,29 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             const current = planDetails[planKey] || planDetails['extended'];
 
-            // Возвращаем все твои проверки элементов
+            // Тексты тарифа
             if (document.getElementById('selectedPlanName')) document.getElementById('selectedPlanName').textContent = current.name;
             if (document.getElementById('selectedPlanDesc')) document.getElementById('selectedPlanDesc').textContent = current.desc;
             
+            // Цена и ID (в красном цвете)
             const priceEl = document.getElementById('selectedPlanPrice');
             if (priceEl) {
                 priceEl.innerHTML = `${price} ₽ <br> <span style="font-size: 1.1rem; color: #e53e3e; display:block; margin-top:5px;">ID: ${orderID}</span>`;
             }
 
+            // --- ВОТ ЭТИ СТРОЧКИ ТЕПЕРЬ ТУТ, ВНУТРИ ФУНКЦИИ ---
+            if (document.getElementById('stepAmount')) document.getElementById('stepAmount').textContent = price;
+            if (document.getElementById('manualPrice')) document.getElementById('manualPrice').textContent = price;
+            // ------------------------------------------------
+
+            // Генерация QR
             const qrImg = document.getElementById('qrCodeImage');
             if (qrImg) {
                 const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
                 qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(baseQR + '&sum=' + price + '&label=' + orderID)}`;
             }
             
-            // Ссылка в ТГ (чтобы тоже была актуальной)
+            // Ссылка в Телеграм
             const tgLink = document.querySelector('a[href*="t.me/chearu252"]');
             if (tgLink) {
                 const msg = encodeURIComponent(`Здравствуйте! Мой ID: ${orderID}. Оплатил ${price} ₽.`);
@@ -142,4 +149,4 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-});
+}); // Конец DOMContentLoaded
