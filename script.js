@@ -1,14 +1,14 @@
 /**
  * АДВОКАТ МЕДНОГО ГРОША — script.js
- * ФИНАЛЬНАЯ ВЕРСИЯ: ИСПРАВЛЕНЫ ТАРИФЫ (2500), ДАТЫ И БУКВЫ
+ * ПОЛНАЯ ВЕРСИЯ: ИСПРАВЛЕНЫ ТАРИФЫ (2500), ВРЕМЯ, ДАТЫ И БУКВЫ
+ * СВЯЗКА: FRONTEND -> RENDER API -> SUPABASE
  */
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ===== 1. ИНИЦИАЛИЗАЦИЯ =====
-    console.log("🚀 Система АМГ запущена. Сегодня: " + new Date().toLocaleDateString());
+    console.log("🚀 Система АМГ запущена. Версия: 1.0.5");
 
-    // ===== 2. ПЛАВНАЯ ПРОКРУТКА =====
+    // ===== 1. ПЛАВНАЯ ПРОКРУТКА =====
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function(e) {
             if (this.hasAttribute('data-no-scroll')) return;
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ===== 3. ГЕНЕРАТОР ID (AMG25-ММДДЧЧММ-БукваТарифаБукваДня) =====
+    // ===== 2. ГЕНЕРАТОР УМНОГО ID (AMG25-ММДДЧЧММ-БукваТарифаБукваОчереди) =====
     function generateOrderIdentifier(planKey) {
         const now = new Date();
         const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const hh = String(now.getHours()).padStart(2, '0');
         const min = String(now.getMinutes()).padStart(2, '0');
         
-        // Буквы: E (Basic), S (Extended/Pro), V (Professional/VIP)
+        // Маппинг букв: E (Basic), S (Extended), V (Professional/VIP)
         const planLetters = { 'basic': 'E', 'extended': 'S', 'subscription': 'V' };
         const planLetter = planLetters[planKey] || 'X';
 
@@ -40,26 +40,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const lastDate = localStorage.getItem('lastGenerationDate');
         let lastLetter = localStorage.getItem('lastUsedLetter') || '@';
 
+        // Если новый день — сбрасываем счетчик букв (A, B, C...)
         if (lastDate !== todayStr) {
             lastLetter = '@';
             localStorage.setItem('lastGenerationDate', todayStr);
         }
 
         let nextCharCode = lastLetter.charCodeAt(0) + 1;
-        if (nextCharCode > 90) nextCharCode = 65; 
+        if (nextCharCode > 90) nextCharCode = 65; // После Z снова A
 
         const nextLetter = String.fromCharCode(nextCharCode);
         localStorage.setItem('lastUsedLetter', nextLetter);
         
+        // Генерируем строку типа AMG25-12191340-VA
         return `AMG25-${mm}${dd}${hh}${min}-${planLetter}${nextLetter}`;
     }
 
-    // ===== 4. ОТПРАВКА В SUPABASE (ЧЕРЕЗ RENDER) =====
+    // ===== 3. ФУНКЦИЯ ОТПРАВКИ В БАЗУ (RENDER API) =====
     async function sendCodeToBackend(orderID, planKey) {
         try {
             const planMap = { 'basic': 'basic', 'extended': 'pro', 'subscription': 'premium' };
             const backendPlan = planMap[planKey] || 'basic';
+            
+            // Лимиты капсов (соответствуют твоим тарифам)
             const capsLimits = { 'basic': 30000, 'pro': 100000, 'premium': 300000 };
+
+            console.log(`📡 Отправка в базу: Код ${orderID}, Тариф ${backendPlan}`);
 
             const response = await fetch('https://chea.onrender.com/generate-code', {
                 method: 'POST',
@@ -72,14 +78,18 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const result = await response.json();
-            return result.success ? result.code : orderID;
+            if (result.success) {
+                console.log('✅ Запись в БД подтверждена');
+                return result.code;
+            }
+            return orderID;
         } catch (error) {
-            console.error('❌ Ошибка сети:', error);
+            console.error('❌ Ошибка связи с сервером:', error);
             return orderID;
         }
     }
 
-    // ===== 5. ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ (ОПРЕДЕЛЕНИЕ ТАРИФОВ) =====
+    // ===== 4. ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ (ВЫБОР ТАРИФА) =====
     const tariffButtons = document.querySelectorAll('.pricing-card .btn');
     tariffButtons.forEach(button => {
         button.addEventListener('click', function(e) {
@@ -88,6 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const card = this.closest('.pricing-card');
                 const title = card.querySelector('h3').innerText.toLowerCase();
                 
+                // Распознаем тариф по ключевым словам
                 let plan = 'basic';
                 if (title.includes('расширенный')) {
                     plan = 'extended';
@@ -96,15 +107,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 const price = card.querySelector('.price-amount').innerText.replace(/\s/g, '');
-                const newID = generateOrderIdentifier(plan); 
                 
+                // Генерируем СВЕЖИЙ ID с текущим временем
+                const newID = generateOrderIdentifier(plan); 
                 localStorage.setItem('lastOrderID', newID);
+                
+                // Переходим на страницу оплаты с параметрами
                 window.location.href = `payment.html?plan=${plan}&price=${price}`;
             }
         });
     });
 
-    // ===== 6. ЛОГИКА СТРАНИЦЫ ОПЛАТЫ (PAYMENT.HTML) =====
+    // ===== 5. ЛОГИКА СТРАНИЦЫ ОПЛАТЫ (PAYMENT.HTML) =====
     if (window.location.pathname.includes('payment.html')) {
         const urlParams = new URLSearchParams(window.location.search);
         const planKey = urlParams.get('plan') || 'extended';
@@ -112,15 +126,18 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const now = new Date();
         const todayStr = String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+        const currentTimeStr = todayStr + String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
         
         let orderID = localStorage.getItem('lastOrderID');
 
-        // Если дата в коде не совпадает с сегодня — обновляем!
+        // ПРОВЕРКА: Если код старый (время или дата не те), принудительно создаем новый
         if (!orderID || !orderID.includes(todayStr)) {
+            console.log("🔄 Код устарел или отсутствует. Генерируем новый.");
             orderID = generateOrderIdentifier(planKey);
             localStorage.setItem('lastOrderID', orderID);
         }
 
+        // Запускаем процесс: сначала в базу, потом показываем юзеру
         (async () => {
             const finalCode = await sendCodeToBackend(orderID, planKey);
             updatePageContent(finalCode, planKey, price);
@@ -135,6 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const current = planDetails[planKey] || planDetails['extended'];
 
+            // Заполняем данные на странице
             if (document.getElementById('selectedPlanName')) document.getElementById('selectedPlanName').textContent = current.name;
             if (document.getElementById('selectedPlanDesc')) document.getElementById('selectedPlanDesc').textContent = current.desc;
             if (document.getElementById('stepAmount')) document.getElementById('stepAmount').textContent = price;
@@ -145,11 +163,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 priceEl.innerHTML = `${price} ₽ <br> <span style="font-size: 1.1rem; color: #e53e3e; display:block; margin-top:5px;">ID: ${orderID}</span>`;
             }
 
+            // Настройка ссылки в Telegram
             const tgMsg = encodeURIComponent(`Здравствуйте! Мой ID: ${orderID}. Оплатил ${price} ₽. Прилагаю чек.`);
             document.querySelectorAll('a[href*="t.me/chearu252"]').forEach(link => {
                 link.href = `https://t.me/chearu252?text=${tgMsg}`;
             });
 
+            // Обновление QR-кода (передаем ID как метку платежа)
             const qrImg = document.getElementById('qrCodeImage');
             if (qrImg) {
                 const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
