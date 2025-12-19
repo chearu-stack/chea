@@ -47,67 +47,79 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { threshold: 0.1 });
     animElements.forEach(el => scrollObserver.observe(el));
 
-    // ===== 4. ГЕНЕРАТОР EXCEL-ID (A, B, C...) =====
-    function generateOrderIdentifier() {
-        const now = new Date();
-        const yy = String(now.getFullYear()).slice(-2);
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        const dd = String(now.getDate()).padStart(2, '0');
-        const hh = String(now.getHours()).padStart(2, '0');
-        const min = String(now.getMinutes()).padStart(2, '0');
-        
-        let lastLetter = localStorage.getItem('lastUsedLetter') || 'Z'; 
-        let nextCharCode = lastLetter.charCodeAt(0) + 1;
-        if (nextCharCode > 90) nextCharCode = 65; // После Z -> A
-        
-        const nextLetter = String.fromCharCode(nextCharCode);
-        localStorage.setItem('lastUsedLetter', nextLetter);
-        
-        return `AMG${yy}-${mm}${dd}${hh}${min}-${nextLetter}`;
+    // ===== 4. ГЕНЕРАТОР "УМНОГО" ID (AMG25-ММДДЧЧММ-БукваТарифаБукваДня) =====
+function generateOrderIdentifier(planKey) {
+    const now = new Date();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    
+    // 1. Буква Тарифа
+    const planLetters = { 'basic': 'E', 'extended': 'S', 'subscription': 'V' };
+    const planLetter = planLetters[planKey] || 'X';
+
+    // 2. Логика сброса буквы дня (A, B, C...)
+    const todayStr = `${mm}${dd}`;
+    const lastDate = localStorage.getItem('lastGenerationDate');
+    let lastLetter = localStorage.getItem('lastUsedLetter') || '@'; // Перед 'A' идет '@'
+
+    // Если наступил новый день — сбрасываем на 'A'
+    if (lastDate !== todayStr) {
+        lastLetter = '@';
+        localStorage.setItem('lastGenerationDate', todayStr);
     }
 
-    // ===== 5. ОТПРАВКА КОДА В БАЗУ ДАННЫХ (RENDER API) =====
-    async function sendCodeToBackend(orderID, planKey) {
-        try {
-            // Извлекаем базовую часть кода (без буквы)
-            const codeParts = orderID.split('-');
-            const baseCode = `${codeParts[0]}-${codeParts[1]}`; // AMG25-12172147
-            
-            // Маппинг планов (basic, pro, premium)
-            const planMap = {
-                'basic': 'basic',
-                'extended': 'pro',
-                'subscription': 'premium'
-            };
-            const backendPlan = planMap[planKey] || 'basic';
-            
-            console.log('📡 Отправка в бэкенд Render:', { baseCode, package: backendPlan });
-            
-            // ✅ ИЗМЕНЕНО: адрес на Render API
-            const response = await fetch('https://chea.onrender.com/generate-code', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    package: backendPlan,
-                    baseCode: baseCode
-                })
-            });
+    let nextCharCode = lastLetter.charCodeAt(0) + 1;
+    if (nextCharCode > 90) nextCharCode = 65; // Если дошли до Z, идем по кругу
 
-            const result = await response.json();
-            
-            if (result.success) {
-                console.log('✅ Код успешно записан в БД:', result.code);
-                return result.code; // Возвращаем финальный код (с буквой)
-            } else {
-                console.error('❌ Ошибка бэкенда:', result.error);
-                return orderID; // Возвращаем локальный код как запасной вариант
-            }
-        } catch (error) {
-            console.error('❌ Ошибка сети:', error);
-            return orderID; // Возвращаем локальный код при ошибке
+    const nextLetter = String.fromCharCode(nextCharCode);
+    localStorage.setItem('lastUsedLetter', nextLetter);
+    
+    // Итог: AMG25-12191430-SA (Дата 19.12, время 14:30, Стандарт, первая оплата за день)
+    return `AMG25-${mm}${dd}${hh}${min}-${planLetter}${nextLetter}`;
+}
+
+// ===== 5. ОТПРАВКА КОДА В БАЗУ ДАННЫХ (RENDER API) =====
+async function sendCodeToBackend(orderID, planKey) {
+    try {
+        const planMap = {
+            'basic': 'basic',
+            'extended': 'pro',
+            'subscription': 'premium'
+        };
+        const backendPlan = planMap[planKey] || 'basic';
+
+        // Определяем лимит капсов для записи в БД
+        const capsLimits = { 'basic': 30000, 'pro': 100000, 'premium': 300000 };
+        const limit = capsLimits[backendPlan];
+
+        console.log('📡 Регистрация заказа в Supabase через Render:', { orderID, backendPlan });
+
+        const response = await fetch('https://chea.onrender.com/generate-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                code: orderID, // Теперь отправляем ПОЛНЫЙ код как ключ
+                package: backendPlan,
+                caps_limit: limit
+            })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('✅ Заказ зафиксирован:', result.code);
+            return result.code;
+        } else {
+            console.error('❌ Ошибка бэкенда:', result.error);
+            return orderID;
         }
+    } catch (error) {
+        console.error('❌ Ошибка сети:', error);
+        return orderID;
     }
-
+}
     // ===== 6. ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ =====
     const tariffButtons = document.querySelectorAll('.pricing-card .btn');
     tariffButtons.forEach(button => {
