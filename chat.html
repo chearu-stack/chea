@@ -4,160 +4,148 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Личный Кабинет | Адвокат Медного Гроша</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        :root { --gold: #d4af37; --bg: #f9f7f2; --bot-msg: #e3dec9; --danger: #e74c3c; --success: #2ecc71; }
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif; background: var(--bg); }
+        :root { --gold: #d4af37; --bg: #f9f7f2; --bot-msg: #e3dec9; --orange: #d35400; --success: #27ae60; }
         
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: #fff; border-bottom: 2px solid var(--gold); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; flex-direction: column; height: 100vh; }
+
+        /* Шапка с документами */
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 25px; background: #fff; border-bottom: 2px solid var(--gold); }
         .logo { color: #b22222; font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
         
-        /* СТИЛЬ РЕСУРСА (Вместо капсов) */
-        .resource-container { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
-        .resource-label { font-size: 0.7rem; font-weight: bold; color: #777; text-transform: uppercase; }
-        .bar-bg { width: 150px; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; border: 1px solid #ddd; }
-        .bar-fill { height: 100%; width: 0%; transition: width 0.5s ease, background 0.5s ease; }
+        .docs-panel { display: flex; gap: 10px; }
+        .doc-btn { padding: 6px 15px; font-size: 0.8rem; border-radius: 5px; border: 1px dashed #ccc; color: #999; cursor: not-allowed; transition: 0.3s; }
+        
+        /* Эффект пульсации при заполнении */
+        .pulse { border-color: var(--gold); color: var(--gold); animation: pulse-gold 1.5s infinite; }
+        @keyframes pulse-gold { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        
+        .active-doc { background: var(--success); color: #fff; border: none; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
-        .main-container { max-width: 1000px; margin: 20px auto; height: calc(100vh - 120px); display: flex; flex-direction: column; background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; position: relative; }
-        #chat-window { flex: 1; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; gap: 20px; }
-        
-        .message { max-width: 80%; padding: 15px; border-radius: 10px; line-height: 1.5; position: relative; }
+        /* Ресурс (Капсы) */
+        .res-container { width: 150px; text-align: right; }
+        .res-text { font-size: 10px; font-weight: bold; color: #666; margin-bottom: 2px; }
+        .bar-bg { width: 100%; height: 6px; background: #eee; border-radius: 10px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 0%; transition: 0.5s; background: var(--success); }
+
+        /* Окно чата */
+        #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .msg { max-width: 80%; padding: 12px 16px; border-radius: 15px; font-size: 15px; line-height: 1.5; }
         .bot { align-self: flex-start; background: var(--bot-msg); border-left: 5px solid var(--gold); }
-        .user { align-self: flex-end; background: #eee; border: 1px solid #ddd; }
-        
-        /* ЭФФЕКТ ЗАГРУЗКИ (КОРОВА) */
-        .thinking { font-style: italic; color: #888; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; }
-        
-        .input-area { padding: 20px; border-top: 1px solid #eee; display: flex; gap: 15px; background: #fff; }
-        textarea { flex: 1; border: 1px solid #ccc; border-radius: 5px; padding: 12px; resize: none; outline: none; font-size: 1rem; }
-        .send-btn { background: #d35400; color: white; border: none; padding: 0 30px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .send-btn:hover { background: #e67e22; }
-        .send-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .user { align-self: flex-end; background: #fff; border: 1px solid #ddd; }
+
+        /* Поле ввода */
+        .input-box { padding: 20px; background: #fff; display: flex; gap: 10px; border-top: 1px solid #eee; }
+        textarea { flex: 1; border: 1px solid #ddd; border-radius: 8px; padding: 10px; outline: none; resize: none; }
+        .btn-send { background: var(--orange); color: #fff; border: none; padding: 0 30px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-send:disabled { background: #ccc; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="logo"><i class="fas fa-balance-scale"></i> Адвокат Медного Гроша</div>
-        <div class="resource-container">
-            <div class="resource-label" id="res-text">Интеллектуальный ресурс</div>
-            <div class="bar-bg"><div id="res-bar" class="bar-fill"></div></div>
+        <div class="logo">⚖️ Адвокат Медного Гроша</div>
+        
+        <div class="docs-panel">
+            <div id="doc-1" class="doc-btn">Претензия</div>
+            <div id="doc-2" class="doc-btn">Роспотребнадзор</div>
+            <div id="doc-3" class="doc-btn">Иск в суд</div>
+        </div>
+
+        <div class="res-container">
+            <div class="res-text">РЕСУРС ИНТЕЛЛЕКТА</div>
+            <div class="bar-bg"><div id="bar" class="bar-fill"></div></div>
         </div>
     </div>
 
-    <div class="main-container">
-        <div id="chat-window">
-            <div class="message bot">Система готова. Я проанализирую вашу ситуацию с точки зрения законодательства РФ. Введите ваш вопрос.</div>
-        </div>
-        <div class="input-area">
-            <textarea id="user-input" rows="2" placeholder="Напишите обстоятельства дела..."></textarea>
-            <button id="send-btn" class="send-btn">Отправить</button>
-        </div>
+    <div id="chat-window">
+        <div class="msg bot">Приветствую! Я готов защитить ваши права. Опишите ситуацию, и я составлю план и документы.</div>
+    </div>
+
+    <div class="input-box">
+        <textarea id="msg-input" placeholder="Введите обстоятельства дела..."></textarea>
+        <button id="send-btn" class="btn-send">Отправить</button>
     </div>
 
     <script>
-        const getFP = () => {
-            const s = window.screen;
-            const b = navigator.userAgent;
-            return btoa(`${s.width}${s.height}${b}${s.colorDepth}`).substring(0, 12);
-        };
-        const userFP = getFP();
+        const fp = btoa(`${window.screen.width}${navigator.userAgent}`).substring(0, 12);
+        const API_URL = 'https://bothub-bridge.onrender.com/api/chat';
+        const CHECK_URL = 'https://chea.onrender.com/verify-code';
 
-        const CHEA_API_VERIFY = 'https://chea.onrender.com/verify-code';
-        const CHEA_API_STATUS = 'https://chea.onrender.com/check-status';
-        const BRIDGE_URL = 'https://bothub-bridge.onrender.com/api/chat';
+        let history = []; // ВОТ ОНА — ПАМЯТЬ БОТА
+        let limit = 0;
 
-        const resBar = document.getElementById('res-bar');
-        const sendBtn = document.getElementById('send-btn');
-        const win = document.getElementById('chat-window');
-        let activeCode = null;
-
-        async function syncCaps() {
-            try {
-                const statusRes = await fetch(`${CHEA_API_STATUS}?fp=${userFP}`);
-                const statusData = await statusRes.json();
-
-                if (statusData.active) {
-                    const res = await fetch(CHEA_API_VERIFY, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ fingerprint: userFP }) 
-                    });
-                    
-                    const d = await res.json();
-                    if (d.success) {
-                        activeCode = d.code;
-                        const percent = Math.max(0, Math.round((d.remaining / d.caps_limit) * 100));
-                        
-                        // Обновляем визуальную шкалу
-                        resBar.style.width = percent + '%';
-                        resBar.style.background = percent > 50 ? '#2ecc71' : (percent > 20 ? '#f1c40f' : '#e74c3c');
-                        
-                        sendBtn.disabled = false;
-                        return d.remaining;
-                    }
-                }
-                document.getElementById('res-text').innerText = "Доступ ограничен";
-                sendBtn.disabled = true;
-            } catch (e) {
-                console.error("Connection error");
+        async function updateUI() {
+            const r = await fetch(CHECK_URL, { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({fingerprint: fp}) 
+            });
+            const d = await r.json();
+            if (d.success) {
+                limit = d.caps_limit;
+                const perc = (d.remaining / d.caps_limit) * 100;
+                document.getElementById('bar').style.width = perc + '%';
+                if (perc < 10) document.getElementById('send-btn').disabled = true;
             }
-            return 0;
         }
 
-        sendBtn.onclick = async () => {
-            const text = document.getElementById('user-input').value.trim();
-            if (!text || !activeCode) return;
+        document.getElementById('send-btn').onclick = async () => {
+            const input = document.getElementById('msg-input');
+            const val = input.value.trim();
+            if (!val) return;
 
-            sendBtn.disabled = true;
-            win.innerHTML += `<div class="message user">${text}</div>`;
-            document.getElementById('user-input').value = '';
-            win.scrollTop = win.scrollHeight;
-
-            // --- ЗАПУСК "КОРОВЫ" (ИНДИКАТОРА) ---
-            const thinkingDiv = document.createElement('div');
-            thinkingDiv.className = 'message bot thinking';
-            thinkingDiv.innerHTML = `<i class="fas fa-balance-scale fa-spin"></i> <span id="think-txt">Анализирую запрос...</span>`;
-            win.appendChild(thinkingDiv);
+            // 1. Отображаем сообщение юзера
+            const win = document.getElementById('chat-window');
+            win.innerHTML += `<div class="msg user">${val}</div>`;
+            input.value = '';
             
-            const phrases = ["Изучаю статьи закона...", "Поиск судебной практики...", "Формирую правовую позицию...", "Проверка юридических рисков..."];
-            let i = 0;
-            const stepInterval = setInterval(() => {
-                const t = document.getElementById('think-txt');
-                if (t) t.innerText = phrases[++i % phrases.length];
-            }, 3000);
+            // 2. Добавляем в историю (чтобы бот помнил!)
+            history.push({ role: "user", content: val });
+
+            // 3. Анимация кнопок в шапке
+            const btn1 = document.getElementById('doc-1');
+            btn1.classList.add('pulse');
+            btn1.innerText = "Формирую...";
 
             try {
-                const res = await fetch(BRIDGE_URL, {
+                // 4. Шлем ВСЮ историю переписки
+                const res = await fetch(API_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ messages: [{role: 'user', content: text}] })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ messages: history }) 
                 });
                 
                 const data = await res.json();
                 const aiMsg = data.choices[0].message.content;
 
-                clearInterval(stepInterval);
-                thinkingDiv.remove(); // Убираем индикатор перед ответом
+                // 5. Сохраняем ответ бота в историю
+                history.push({ role: "assistant", content: aiMsg });
 
-                win.innerHTML += `<div class="message bot">${aiMsg}</div>`;
+                // 6. Выводим ответ
+                win.innerHTML += `<div class="msg bot">${aiMsg}</div>`;
                 win.scrollTop = win.scrollHeight;
 
-                await fetch(CHEA_API_VERIFY, {
+                // 7. Списание капсов (по длине ответа для теста)
+                await fetch(CHECK_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fingerprint: userFP, usage: aiMsg.length })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ fingerprint: fp, usage: aiMsg.length * 5 })
                 });
-                syncCaps();
-            } catch (err) {
-                clearInterval(stepInterval);
-                thinkingDiv.innerHTML = "Ошибка связи. Попробуйте позже.";
-            } finally {
-                sendBtn.disabled = false;
-            }
+                
+                // Активируем кнопку документа, если диалог продвинулся
+                if(history.length > 4) {
+                    btn1.classList.remove('pulse');
+                    btn1.classList.add('active-doc');
+                    btn1.innerText = "Скачать Претензию";
+                }
+
+                updateUI();
+            } catch (e) { console.error("Ошибка:", e); }
         };
 
-        syncCaps();
+        updateUI();
     </script>
 </body>
 </html>
