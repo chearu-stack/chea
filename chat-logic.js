@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         element.click();
     };
 
-    // --- 6. ОТПРАВКА СООБЩЕНИЯ ---
+    // --- 6. ОТПРАВКА СООБЩЕНИЯ (ИСПРАВЛЕНО ДЛЯ ЧЕСТНОГО СЧЕТЧИКА) ---
     const sendMessage = async () => {
         const input = document.getElementById('user-input');
         const win = document.getElementById('chat-window');
@@ -129,11 +129,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1800);
 
         try {
-            const response = await fetch(BRIDGE, {
+            // МЫ ТЕПЕРЬ СТУЧИМСЯ В ТВОЙ ПРОКСИ (chea.onrender.com/proxy)
+            // И ПЕРЕДАЕМ ТУДА activeCode
+            const response = await fetch('https://chea.onrender.com/proxy', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ messages: history })
+                body: JSON.stringify({ 
+                    messages: history,
+                    userCode: activeCode, // <--- ВОТ ЭТО ДАСТ КОМАНДУ ПРОКСИ СПИСАТЬ CAPS
+                    model: "deepseek-ai/deepseek-r1"
+                })
             });
+            
             const d = await response.json();
             const aiText = d.choices[0].message.content;
             
@@ -142,15 +149,13 @@ document.addEventListener('DOMContentLoaded', () => {
             history.push({role: 'assistant', content: aiText});
             localStorage.setItem(`chat_history_${fp}`, JSON.stringify(history));
             
-            updateVault(aiText); // Проверяем, не "сварился" ли документ
+            updateVault(aiText);
             win.scrollTop = win.scrollHeight;
 
-            await fetch(API_VERIFY, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ fingerprint: fp, usage: aiText.length * 3 }) // Чуть снизил множитель
-            });
-            sync();
+            // СТАРОЕ СПИСАНИЕ (aiText.length * 3) УДАЛЕНО!
+            // Теперь просто обновляем полоску CAPS, так как прокси уже всё списал в БД
+            setTimeout(sync, 1000); 
+
         } catch (err) {
             clearInterval(stepInterval);
             loader.innerHTML = "⚠️ Ошибка связи. Проверьте соединение.";
