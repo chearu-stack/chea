@@ -1,6 +1,5 @@
 /**
  * АДВОКАТ МЕДНОГО ГРОША — chat-logic.js (Ferrari Final Edition)
- * Полная интеграция с автономным Бриджем и мгновенной синхронизацией МАННЫ
  */
 document.addEventListener('DOMContentLoaded', () => {
     const API_STATUS = 'https://chea.onrender.com/check-status';
@@ -27,17 +26,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedHistory) {
         history = JSON.parse(savedHistory);
         const win = document.getElementById('chat-window');
-        if (win) {
-            history.forEach(msg => {
-                const className = msg.role === 'user' ? 'msg-user' : 'msg-bot';
-                win.innerHTML += `<div class="msg ${className}">${msg.content.replace(/\n/g, '<br>')}</div>`;
-                updateVault(msg.content);
-            });
-            win.scrollTop = win.scrollHeight;
-        }
+        history.forEach(msg => {
+            const className = msg.role === 'user' ? 'msg-user' : 'msg-bot';
+            win.innerHTML += `<div class="msg ${className}">${msg.content.replace(/\n/g, '<br>')}</div>`;
+            updateVault(msg.content); // Восстанавливаем кнопки документов в шапке
+        });
+        win.scrollTop = win.scrollHeight;
     }
 
-    // --- 2. АВТОРЕСАЙЗ ПОЛЯ ВВОДА ---
+    // --- 2. АВТОРЕСАЙЗА ПОЛЯ ВВОДА ---
     const inputField = document.getElementById('user-input');
     if (inputField) {
         inputField.addEventListener('input', function() {
@@ -46,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 3. СКАНЕР ДОКУМЕНТОВ ---
+    // --- 3. СКАНЕР ДОКУМЕНТОВ (ВАРКА В ПРОЦЕССЕ) ---
     function updateVault(text) {
         const checkList = [
             { key: 'pretenzia', trigger: 'ПРЕТЕНЗИЯ', id: 'btn-pretenzia' },
@@ -66,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 4. СИНХРОНИЗАЦИЯ CAPS И БАРА (ФОНОВАЯ) ---
+    // --- 4. СИНХРОНИЗАЦИЯ CAPS И БАРА ---
     async function sync() {
         try {
             const res = await fetch(`${API_STATUS}?fp=${fp}`);
@@ -80,20 +77,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const vData = await vRes.json();
                 if (vData.success) {
                     activeCode = vData.code;
-                    updateManaBar(vData.remaining, vData.caps_limit || 100000);
+                    const remaining = vData.remaining;
+                    const total = vData.caps_limit || 100000;
+                    const pct = Math.max(5, Math.min(100, Math.round((remaining / total) * 100)));
+                    
+                    const bar = document.getElementById('res-bar');
+                    if(bar) {
+                        bar.style.width = pct + '%';
+                        bar.style.backgroundColor = pct < 20 ? '#e53e3e' : (pct < 50 ? '#dd6b20' : '#38a169');
+                    }
                 }
             } else { window.location.href = 'index.html'; }
         } catch (e) { console.error("Sync failed"); }
-    }
-
-    // Вспомогательная функция отрисовки БАРА
-    function updateManaBar(remaining, total) {
-        const pct = Math.max(5, Math.min(100, Math.round((remaining / total) * 100)));
-        const bar = document.getElementById('res-bar');
-        if(bar) {
-            bar.style.width = pct + '%';
-            bar.style.backgroundColor = pct < 20 ? '#e53e3e' : (pct < 50 ? '#dd6b20' : '#38a169');
-        }
     }
 
     // --- 5. ФУНКЦИЯ СКАЧИВАНИЯ ---
@@ -105,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         element.click();
     };
 
-    // --- 6. ОТПРАВКА СООБЩЕНИЯ (ТОЧКА СОПРИКОСНОВЕНИЯ) ---
+    // --- 6. ОТПРАВКА СООБЩЕНИЯ ---
     const sendMessage = async () => {
         const input = document.getElementById('user-input');
         const win = document.getElementById('chat-window');
@@ -134,54 +129,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1800);
 
         try {
-            // Прямой вызов Бриджа
-            const response = await fetch(BRIDGE, { 
+            const response = await fetch(BRIDGE, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ 
-                    messages: history,
-                    userCode: activeCode
-                })
+                body: JSON.stringify({ messages: history })
             });
-            
             const d = await response.json();
-            clearInterval(stepInterval);
-            loader.classList.remove('msg-bot-loading');
-
-            // Проверка логических блокировок
-            if (response.status === 403) {
-                loader.innerHTML = "⚠️ Доступ ограничен: лимит CAPS исчерпан. Пополните баланс для продолжения.";
-                return;
-            }
-
-            if (!response.ok) {
-                loader.innerHTML = `⚠️ Системный сбой (Код ${response.status}). Техническая служба уже уведомлена.`;
-                return;
-            }
-
-            // Успешный результат
             const aiText = d.choices[0].message.content;
-            loader.innerHTML = aiText.replace(/\n/g, '<br>');
             
+            clearInterval(stepInterval);
+            loader.innerHTML = aiText.replace(/\n/g, '<br>');
             history.push({role: 'assistant', content: aiText});
             localStorage.setItem(`chat_history_${fp}`, JSON.stringify(history));
             
-            updateVault(aiText);
-
-            // Мгновенное обновление МАННЫ из ответа Бриджа
-            if (d.userBalance) {
-                updateManaBar(d.userBalance.remaining, d.userBalance.total || 100000);
-            } else {
-                setTimeout(sync, 1000); 
-            }
-
+            updateVault(aiText); // Проверяем, не "сварился" ли документ
             win.scrollTop = win.scrollHeight;
 
+            await fetch(API_VERIFY, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ fingerprint: fp, usage: aiText.length * 3 }) // Чуть снизил множитель
+            });
+            sync();
         } catch (err) {
             clearInterval(stepInterval);
-            loader.classList.remove('msg-bot-loading');
-            loader.innerHTML = "⚠️ Сетевой сбой. Проверьте соединение с интернетом.";
-            console.error(err);
+            loader.innerHTML = "⚠️ Ошибка связи. Проверьте соединение.";
         }
     };
 
