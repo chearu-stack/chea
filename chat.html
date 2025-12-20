@@ -21,15 +21,15 @@
 
             <div class="nav-links cabinet-menu">
                 <div id="btn-pretenzia" class="doc-item doc-inactive">
-                    <small>Скачать</small>
+                    <small id="status-pretenzia">Формировка</small>
                     <strong>Претензия</strong>
                 </div>
                 <div id="btn-rospotreb" class="doc-item doc-inactive">
-                    <small>Скачать</small>
+                    <small id="status-rospotreb">Формировка</small>
                     <strong>Жалоба Роспотребнадзор</strong>
                 </div>
                 <div id="btn-prokuror" class="doc-item doc-inactive">
-                    <small>Скачать</small>
+                    <small id="status-prokuror">Формировка</small>
                     <strong>Заявление Прокуратура</strong>
                 </div>
             </div>
@@ -48,7 +48,8 @@
         </div>
     </nav>
 
-<div class="container">
+    <div class="container">
+        
         <div class="chat-container">
             <div id="chat-window">
                 <div class="msg msg-bot">
@@ -56,22 +57,21 @@
                     <p>Я готов проанализировать материалы дела. Опишите ситуацию максимально подробно.</p>
                 </div>
             </div>
-            
-            <div class="chat-input-area">
-                <textarea id="user-input" class="bot-textarea" placeholder="Введите обстоятельства дела..."></textarea>
-                <button id="send-btn" class="btn btn-primary">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
-            </div>
-
-            <div class="truth-card" style="margin-top: 20px; padding: 15px;">
-                <p style="font-size: 0.85rem;">
-                    <i class="fas fa-lock"></i> <strong>ЗАЩИЩЕННЫЙ РЕЖИМ:</strong> Конфиденциальность обеспечена отсутствием логов на сервере.
-                </p>
-            </div>
         </div>
-    </div>
+        
+        <div class="chat-input-area" style="margin-top: 25px;">
+            <textarea id="user-input" class="bot-textarea" placeholder="Введите обстоятельства дела..."></textarea>
+            <button id="send-btn" class="btn btn-primary">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
 
-    <script src="chat-logic.js"></script>
+        <div class="truth-card" style="margin-top: 25px; padding: 20px;">
+            <p style="font-size: 0.9rem; margin: 0;">
+                <i class="fas fa-lock" style="color: #e67e22;"></i> <strong>ЗАЩИЩЕННЫЙ РЕЖИМ:</strong> Конфиденциальность обеспечена отсутствием логов на сервере. Не обновляйте страницу (F5).
+            </p>
+        </div>
+
+    </div> <script src="chat-logic.js"></script>
 </body>
 </html>
