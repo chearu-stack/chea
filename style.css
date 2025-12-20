@@ -329,6 +329,28 @@ h1, h2, h3, h4 {
     color: #1a365d;
 }
 
+/* =====ЧАТ  ===== */
+
+/* Твоя идея: контейнер только для чата (средняя полка) */
+.container_chat {
+    flex-grow: 1;      /* Забирает всё свободное место в "шкафу" */
+    overflow-y: auto;  /* Прокрутка только внутри этого блока */
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 8px 8px 0 0; /* Скругляем только верх */
+}
+
+/* Поле ввода (нижняя полка) */
+.chat-input-area {
+    display: flex;
+    gap: 10px;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-top: none; /* Чтобы сливалось с чатом */
+    border-radius: 0 0 8px 8px; /* Скругляем только низ */
+}
+
 /* ===== КАК ЭТО РАБОТАЕТ ===== */
 .how-section {
     padding: 60px 0;
