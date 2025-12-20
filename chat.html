@@ -4,57 +4,162 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Личный Кабинет | Адвокат Медного Гроша</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Дополнительные стили для специфики кабинета, выдержанные в стиле главной */
+        .cabinet-nav {
+            height: 80px; /* Чуть выше для двустрочного меню */
+            background: #fff;
+            border-bottom: 1px solid #eee;
+        }
+        
+        /* Двустрочное меню в центре */
+        .doc-menu {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            flex: 2;
+        }
+        .doc-item {
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            cursor: default;
+            transition: all 0.3s ease;
+            opacity: 0.3; /* Неактивно по умолчанию */
+        }
+        .doc-item.doc-active {
+            opacity: 1;
+            cursor: pointer;
+        }
+        .doc-item span:first-child {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            font-family: 'Open Sans', sans-serif;
+        }
+        .doc-item span:last-child {
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: 'Merriweather', serif;
+            color: #2c3e50;
+        }
+        .doc-item.doc-active:hover span:last-child {
+            color: #e67e22;
+            text-decoration: underline;
+        }
+
+        /* Компактный ресурс */
+        .res-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 20px;
+        }
+        .res-info {
+            width: 120px; /* Фиксированная ширина по размеру текста */
+        }
+        .res-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .res-bar-mini {
+            width: 100%;
+            height: 4px;
+            background: #f0f0f0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .res-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: #38a169;
+            transition: width 0.6s ease;
+        }
+
+        /* Кнопка Очистить в стиле кнопки Старт */
+        .btn-clear {
+            padding: 8px 16px;
+            background-color: #e63946; /* Акцентный красный */
+            color: white !important;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            text-decoration: none !important;
+            transition: background 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-clear:hover { background-color: #c1121f; }
+    </style>
 </head>
 <body class="admin-body"> 
-    <nav class="main-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px; height: 70px; background: #fff; border-bottom: 1px solid #eee;">
-        <div class="nav-logo" style="display: flex; align-items: center; gap: 10px; flex: 1;">
-            <i class="fas fa-balance-scale" style="color: #e67e22; font-size: 1.4rem;"></i>
-            <span class="logo-full" style="font-weight: bold;">Адвокат Медного Гроша</span>
-        </div>
+    <nav class="main-nav cabinet-nav">
+        <div class="nav-container" style="max-width: 1400px;">
+            <div class="nav-logo" style="flex: 1;">
+                <i class="fas fa-balance-scale"></i>
+                <span style="font-family: 'Merriweather', serif;">Адвокат Медного Гроша</span>
+            </div>
 
-        <div class="header-tools" style="display: flex; gap: 15px; flex: 2; justify-content: center; align-items: center;">
-            <div style="display: flex; gap: 8px;">
-                <button id="btn-pretenzia" class="doc-btn doc-inactive" title="Претензия"><i class="fas fa-file-invoice"></i> <span class="hide-mobile">Претензия</span></button>
-                <button id="btn-rospotreb" class="doc-btn doc-inactive" title="Роспотребнадзор"><i class="fas fa-shield-halved"></i> <span class="hide-mobile">Роспотреб</span></button>
-                <button id="btn-prokuror" class="doc-btn doc-inactive" title="Прокуратура"><i class="fas fa-gavel"></i> <span class="hide-mobile">Прокурор</span></button>
+            <div class="doc-menu">
+                <div id="btn-pretenzia" class="doc-item">
+                    <span>Сформировать</span>
+                    <span>Скачать претензию</span>
+                </div>
+                <div id="btn-rospotreb" class="doc-item">
+                    <span>Подготовить</span>
+                    <span>Жалоба Роспотребнадзор</span>
+                </div>
+                <div id="btn-prokuror" class="doc-item">
+                    <span>Подать</span>
+                    <span>Заявление Прокуратура</span>
+                </div>
             </div>
             
-            <div style="width: 1px; height: 24px; background: #ddd; margin: 0 5px;"></div>
-            
-            <button onclick="clearChat()" class="trash-btn" title="Удалить все материалы дела" style="background: none; border: none; color: #cc0000; cursor: pointer; font-size: 1.2rem; transition: transform 0.2s;">
-                <i class="fas fa-trash-can"></i>
-            </button>
-        </div>
-        
-        <div class="res-widget" style="flex: 1; min-width: 150px; text-align: right;">
-            <div style="font-size: 0.65rem; text-transform: uppercase; color: #999; margin-bottom: 4px;">Ресурс системы</div>
-            <div class="res-bar-bg" style="width: 100%; height: 6px; background: #f0f0f0; border-radius: 10px; overflow: hidden; border: 1px solid #ddd;">
-                <div id="res-bar" class="res-bar-fill" style="width: 0%; height: 100%; transition: all 0.5s ease;"></div>
+            <div class="res-container">
+                <div class="res-info">
+                    <span class="res-label">Ресурс системы</span>
+                    <div class="res-bar-mini">
+                        <div id="res-bar" class="res-bar-fill"></div>
+                    </div>
+                </div>
+                <button onclick="clearChat()" class="btn-clear">
+                    <i class="fas fa-trash-can" style="margin-right: 5px;"></i> Очистить
+                </button>
             </div>
         </div>
     </nav>
 
-    <div class="container">
+    <div class="container" style="margin-top: 30px;">
         <div class="chat-container">
             <div id="chat-window">
                 <div class="msg msg-bot">
-                    <strong>Система активна.</strong><br>
-                    Я готов проанализировать материалы дела. Опишите ситуацию максимально подробно.
+                    <h3 style="font-family: 'Merriweather', serif; font-size: 1.1rem; margin-bottom: 10px;">Система активна.</h3>
+                    Я готов проанализировать материалы дела. Опишите ситуацию максимально подробно, включая даты и суммы.
                 </div>
             </div>
             
-            <div class="chat-input-area" style="display: flex; gap: 10px; align-items: flex-end;">
-                <textarea id="user-input" class="bot-textarea" style="flex:1; padding:12px; resize:none; min-height: 45px;" placeholder="Введите обстоятельства..."></textarea>
-                <button id="send-btn" class="btn btn-primary" style="width: 50px; height: 45px; margin: 0;">
+            <div class="chat-input-area" style="display: flex; gap: 15px; align-items: flex-end; padding: 20px; background: #fff; border-top: 1px solid #eee;">
+                <textarea id="user-input" class="bot-textarea" style="flex:1; padding:15px; border: 1px solid #ddd; border-radius: 8px; font-family: 'Open Sans', sans-serif; resize: none; min-height: 50px;" placeholder="Введите обстоятельства дела..."></textarea>
+                <button id="send-btn" class="btn btn-primary" style="margin: 0; height: 50px; width: 60px; display: flex; align-items: center; justify-content: center;">
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
 
-            <div class="warning-box">
-                <i class="fas fa-shield-alt"></i>
-                <span><b>ЗАЩИЩЕННЫЙ РЕЖИМ:</b> Конфиденциальность обеспечена отсутствием логов.</span>
+            <div class="warning-box" style="background: #fdf2f2; border-left: 4px solid #e63946; padding: 15px; font-size: 0.85rem; color: #555;">
+                <i class="fas fa-shield-alt" style="color: #e63946; margin-right: 10px;"></i>
+                <span><strong>КОНФИДЕНЦИАЛЬНО:</strong> Сервис не сохраняет историю на сервере. Не обновляйте страницу (F5), чтобы не потерять текущий анализ.</span>
             </div>
         </div>
     </div>
