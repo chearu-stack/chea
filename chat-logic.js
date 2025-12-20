@@ -100,67 +100,93 @@ document.addEventListener('DOMContentLoaded', () => {
         element.click();
     };
 
-    // --- 6. ОТПРАВКА СООБЩЕНИЯ (ИСПРАВЛЕНО ДЛЯ ЧЕСТНОГО СЧЕТЧИКА) ---
-    const sendMessage = async () => {
-        const input = document.getElementById('user-input');
-        const win = document.getElementById('chat-window');
-        const text = input.value.trim();
+    // --- 6. ОТПРАВКА СООБЩЕНИЯ (БЕЗ ЛЖИ И С МГНОВЕННОЙ МАННОЙ) ---
+const sendMessage = async () => {
+    const input = document.getElementById('user-input');
+    const win = document.getElementById('chat-window');
+    const text = input.value.trim();
 
-        if (!text || !activeCode) return;
+    if (!text || !activeCode) return;
 
-        input.value = '';
-        input.style.height = '45px';
-        win.innerHTML += `<div class="msg msg-user">${text}</div>`;
-        win.scrollTop = win.scrollHeight;
+    input.value = '';
+    input.style.height = '45px';
+    win.innerHTML += `<div class="msg msg-user">${text}</div>`;
+    win.scrollTop = win.scrollHeight;
 
-        history.push({role: 'user', content: text});
-        localStorage.setItem(`chat_history_${fp}`, JSON.stringify(history));
+    history.push({role: 'user', content: text});
+    localStorage.setItem(`chat_history_${fp}`, JSON.stringify(history));
 
-        const loader = document.createElement('div');
-        loader.className = 'msg msg-bot msg-bot-loading';
-        loader.innerHTML = `<div style="display:flex;align-items:center;"><i class="fas fa-gavel fa-spin" style="color:#e67e22;margin-right:12px;"></i><span id="dynamic-status" class="blink-status">Запуск системы...</span></div>`;
-        win.appendChild(loader);
-        win.scrollTop = win.scrollHeight;
+    const loader = document.createElement('div');
+    loader.className = 'msg msg-bot msg-bot-loading';
+    loader.innerHTML = `<div style="display:flex;align-items:center;"><i class="fas fa-gavel fa-spin" style="color:#e67e22;margin-right:12px;"></i><span id="dynamic-status" class="blink-status">Запуск системы...</span></div>`;
+    win.appendChild(loader);
+    win.scrollTop = win.scrollHeight;
 
-        let stepIdx = 0;
-        const statusEl = loader.querySelector('#dynamic-status');
-        const stepInterval = setInterval(() => {
-            if (statusEl && stepIdx < steps.length) { statusEl.innerText = steps[stepIdx]; stepIdx++; }
-        }, 1800);
+    let stepIdx = 0;
+    const statusEl = loader.querySelector('#dynamic-status');
+    const stepInterval = setInterval(() => {
+        if (statusEl && stepIdx < steps.length) { statusEl.innerText = steps[stepIdx]; stepIdx++; }
+    }, 1800);
 
-        try {
-            // МЫ ТЕПЕРЬ СТУЧИМСЯ В ТВОЙ ПРОКСИ (chea.onrender.com/proxy)
-            // И ПЕРЕДАЕМ ТУДА activeCode
-            const response = await fetch('https://chea.onrender.com/proxy', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ 
-                    messages: history,
-                    userCode: activeCode, // <--- ВОТ ЭТО ДАСТ КОМАНДУ ПРОКСИ СПИСАТЬ CAPS
-                    model: "deepseek-ai/deepseek-r1"
-                })
-            });
-            
-            const d = await response.json();
-            const aiText = d.choices[0].message.content;
-            
-            clearInterval(stepInterval);
-            loader.innerHTML = aiText.replace(/\n/g, '<br>');
-            history.push({role: 'assistant', content: aiText});
-            localStorage.setItem(`chat_history_${fp}`, JSON.stringify(history));
-            
-            updateVault(aiText);
-            win.scrollTop = win.scrollHeight;
+    try {
+        // СТУЧИМСЯ В БРИДЖ (ПРЯМОЙ ВЫЗОВ)
+        const response = await fetch('https://bothub-bridge.onrender.com/api/chat', { 
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ 
+                messages: history,
+                userCode: activeCode
+            })
+        });
+        
+        const d = await response.json();
+        clearInterval(stepInterval);
 
-            // СТАРОЕ СПИСАНИЕ (aiText.length * 3) УДАЛЕНО!
-            // Теперь просто обновляем полоску CAPS, так как прокси уже всё списал в БД
-            setTimeout(sync, 1000); 
-
-        } catch (err) {
-            clearInterval(stepInterval);
-            loader.innerHTML = "⚠️ Ошибка связи. Проверьте соединение.";
+        // --- ОБРАБОТКА ЛОГИЧЕСКИХ ОШИБОК ---
+        if (response.status === 403) {
+            loader.innerHTML = "⚠️ Доступ заблокирован: лимит CAPS исчерпан. Пополните баланс.";
+            loader.classList.remove('msg-bot-loading');
+            return;
         }
-    };
+
+        if (!response.ok) {
+            loader.innerHTML = `⚠️ Системный сбой (Код ${response.status}). Попробуйте позже.`;
+            loader.classList.remove('msg-bot-loading');
+            return;
+        }
+
+        // --- УСПЕШНЫЙ ОТВЕТ ---
+        const aiText = d.choices[0].message.content;
+        loader.innerHTML = aiText.replace(/\n/g, '<br>');
+        loader.classList.remove('msg-bot-loading');
+        
+        history.push({role: 'assistant', content: aiText});
+        localStorage.setItem(`chat_history_${fp}`, JSON.stringify(history));
+        
+        updateVault(aiText);
+
+        // --- ОБНОВЛЕНИЕ БАРА МАННЫ (МГНОВЕННО ИЗ ОТВЕТА) ---
+        if (d.userBalance) {
+            const pct = d.userBalance.percent;
+            const bar = document.getElementById('res-bar');
+            if(bar) {
+                bar.style.width = pct + '%';
+                bar.style.backgroundColor = pct < 20 ? '#e53e3e' : (pct < 50 ? '#dd6b20' : '#38a169');
+            }
+        } else {
+            // Если баланс не пришел в ответе, дергаем старый sync
+            setTimeout(sync, 1000); 
+        }
+
+        win.scrollTop = win.scrollHeight;
+
+    } catch (err) {
+        clearInterval(stepInterval);
+        // ТУТ РЕАЛЬНЫЙ ОБРЫВ СЕТИ
+        loader.innerHTML = "⚠️ Сетевой сбой. Не удалось достучаться до сервера адвоката.";
+        loader.classList.remove('msg-bot-loading');
+    }
+};
 
     // --- 7. ГЛОБАЛЬНЫЕ КОМАНДЫ ---
     window.clearChat = () => {
