@@ -34,13 +34,16 @@ function countTokens(text) {
 }
 
 // === ПОДСЧЁТ ТОКЕНОВ ДЛЯ ВСЕГО КОНТЕКСТА ===
-function countConversationTokens(messages, systemPrompt = "") {
-    // 1. Токены системного промпта (тот самый "Ты адвокат...")
-    let totalTokens = countTokens(systemPrompt) + 15; // +15 на форматирование "system: "
+function countConversationTokens(messages) {
+    // Твой системный промпт "Адвокат Медного Гроша" весит ~1050 токенов.
+    // Мы закладываем это число как базу для каждого запроса.
+    const SYSTEM_PROMPT_WEIGHT = 1050; 
     
-    // 2. Токены ВСЕХ сообщений истории
+    let totalTokens = SYSTEM_PROMPT_WEIGHT;
+    
+    // Считаем токены всей истории сообщений
     messages.forEach(msg => {
-        totalTokens += countTokens(msg.content) + 5; // +5 на "assistant: " или "user: "
+        totalTokens += countTokens(msg.content) + 10; // +10 на технические заголовки
     });
     
     return totalTokens;
@@ -88,11 +91,8 @@ exports.handler = async (event) => {
         const aiText = data.choices[0].message.content;
 
         // === 2. ЧЕСТНЫЙ ПОДСЧЁТ: ВЕСЬ КОНТЕКСТ + ОТВЕТ ===
-        // У KeyAPI есть системный промпт (предположим ~200 токенов)
-        const ESTIMATED_SYSTEM_PROMPT = "Ты — опытный юрист по защите прав потребителей...";
-        
-        // 2A. Токены всего запроса (вся история + системный промпт)
-        const requestTokens = countConversationTokens(messages, ESTIMATED_SYSTEM_PROMPT);
+        // 2A. Токены всего запроса (вся история + твой промпт 1050 токенов)
+        const requestTokens = countConversationTokens(messages);
         
         // 2B. Токены ответа
         const responseTokens = countTokens(aiText);
@@ -101,8 +101,8 @@ exports.handler = async (event) => {
         const totalTokens = requestTokens + responseTokens;
         
         console.log(`🧮 ЧЕСТНЫЙ БИЛЛИНГ:`);
-        console.log(`   • Системный промпт: ~${countTokens(ESTIMATED_SYSTEM_PROMPT)} токенов`);
-        console.log(`   • История (${messages.length} сообщ.): ${requestTokens - countTokens(ESTIMATED_SYSTEM_PROMPT)} токенов`);
+        console.log(`   • Системный промпт: 1050 токенов`);
+        console.log(`   • История (${messages.length} сообщ.): ${requestTokens - 1050} токенов`);
         console.log(`   • Ответ: ${responseTokens} токенов`);
         console.log(`   • ВСЕГО К ОПЛАТЕ: ${totalTokens} токенов`);
 
