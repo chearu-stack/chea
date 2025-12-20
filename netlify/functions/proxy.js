@@ -1,12 +1,12 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// Настройки из переменных окружения
+// Настройки
 const BOTHUB_API_KEY = process.env.BOTHUB_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-// === ФУНКЦИЯ ПОДСЧЁТА ТОКЕНОВ ===
+// === ТОЧНАЯ ФУНКЦИЯ ПОДСЧЁТА ТОКЕНОВ (как в bridge) ===
 function countTokens(text) {
     if (!text || typeof text !== 'string') return 0;
     
@@ -33,6 +33,19 @@ function countTokens(text) {
     return Math.ceil(tokenCount * 1.1);
 }
 
+// === ПОДСЧЁТ ТОКЕНОВ ДЛЯ ВСЕГО КОНТЕКСТА ===
+function countConversationTokens(messages, systemPrompt = "") {
+    // 1. Токены системного промпта (тот самый "Ты адвокат...")
+    let totalTokens = countTokens(systemPrompt) + 15; // +15 на форматирование "system: "
+    
+    // 2. Токены ВСЕХ сообщений истории
+    messages.forEach(msg => {
+        totalTokens += countTokens(msg.content) + 5; // +5 на "assistant: " или "user: "
+    });
+    
+    return totalTokens;
+}
+
 // === ОСНОВНОЙ ОБРАБОТЧИК ===
 exports.handler = async (event) => {
     const headers = {
@@ -48,14 +61,17 @@ exports.handler = async (event) => {
 
     try {
         const payload = JSON.parse(event.body);
-        const { messages, userCode } = payload; // Модель убрана - её задаёт Bridge
+        const { messages, userCode } = payload;
 
-        // === 1. ОТПРАВКА В BRIDGE (чтобы сохранить "личность" адвоката) ===
+        // === 1. ОТПРАВКА В BRIDGE ===
         const BRIDGE_URL = 'https://bothub-bridge.onrender.com/api/chat';
+        
+        console.log(`📤 Отправка в Bridge. Сообщений в истории: ${messages.length}`);
+        
         const bridgeResponse = await fetch(BRIDGE_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messages }) // Bridge сам добавит системный промпт
+            body: JSON.stringify({ messages })
         });
 
         if (!bridgeResponse.ok) {
@@ -71,29 +87,27 @@ exports.handler = async (event) => {
 
         const aiText = data.choices[0].message.content;
 
-        // === 2. УМНЫЙ ПОДСЧЁТ ТОКЕНОВ (БЕЗ ПОВТОРНОГО УЧЁТА ИСТОРИИ) ===
-        // Считаем ТОЛЬКО токены последнего вопроса пользователя + ответа бота
-        // Чтобы избежать многократного списания за одну и ту же историю
+        // === 2. ЧЕСТНЫЙ ПОДСЧЁТ: ВЕСЬ КОНТЕКСТ + ОТВЕТ ===
+        // У KeyAPI есть системный промпт (предположим ~200 токенов)
+        const ESTIMATED_SYSTEM_PROMPT = "Ты — опытный юрист по защите прав потребителей...";
         
-        // 2A. Последний вопрос пользователя (последнее сообщение с role: 'user')
-        const userMessages = messages.filter(m => m.role === 'user');
-        const lastUserQuestion = userMessages[userMessages.length - 1]?.content || '';
-        const questionTokens = countTokens(lastUserQuestion);
+        // 2A. Токены всего запроса (вся история + системный промпт)
+        const requestTokens = countConversationTokens(messages, ESTIMATED_SYSTEM_PROMPT);
         
-        // 2B. Ответ бота
-        const answerTokens = countTokens(aiText);
+        // 2B. Токены ответа
+        const responseTokens = countTokens(aiText);
         
-        // 2C. Добавляем фиксированную плату за системный промпт и форматирование
-        const SYSTEM_OVERHEAD = 150; // Токены на системный промпт "Ты адвокат..."
-        const FORMATTING_OVERHEAD = 30; // Токены на форматирование сообщений
+        // 2C. ИТОГО (именно столько KeyAPI посчитал на своих серверах)
+        const totalTokens = requestTokens + responseTokens;
         
-        // 2D. ИТОГО токенов для списания (без учета всей истории!)
-        const tokensToCharge = SYSTEM_OVERHEAD + FORMATTING_OVERHEAD + questionTokens + answerTokens;
-        
-        console.log(`🧮 Токены для списания: вопрос=${questionTokens}, ответ=${answerTokens}, накладные=${SYSTEM_OVERHEAD + FORMATTING_OVERHEAD}, всего=${tokensToCharge}`);
+        console.log(`🧮 ЧЕСТНЫЙ БИЛЛИНГ:`);
+        console.log(`   • Системный промпт: ~${countTokens(ESTIMATED_SYSTEM_PROMPT)} токенов`);
+        console.log(`   • История (${messages.length} сообщ.): ${requestTokens - countTokens(ESTIMATED_SYSTEM_PROMPT)} токенов`);
+        console.log(`   • Ответ: ${responseTokens} токенов`);
+        console.log(`   • ВСЕГО К ОПЛАТЕ: ${totalTokens} токенов`);
 
-        // === 3. ОБНОВЛЕНИЕ БАЗЫ (БЕЗ ДУБЛИРОВАНИЯ!) ===
-        if (tokensToCharge > 0 && userCode) {
+        // === 3. ОБНОВЛЕНИЕ БАЗЫ ===
+        if (totalTokens > 0 && userCode) {
             try {
                 // Получаем текущий баланс
                 const { data: codeData, error: fetchError } = await supabase
@@ -104,15 +118,26 @@ exports.handler = async (event) => {
 
                 if (!fetchError && codeData) {
                     const currentCapsUsed = codeData.caps_used || 0;
-                    const newCapsUsed = currentCapsUsed + tokensToCharge;
+                    const newCapsUsed = currentCapsUsed + totalTokens;
                     
-                    // Проверяем, не превысит ли списание лимит
+                    // Проверяем лимит
                     if (newCapsUsed > codeData.caps_limit) {
-                        console.warn(`⚠️ Списание ${tokensToCharge} токенов превысит лимит для кода ${userCode}`);
-                        // Можно вернуть ошибку или списать только до лимита
+                        console.error(`❌ Превышение лимита: ${userCode} (${newCapsUsed} > ${codeData.caps_limit})`);
+                        
+                        // Возвращаем ошибку - нельзя превысить лимит
+                        return {
+                            statusCode: 403,
+                            headers,
+                            body: JSON.stringify({ 
+                                error: 'Лимит CAPS исчерпан',
+                                code: 'CAPS_LIMIT_EXCEEDED',
+                                remaining: codeData.caps_limit - currentCapsUsed,
+                                required: totalTokens
+                            })
+                        };
                     }
                     
-                    // ОДИН ЗАПРОС на обновление - без RPC!
+                    // Списание
                     const { error: updateError } = await supabase
                         .from('access_codes')
                         .update({ 
@@ -124,20 +149,21 @@ exports.handler = async (event) => {
                     if (updateError) {
                         console.error("❌ Ошибка обновления БД:", updateError.message);
                     } else {
-                        console.log(`✅ База обновлена: код ${userCode}, +${tokensToCharge} токенов, итого ${newCapsUsed}/${codeData.caps_limit}`);
+                        console.log(`✅ Списано: ${totalTokens} токенов`);
+                        console.log(`   Баланс: ${newCapsUsed}/${codeData.caps_limit} CAPS`);
                     }
                 }
             } catch (dbError) {
-                console.error("⚠️ Ошибка работы с БД:", dbError.message);
-                // НЕ ПАДАЕМ - чат продолжает работать
+                console.error("⚠️ Ошибка БД:", dbError.message);
+                // НЕ падаем - пользователь уже получил ответ
             }
         }
 
-        // === 4. ВОЗВРАЩАЕМ ОТВЕТ ===
+        // === 4. ВОЗВРАТ ОТВЕТА ===
         return {
             statusCode: 200,
             headers,
-            body: JSON.stringify(data) // Возвращаем чистый ответ от Bridge
+            body: JSON.stringify(data)
         };
 
     } catch (error) {
