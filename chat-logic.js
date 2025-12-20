@@ -1,16 +1,16 @@
 /**
- * АДВОКАТ МЕДНОГО ГРОША — chat-logic.js (Ferrari Final Edition)
+ * АДВОКАТ МЕДНОГО ГРОША — chat-logic.js (CLEAN EDITION)
+ * Только PROXY и STATUS. Никаких фантомных проверок.
  */
 document.addEventListener('DOMContentLoaded', () => {
     const API_STATUS = 'https://chea.onrender.com/check-status';
-    const API_VERIFY = 'https://chea.onrender.com/verify-code';
-    const BRIDGE = 'https://bothub-bridge.onrender.com/api/chat';
+    const PROXY_API = 'https://chea.onrender.com/proxy'; 
 
     const getFP = () => btoa(`${screen.width}${screen.height}${navigator.userAgent}${screen.colorDepth}`).substring(0, 12);
     const fp = getFP();
     
     let activeCode = null;
-    let history = []; 
+    let history = [];
     const readyDocs = { pretenzia: null, rospotreb: null, prokuror: null };
 
     const steps = [
@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
         "📝 Формирование документа..."
     ];
 
-    // --- 1. ПАМЯТЬ ПРИ ПЕРЕЗАГРУЗКЕ ---
+    // --- 1. ПАМЯТЬ ---
     const savedHistory = localStorage.getItem(`chat_history_${fp}`);
     if (savedHistory) {
         history = JSON.parse(savedHistory);
@@ -29,21 +29,39 @@ document.addEventListener('DOMContentLoaded', () => {
         history.forEach(msg => {
             const className = msg.role === 'user' ? 'msg-user' : 'msg-bot';
             win.innerHTML += `<div class="msg ${className}">${msg.content.replace(/\n/g, '<br>')}</div>`;
-            updateVault(msg.content); // Восстанавливаем кнопки документов в шапке
+            updateVault(msg.content);
         });
         win.scrollTop = win.scrollHeight;
     }
 
-    // --- 2. АВТОРЕСАЙЗА ПОЛЯ ВВОДА ---
-    const inputField = document.getElementById('user-input');
-    if (inputField) {
-        inputField.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = Math.min(this.scrollHeight, 200) + 'px';
-        });
+    // --- 2. СИНХРОНИЗАЦИЯ (Берем всё из API_STATUS) ---
+    async function sync() {
+        try {
+            // API_STATUS должен возвращать: { active: true, code: "...", remaining: 5000, caps_limit: 10000 }
+            const res = await fetch(`${API_STATUS}?fp=${fp}`);
+            const data = await res.json();
+            
+            if (data.active && data.code) {
+                activeCode = data.code; // Сохраняем код для отправки в PROXY
+                
+                const remaining = data.remaining || 0;
+                const total = data.caps_limit || 100000;
+                const pct = Math.max(5, Math.min(100, Math.round((remaining / total) * 100)));
+                
+                const bar = document.getElementById('res-bar');
+                if(bar) {
+                    bar.style.width = pct + '%';
+                    bar.style.backgroundColor = pct < 20 ? '#e53e3e' : (pct < 50 ? '#dd6b20' : '#38a169');
+                }
+            } else { 
+                window.location.href = 'index.html'; 
+            }
+        } catch (e) { 
+            console.error("Sync failed:", e); 
+        }
     }
 
-    // --- 3. СКАНЕР ДОКУМЕНТОВ (ВАРКА В ПРОЦЕССЕ) ---
+    // --- 3. СКАНЕР ДОКУМЕНТОВ ---
     function updateVault(text) {
         const checkList = [
             { key: 'pretenzia', trigger: 'ПРЕТЕНЗИЯ', id: 'btn-pretenzia' },
@@ -63,44 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 4. СИНХРОНИЗАЦИЯ CAPS И БАРА ---
-    async function sync() {
-        try {
-            const res = await fetch(`${API_STATUS}?fp=${fp}`);
-            const data = await res.json();
-            if (data.active) {
-                const vRes = await fetch(API_VERIFY, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ fingerprint: fp })
-                });
-                const vData = await vRes.json();
-                if (vData.success) {
-                    activeCode = vData.code;
-                    const remaining = vData.remaining;
-                    const total = vData.caps_limit || 100000;
-                    const pct = Math.max(5, Math.min(100, Math.round((remaining / total) * 100)));
-                    
-                    const bar = document.getElementById('res-bar');
-                    if(bar) {
-                        bar.style.width = pct + '%';
-                        bar.style.backgroundColor = pct < 20 ? '#e53e3e' : (pct < 50 ? '#dd6b20' : '#38a169');
-                    }
-                }
-            } else { window.location.href = 'index.html'; }
-        } catch (e) { console.error("Sync failed"); }
-    }
-
-    // --- 5. ФУНКЦИЯ СКАЧИВАНИЯ ---
-    window.downloadDoc = (filename, text) => {
-        const element = document.createElement('a');
-        const cleanText = text.replace(/<br>/g, '\n');
-        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(cleanText));
-        element.setAttribute('download', filename);
-        element.click();
-    };
-
-    // --- 6. ОТПРАВКА СООБЩЕНИЯ ---
+    // --- 4. ОТПРАВКА ---
     const sendMessage = async () => {
         const input = document.getElementById('user-input');
         const win = document.getElementById('chat-window');
@@ -118,23 +99,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const loader = document.createElement('div');
         loader.className = 'msg msg-bot msg-bot-loading';
-        loader.innerHTML = `<div style="display:flex;align-items:center;"><i class="fas fa-gavel fa-spin" style="color:#e67e22;margin-right:12px;"></i><span id="dynamic-status" class="blink-status">Запуск системы...</span></div>`;
+        loader.innerHTML = `<div style="display:flex;align-items:center;">
+            <i class="fas fa-gavel fa-spin" style="color:#e67e22;margin-right:12px;"></i>
+            <span id="dynamic-status" class="blink-status">Запуск системы...</span>
+        </div>`;
         win.appendChild(loader);
         win.scrollTop = win.scrollHeight;
 
         let stepIdx = 0;
         const statusEl = loader.querySelector('#dynamic-status');
         const stepInterval = setInterval(() => {
-            if (statusEl && stepIdx < steps.length) { statusEl.innerText = steps[stepIdx]; stepIdx++; }
+            if (statusEl && stepIdx < steps.length) { 
+                statusEl.innerText = steps[stepIdx]; 
+                stepIdx++; 
+            }
         }, 1800);
 
         try {
-            const response = await fetch(BRIDGE, {
+            const response = await fetch(PROXY_API, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ messages: history })
+                body: JSON.stringify({ 
+                    messages: history,
+                    userCode: activeCode
+                })
             });
+            
             const d = await response.json();
+            
+            if (d.error) {
+                clearInterval(stepInterval);
+                loader.innerHTML = `⛔ ${d.error}`;
+                sync();
+                return;
+            }
+            
             const aiText = d.choices[0].message.content;
             
             clearInterval(stepInterval);
@@ -142,22 +141,28 @@ document.addEventListener('DOMContentLoaded', () => {
             history.push({role: 'assistant', content: aiText});
             localStorage.setItem(`chat_history_${fp}`, JSON.stringify(history));
             
-            updateVault(aiText); // Проверяем, не "сварился" ли документ
+            updateVault(aiText);
             win.scrollTop = win.scrollHeight;
 
-            await fetch(API_VERIFY, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ fingerprint: fp, usage: aiText.length * 3 }) // Чуть снизил множитель
-            });
+            // Просто обновляем визуализацию
             sync();
+            
         } catch (err) {
             clearInterval(stepInterval);
-            loader.innerHTML = "⚠️ Ошибка связи. Проверьте соединение.";
+            console.error('💥 Proxy Error:', err);
+            loader.innerHTML = "⚠️ Ошибка связи.";
         }
     };
 
-    // --- 7. ГЛОБАЛЬНЫЕ КОМАНДЫ ---
+    // --- 5. ВСПОМОГАТЕЛЬНОЕ ---
+    window.downloadDoc = (filename, text) => {
+        const element = document.createElement('a');
+        const cleanText = text.replace(/<br>/g, '\n');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(cleanText));
+        element.setAttribute('download', filename);
+        element.click();
+    };
+
     window.clearChat = () => {
         if (confirm("Удалить все материалы дела?")) {
             localStorage.removeItem(`chat_history_${fp}`);
@@ -167,7 +172,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('send-btn').onclick = sendMessage;
     document.getElementById('user-input').onkeydown = (e) => {
-        if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        if(e.key === 'Enter' && !e.shiftKey) { 
+            e.preventDefault(); 
+            sendMessage(); 
+        }
     };
 
     sync();
