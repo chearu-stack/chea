@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Личный Кабинет | Адвокат Медного Гроша</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css"> 
@@ -21,16 +18,16 @@
 
             <div class="nav-links cabinet-menu">
                 <div id="btn-pretenzia" class="doc-item doc-inactive">
-                    <small id="status-pretenzia">Формировка</small>
                     <strong>Претензия</strong>
+                    <small id="status-pretenzia">Формирование</small>
                 </div>
                 <div id="btn-rospotreb" class="doc-item doc-inactive">
-                    <small id="status-rospotreb">Формировка</small>
                     <strong>Жалоба Роспотребнадзор</strong>
+                    <small id="status-rospotreb">Формирование</small>
                 </div>
                 <div id="btn-prokuror" class="doc-item doc-inactive">
-                    <small id="status-prokuror">Формировка</small>
                     <strong>Заявление Прокуратура</strong>
+                    <small id="status-prokuror">Формирование</small>
                 </div>
             </div>
             
@@ -38,7 +35,7 @@
                 <div class="res-status">
                     <span class="res-text">Ресурс системы</span>
                     <div class="res-bar-container">
-                        <div id="res-bar" class="res-bar-fill"></div>
+                        <div id="res-bar" class="res-bar-fill" style="width: 100%;"></div>
                     </div>
                 </div>
                 <button onclick="clearChat()" class="nav-button btn-clear">
@@ -49,7 +46,6 @@
     </nav>
 
     <div class="container">
-        
         <div class="chat-container">
             <div id="chat-window">
                 <div class="msg msg-bot">
@@ -59,19 +55,20 @@
             </div>
         </div>
         
-        <div class="chat-input-area" style="margin-top: 25px;">
-            <textarea id="user-input" class="bot-textarea" placeholder="Введите обстоятельства дела..."></textarea>
-            <button id="send-btn" class="btn btn-primary">
+        <div class="chat-input-area" style="margin-top: 20px; display: flex; gap: 10px; width: 100%;">
+            <textarea id="user-input" class="bot-textarea" placeholder="Введите обстоятельства дела..." style="flex-grow: 1; min-height: 60px;"></textarea>
+            <button id="send-btn" class="btn btn-primary" style="height: 60px; width: 60px; flex-shrink: 0;">
                 <i class="fas fa-paper-plane"></i>
             </button>
         </div>
 
-        <div class="truth-card" style="margin-top: 25px; padding: 20px;">
-            <p style="font-size: 0.9rem; margin: 0;">
-                <i class="fas fa-lock" style="color: #e67e22;"></i> <strong>ЗАЩИЩЕННЫЙ РЕЖИМ:</strong> Конфиденциальность обеспечена отсутствием логов на сервере. Не обновляйте страницу (F5).
+        <div class="truth-card" style="margin-top: 20px; padding: 15px; border-left: 4px solid #e67e22; background: #fffcf5;">
+            <p style="font-size: 0.85rem; margin: 0;">
+                <i class="fas fa-lock"></i> <strong>ЗАЩИЩЕННЫЙ РЕЖИМ:</strong> Конфиденциальность обеспечена отсутствием логов на сервере. Не обновляйте страницу (F5).
             </p>
         </div>
+    </div>
 
-    </div> <script src="chat-logic.js"></script>
+    <script src="chat-logic.js"></script>
 </body>
 </html>
