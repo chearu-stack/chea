@@ -1,5 +1,6 @@
 /**
  * АДВОКАТ МЕДНОГО ГРОША — chat-logic.js (Ferrari Final Edition)
+ * Полная интеграция с автономным Бриджем и мгновенной синхронизацией МАННЫ
  */
 document.addEventListener('DOMContentLoaded', () => {
     const API_STATUS = 'https://chea.onrender.com/check-status';
@@ -26,15 +27,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedHistory) {
         history = JSON.parse(savedHistory);
         const win = document.getElementById('chat-window');
-        history.forEach(msg => {
-            const className = msg.role === 'user' ? 'msg-user' : 'msg-bot';
-            win.innerHTML += `<div class="msg ${className}">${msg.content.replace(/\n/g, '<br>')}</div>`;
-            updateVault(msg.content); // Восстанавливаем кнопки документов в шапке
-        });
-        win.scrollTop = win.scrollHeight;
+        if (win) {
+            history.forEach(msg => {
+                const className = msg.role === 'user' ? 'msg-user' : 'msg-bot';
+                win.innerHTML += `<div class="msg ${className}">${msg.content.replace(/\n/g, '<br>')}</div>`;
+                updateVault(msg.content);
+            });
+            win.scrollTop = win.scrollHeight;
+        }
     }
 
-    // --- 2. АВТОРЕСАЙЗА ПОЛЯ ВВОДА ---
+    // --- 2. АВТОРЕСАЙЗ ПОЛЯ ВВОДА ---
     const inputField = document.getElementById('user-input');
     if (inputField) {
         inputField.addEventListener('input', function() {
@@ -43,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 3. СКАНЕР ДОКУМЕНТОВ (ВАРКА В ПРОЦЕССЕ) ---
+    // --- 3. СКАНЕР ДОКУМЕНТОВ ---
     function updateVault(text) {
         const checkList = [
             { key: 'pretenzia', trigger: 'ПРЕТЕНЗИЯ', id: 'btn-pretenzia' },
@@ -63,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 4. СИНХРОНИЗАЦИЯ CAPS И БАРА ---
+    // --- 4. СИНХРОНИЗАЦИЯ CAPS И БАРА (ФОНОВАЯ) ---
     async function sync() {
         try {
             const res = await fetch(`${API_STATUS}?fp=${fp}`);
@@ -77,18 +80,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const vData = await vRes.json();
                 if (vData.success) {
                     activeCode = vData.code;
-                    const remaining = vData.remaining;
-                    const total = vData.caps_limit || 100000;
-                    const pct = Math.max(5, Math.min(100, Math.round((remaining / total) * 100)));
-                    
-                    const bar = document.getElementById('res-bar');
-                    if(bar) {
-                        bar.style.width = pct + '%';
-                        bar.style.backgroundColor = pct < 20 ? '#e53e3e' : (pct < 50 ? '#dd6b20' : '#38a169');
-                    }
+                    updateManaBar(vData.remaining, vData.caps_limit || 100000);
                 }
             } else { window.location.href = 'index.html'; }
         } catch (e) { console.error("Sync failed"); }
+    }
+
+    // Вспомогательная функция отрисовки БАРА
+    function updateManaBar(remaining, total) {
+        const pct = Math.max(5, Math.min(100, Math.round((remaining / total) * 100)));
+        const bar = document.getElementById('res-bar');
+        if(bar) {
+            bar.style.width = pct + '%';
+            bar.style.backgroundColor = pct < 20 ? '#e53e3e' : (pct < 50 ? '#dd6b20' : '#38a169');
+        }
     }
 
     // --- 5. ФУНКЦИЯ СКАЧИВАНИЯ ---
@@ -100,93 +105,85 @@ document.addEventListener('DOMContentLoaded', () => {
         element.click();
     };
 
-    // --- 6. ОТПРАВКА СООБЩЕНИЯ (БЕЗ ЛЖИ И С МГНОВЕННОЙ МАННОЙ) ---
-const sendMessage = async () => {
-    const input = document.getElementById('user-input');
-    const win = document.getElementById('chat-window');
-    const text = input.value.trim();
+    // --- 6. ОТПРАВКА СООБЩЕНИЯ (ТОЧКА СОПРИКОСНОВЕНИЯ) ---
+    const sendMessage = async () => {
+        const input = document.getElementById('user-input');
+        const win = document.getElementById('chat-window');
+        const text = input.value.trim();
 
-    if (!text || !activeCode) return;
+        if (!text || !activeCode) return;
 
-    input.value = '';
-    input.style.height = '45px';
-    win.innerHTML += `<div class="msg msg-user">${text}</div>`;
-    win.scrollTop = win.scrollHeight;
-
-    history.push({role: 'user', content: text});
-    localStorage.setItem(`chat_history_${fp}`, JSON.stringify(history));
-
-    const loader = document.createElement('div');
-    loader.className = 'msg msg-bot msg-bot-loading';
-    loader.innerHTML = `<div style="display:flex;align-items:center;"><i class="fas fa-gavel fa-spin" style="color:#e67e22;margin-right:12px;"></i><span id="dynamic-status" class="blink-status">Запуск системы...</span></div>`;
-    win.appendChild(loader);
-    win.scrollTop = win.scrollHeight;
-
-    let stepIdx = 0;
-    const statusEl = loader.querySelector('#dynamic-status');
-    const stepInterval = setInterval(() => {
-        if (statusEl && stepIdx < steps.length) { statusEl.innerText = steps[stepIdx]; stepIdx++; }
-    }, 1800);
-
-    try {
-        // СТУЧИМСЯ В БРИДЖ (ПРЯМОЙ ВЫЗОВ)
-        const response = await fetch('https://bothub-bridge.onrender.com/api/chat', { 
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ 
-                messages: history,
-                userCode: activeCode
-            })
-        });
-        
-        const d = await response.json();
-        clearInterval(stepInterval);
-
-        // --- ОБРАБОТКА ЛОГИЧЕСКИХ ОШИБОК ---
-        if (response.status === 403) {
-            loader.innerHTML = "⚠️ Доступ заблокирован: лимит CAPS исчерпан. Пополните баланс.";
-            loader.classList.remove('msg-bot-loading');
-            return;
-        }
-
-        if (!response.ok) {
-            loader.innerHTML = `⚠️ Системный сбой (Код ${response.status}). Попробуйте позже.`;
-            loader.classList.remove('msg-bot-loading');
-            return;
-        }
-
-        // --- УСПЕШНЫЙ ОТВЕТ ---
-        const aiText = d.choices[0].message.content;
-        loader.innerHTML = aiText.replace(/\n/g, '<br>');
-        loader.classList.remove('msg-bot-loading');
-        
-        history.push({role: 'assistant', content: aiText});
-        localStorage.setItem(`chat_history_${fp}`, JSON.stringify(history));
-        
-        updateVault(aiText);
-
-        // --- ОБНОВЛЕНИЕ БАРА МАННЫ (МГНОВЕННО ИЗ ОТВЕТА) ---
-        if (d.userBalance) {
-            const pct = d.userBalance.percent;
-            const bar = document.getElementById('res-bar');
-            if(bar) {
-                bar.style.width = pct + '%';
-                bar.style.backgroundColor = pct < 20 ? '#e53e3e' : (pct < 50 ? '#dd6b20' : '#38a169');
-            }
-        } else {
-            // Если баланс не пришел в ответе, дергаем старый sync
-            setTimeout(sync, 1000); 
-        }
-
+        input.value = '';
+        input.style.height = '45px';
+        win.innerHTML += `<div class="msg msg-user">${text}</div>`;
         win.scrollTop = win.scrollHeight;
 
-    } catch (err) {
-        clearInterval(stepInterval);
-        // ТУТ РЕАЛЬНЫЙ ОБРЫВ СЕТИ
-        loader.innerHTML = "⚠️ Сетевой сбой. Не удалось достучаться до сервера адвоката.";
-        loader.classList.remove('msg-bot-loading');
-    }
-};
+        history.push({role: 'user', content: text});
+        localStorage.setItem(`chat_history_${fp}`, JSON.stringify(history));
+
+        const loader = document.createElement('div');
+        loader.className = 'msg msg-bot msg-bot-loading';
+        loader.innerHTML = `<div style="display:flex;align-items:center;"><i class="fas fa-gavel fa-spin" style="color:#e67e22;margin-right:12px;"></i><span id="dynamic-status" class="blink-status">Запуск системы...</span></div>`;
+        win.appendChild(loader);
+        win.scrollTop = win.scrollHeight;
+
+        let stepIdx = 0;
+        const statusEl = loader.querySelector('#dynamic-status');
+        const stepInterval = setInterval(() => {
+            if (statusEl && stepIdx < steps.length) { statusEl.innerText = steps[stepIdx]; stepIdx++; }
+        }, 1800);
+
+        try {
+            // Прямой вызов Бриджа
+            const response = await fetch(BRIDGE, { 
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ 
+                    messages: history,
+                    userCode: activeCode
+                })
+            });
+            
+            const d = await response.json();
+            clearInterval(stepInterval);
+            loader.classList.remove('msg-bot-loading');
+
+            // Проверка логических блокировок
+            if (response.status === 403) {
+                loader.innerHTML = "⚠️ Доступ ограничен: лимит CAPS исчерпан. Пополните баланс для продолжения.";
+                return;
+            }
+
+            if (!response.ok) {
+                loader.innerHTML = `⚠️ Системный сбой (Код ${response.status}). Техническая служба уже уведомлена.`;
+                return;
+            }
+
+            // Успешный результат
+            const aiText = d.choices[0].message.content;
+            loader.innerHTML = aiText.replace(/\n/g, '<br>');
+            
+            history.push({role: 'assistant', content: aiText});
+            localStorage.setItem(`chat_history_${fp}`, JSON.stringify(history));
+            
+            updateVault(aiText);
+
+            // Мгновенное обновление МАННЫ из ответа Бриджа
+            if (d.userBalance) {
+                updateManaBar(d.userBalance.remaining, d.userBalance.total || 100000);
+            } else {
+                setTimeout(sync, 1000); 
+            }
+
+            win.scrollTop = win.scrollHeight;
+
+        } catch (err) {
+            clearInterval(stepInterval);
+            loader.classList.remove('msg-bot-loading');
+            loader.innerHTML = "⚠️ Сетевой сбой. Проверьте соединение с интернетом.";
+            console.error(err);
+        }
+    };
 
     // --- 7. ГЛОБАЛЬНЫЕ КОМАНДЫ ---
     window.clearChat = () => {
