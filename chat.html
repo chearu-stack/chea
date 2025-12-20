@@ -8,22 +8,32 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="admin-body"> 
-    <nav class="main-nav">
-        <div class="nav-container">
-            <div class="nav-logo">
-                <i class="fas fa-balance-scale"></i>
-                <span class="logo-full">Адвокат Медного Гроша</span>
-                <span class="logo-short">АМГ</span>
+    <nav class="main-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px; height: 70px; background: #fff; border-bottom: 1px solid #eee;">
+        <div class="nav-logo" style="display: flex; align-items: center; gap: 12px;">
+            <i class="fas fa-balance-scale" style="font-size: 1.5rem; color: #e67e22;"></i>
+            <div style="display: flex; flex-direction: column;">
+                <span class="logo-full" style="font-weight: bold; font-size: 1.1rem;">Адвокат Медного Гроша</span>
+                <span class="logo-short" style="font-size: 0.8rem; color: #888; display: none;">АМГ</span>
             </div>
-            
-            <div class="res-widget">
-                <span class="section-title" style="font-size: 0.7rem; margin:0; border:0; text-transform:uppercase;">Ресурс системы</span>
-                <div class="res-bar-bg"><div id="res-bar" class="res-bar-fill"></div></div>
+        </div>
+        
+        <div class="res-widget" style="min-width: 180px; text-align: right;">
+            <div style="font-size: 0.7rem; text-transform: uppercase; color: #999; margin-bottom: 5px; font-weight: 600; letter-spacing: 0.5px;">
+                Ресурс системы
+            </div>
+            <div class="res-bar-bg" style="width: 100%; height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden; border: 1px solid #ddd;">
+                <div id="res-bar" class="res-bar-fill" style="width: 0%; height: 100%; transition: width 0.8s ease, background-color 0.5s ease;"></div>
             </div>
         </div>
     </nav>
 
     <div class="container">
+        <div class="doc-panel" style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;">
+            <button id="btn-pretenzia" class="doc-btn doc-inactive"><i class="fas fa-file-invoice"></i> Претензия</button>
+            <button id="btn-rospotreb" class="doc-btn doc-inactive"><i class="fas fa-shield-halved"></i> Роспотреб</button>
+            <button id="btn-prokuror" class="doc-btn doc-inactive"><i class="fas fa-gavel"></i> Прокуратура</button>
+        </div>
+
         <div class="chat-container">
             <div id="chat-window">
                 <div class="msg msg-bot">
@@ -32,17 +42,23 @@
                 </div>
             </div>
             
-            <div class="chat-input-area">
-                <textarea id="user-input" class="bot-textarea" style="flex:1; padding:12px; resize:none;" placeholder="Введите обстоятельства..."></textarea>
-                <button id="send-btn" class="btn btn-primary" style="width:auto; margin:0;">
+            <div class="chat-input-area" style="display: flex; gap: 10px; align-items: flex-end;">
+                <textarea id="user-input" class="bot-textarea" style="flex:1; padding:12px; resize:none; border-radius: 8px; border: 1px solid #ddd; min-height: 45px;" placeholder="Введите обстоятельства..."></textarea>
+                <button id="send-btn" class="btn btn-primary" style="width: 50px; height: 45px; display: flex; align-items: center; justify-content: center; margin: 0;">
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
 
-            <div class="warning-box">
-                <i class="fas fa-shield-alt"></i>
-                <span><b>ЗАЩИЩЕННЫЙ РЕЖИМ:</b> Конфиденциальность обеспечена отсутствием логов на сервере. Не обновляйте страницу (F5), чтобы не потерять текущую историю анализа.</span>
+            <div class="warning-box" style="margin-top: 15px; font-size: 0.85rem; color: #666; background: #f9f9f9; padding: 10px; border-radius: 6px; border-left: 4px solid #e67e22;">
+                <i class="fas fa-shield-alt" style="margin-right: 8px; color: #e67e22;"></i>
+                <span><b>ЗАЩИЩЕННЫЙ РЕЖИМ:</b> Конфиденциальность обеспечена отсутствием логов на сервере. Не обновляйте страницу (F5).</span>
             </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 10px;">
+            <button onclick="clearChat()" style="background: none; border: none; color: #999; cursor: pointer; font-size: 0.8rem;">
+                <i class="fas fa-trash-alt"></i> Очистить историю чата
+            </button>
         </div>
     </div>
 
