@@ -69,7 +69,7 @@ exports.handler = async (event) => {
         // === 1. ОТПРАВКА В BRIDGE ===
         const BRIDGE_URL = 'https://bothub-bridge.onrender.com/api/chat';
         
-        console.log(`📤 Отправка в Bridge. Сообщений в истории: ${messages.length}`);
+        console.log(`📤 Отправка в Bridge. Сообщений: ${messages.length}, userCode: "${userCode}"`);
         
         const bridgeResponse = await fetch(BRIDGE_URL, {
             method: 'POST',
@@ -106,9 +106,11 @@ exports.handler = async (event) => {
         console.log(`   • Ответ: ${responseTokens} токенов`);
         console.log(`   • ВСЕГО К ОПЛАТЕ: ${totalTokens} токенов`);
 
-        // === 3. ОБНОВЛЕНИЕ БАЗЫ ===
+        // === 3. ОБНОВЛЕНИЕ БАЗЫ (ИСПРАВЛЕННЫЙ SCOPE) ===
         if (totalTokens > 0 && userCode) {
             try {
+                console.log(`🔍 Обновление БД для кода: "${userCode}"`);
+                
                 // Получаем текущий баланс
                 const { data: codeData, error: fetchError } = await supabase
                     .from('access_codes')
@@ -116,13 +118,34 @@ exports.handler = async (event) => {
                     .eq('code', userCode)
                     .single();
 
-                if (!fetchError && codeData) {
+                // ОТЛАДКА: что нашли в БД
+                console.log('📊 Результат поиска в БД:', {
+                    userCode: userCode,
+                    found: !!codeData,
+                    fetchError: fetchError ? fetchError.message : 'нет',
+                    caps_used: codeData?.caps_used || 0,
+                    caps_limit: codeData?.caps_limit || 0
+                });
+                
+                // Объявляем переменные ВНЕ блоков if
+                let updateSuccess = false;
+                let updateError = null;
+                
+                if (fetchError) {
+                    console.error(`❌ Ошибка поиска кода "${userCode}":`, fetchError.message);
+                } 
+                else if (!codeData) {
+                    console.error(`❌ Запись с кодом "${userCode}" не найдена в таблице access_codes`);
+                }
+                else {
                     const currentCapsUsed = codeData.caps_used || 0;
                     const newCapsUsed = currentCapsUsed + totalTokens;
                     
+                    console.log(`📈 Текущий баланс: ${currentCapsUsed} → ${newCapsUsed} (+${totalTokens})`);
+                    
                     // Проверяем лимит
                     if (newCapsUsed > codeData.caps_limit) {
-                        console.error(`❌ Превышение лимита: ${userCode} (${newCapsUsed} > ${codeData.caps_limit})`);
+                        console.error(`❌ Превышение лимита: ${newCapsUsed} > ${codeData.caps_limit}`);
                         
                         // Возвращаем ошибку - нельзя превысить лимит
                         return {
@@ -138,7 +161,7 @@ exports.handler = async (event) => {
                     }
                     
                     // Списание
-                    const { error: updateError } = await supabase
+                    const updateResult = await supabase
                         .from('access_codes')
                         .update({ 
                             caps_used: newCapsUsed,
@@ -146,17 +169,41 @@ exports.handler = async (event) => {
                         })
                         .eq('code', userCode);
 
+                    updateError = updateResult.error;
+                    updateSuccess = !updateError;
+                    
                     if (updateError) {
                         console.error("❌ Ошибка обновления БД:", updateError.message);
+                        console.error("   Детали:", updateError);
                     } else {
-                        console.log(`✅ Списано: ${totalTokens} токенов`);
-                        console.log(`   Баланс: ${newCapsUsed}/${codeData.caps_limit} CAPS`);
+                        console.log(`✅ УСПЕХ: База обновлена!`);
+                        console.log(`   Код: ${userCode}`);
+                        console.log(`   Списано: ${totalTokens} токенов`);
+                        console.log(`   Новый баланс: ${newCapsUsed}/${codeData.caps_limit} CAPS`);
                     }
                 }
+                
+                // ЛОГИРОВАНИЕ ДЛЯ ОТЛАДКИ (теперь updateError доступна!)
+                console.log('📝 Итог обновления БД:', {
+                    timestamp: new Date().toISOString(),
+                    userCode: userCode,
+                    tokens: totalTokens,
+                    success: updateSuccess,
+                    updateError: updateError ? updateError.message : null,
+                    fetchError: fetchError ? fetchError.message : null
+                });
+                
             } catch (dbError) {
-                console.error("⚠️ Ошибка БД:", dbError.message);
+                console.error("💥 КРИТИЧЕСКАЯ Ошибка БД:", dbError.message);
+                console.error("   Стек:", dbError.stack);
                 // НЕ падаем - пользователь уже получил ответ
             }
+        } else {
+            console.log(`⚠️ Пропускаем обновление БД:`, {
+                totalTokens: totalTokens,
+                userCode: userCode,
+                reason: !totalTokens ? 'totalTokens <= 0' : 'userCode отсутствует'
+            });
         }
 
         // === 4. ВОЗВРАТ ОТВЕТА ===
@@ -168,6 +215,7 @@ exports.handler = async (event) => {
 
     } catch (error) {
         console.error("❌ Ошибка в Proxy:", error.message);
+        console.error("   Стек:", error.stack);
         return {
             statusCode: 500,
             headers,
