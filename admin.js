@@ -60,7 +60,7 @@ async function loadOrders() {
     }
 }
 
-// Активация: код улетает из этого списка в "активные"
+// Активация: исправлена ошибка coerce путем экранирования параметров
 async function activateCode(code, tariff) {
     const caps = { 'BASIC': 30000, 'PRO': 60000, 'PREMIUM': 90000 };
     const limit = caps[tariff] || 30000;
@@ -68,16 +68,27 @@ async function activateCode(code, tariff) {
     if (!confirm(`Активировать код ${code}\nТариф: ${tariff}\nЛимит: ${limit} CAPS?`)) return;
 
     try {
-        const res = await fetch(`${API_BASE}/activate-code?code=${code}&limit=${limit}&active=true`);
+        // Мы используем encodeURIComponent, чтобы параметры в URL не вызывали ошибку синтаксиса в БД
+        const params = new URLSearchParams({
+            code: code,
+            limit: limit,
+            active: 'true'
+        });
+
+        const res = await fetch(`${API_BASE}/activate-code?${params.toString()}`);
         const data = await res.json();
         
-        if (data.success) {
+        // Логика успеха расширена, чтобы понимать ответы от Postgrest
+        if (data.success || (res.ok && !data.error)) {
             alert(`Успех! Код ${code} теперь активен.`);
-            loadOrders(); // Список обновится, и этот код исчезнет
+            loadOrders(); 
         } else {
-            alert('Ошибка: ' + data.error);
+            // Теперь мы увидим реальную причину, если база снова ругнется
+            const errorMsg = data.error || data.message || 'Неизвестная ошибка сервера';
+            alert('Ошибка: ' + errorMsg);
         }
     } catch (e) {
+        console.error('Ошибка в процессе активации:', e);
         alert('Ошибка связи с сервером');
     }
 }
