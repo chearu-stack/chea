@@ -13,8 +13,11 @@ exports.handler = async (event, context) => {
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   try {
-    // Render через твой server.js передает параметры сюда в event.queryStringParameters
-    const { code, limit, active } = event.queryStringParameters || {};
+    // Извлекаем параметры. Добавлена поддержка имен из вашего admin.js (caps_limit и is_active)
+    const params = event.queryStringParameters || {};
+    const code = params.code;
+    const limit = params.caps_limit || params.limit;
+    const active = params.is_active || params.active;
     
     if (!code) {
       return { 
@@ -24,28 +27,28 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Подготовка данных для "Таксометра"
+    // Подготовка данных
     const newLimit = limit ? parseInt(limit) : null;
     const activateFlag = active === 'true';
 
     const updateData = {
       status: 'active',
       activated_at: new Date().toISOString(),
-      is_active: activateFlag, // ВКЛЮЧАЕМ КЛЮЧ
-      caps_used: 0             // ОБНУЛЯЕМ СЧЕТЧИК
+      is_active: activateFlag,
+      caps_used: 0
     };
 
     if (newLimit !== null) {
-      updateData.caps_limit = newLimit; // ЗАПРАВЛЯЕМ БАК
+      updateData.caps_limit = newLimit;
     }
 
-    // ВАЖНО: Таблица называется access_codes (как на твоем скриншоте)
+    // ВАЖНО: Заменили .single() на .maybeSingle()
     const { data, error } = await supabase
       .from('access_codes') 
       .update(updateData)
       .eq('code', code)
       .select()
-      .single();
+      .maybeSingle(); // <--- Исправлено здесь
 
     if (error) throw error;
 
@@ -56,7 +59,8 @@ exports.handler = async (event, context) => {
         success: true, 
         message: `Activated: ${code}`,
         is_active: activateFlag,
-        caps_limit: newLimit
+        caps_limit: newLimit,
+        data: data // Вернем данные объекта для надежности
       })
     };
 
