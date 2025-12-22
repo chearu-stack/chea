@@ -60,7 +60,7 @@ async function loadOrders() {
     }
 }
 
-// Активация: исправлены ключи под структуру БД (caps_limit и is_active)
+// АКТИВАЦИЯ: Приведена в соответствие с полями твоей БД
 async function activateCode(code, tariff) {
     const caps = { 'BASIC': 30000, 'PRO': 60000, 'PREMIUM': 90000 };
     const limit = caps[tariff] || 30000;
@@ -68,11 +68,11 @@ async function activateCode(code, tariff) {
     if (!confirm(`Активировать код ${code}\nТариф: ${tariff}\nЛимит: ${limit} CAPS?`)) return;
 
     try {
-        // ПРАВКА: Ключи приведены в соответствие с твоей таблицей access_codes
+        // ИСПОЛЬЗУЕМ КЛЮЧИ ИЗ ТВОЕЙ ТАБЛИЦЫ: caps_limit и is_active
         const params = new URLSearchParams({
             code: code,
-            caps_limit: limit, // в БД столбец caps_limit
-            is_active: 'true'  // в БД столбец is_active
+            caps_limit: limit, 
+            is_active: 'true'
         });
 
         const res = await fetch(`${API_BASE}/activate-code?${params.toString()}`);
@@ -83,11 +83,12 @@ async function activateCode(code, tariff) {
             alert(`Успех! Код ${code} теперь активен.`);
             loadOrders(); 
         } else {
-            const errorMsg = data.error || data.message || 'Неизвестная ошибка сервера';
+            // Если сервер выдает "Cannot coerce", мы увидим это здесь
+            const errorMsg = data.error || data.message || 'Запись не найдена в БД';
             alert('Ошибка: ' + errorMsg);
         }
     } catch (e) {
-        console.error('Ошибка в процессе активации:', e);
+        console.error('Ошибка активации:', e);
         alert('Ошибка связи с сервером');
     }
 }
