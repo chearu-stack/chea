@@ -104,28 +104,19 @@
         }
     ];
 
+    // === СОСТОЯНИЕ ВИДЖЕТА ===
+    let currentStep = 0;
+    let answers = {};
+    let isProcessing = false;
 
-// Состояние виджета
-let currentStep = 0;
-let answers = {};
-let isProcessing = false;
-
-// Стало:
-// Состояние виджета - ВСЕГДА СБРАСЫВАЕМ ПРИ ЗАГРУЗКЕ
-let currentStep = 0;
-let answers = {};
-let isProcessing = false;
-
-// Принудительный сброс при каждой загрузке страницы
-// Удаляем любые сохранённые состояния
-try {
-    sessionStorage.removeItem('preview_widget_state');
-    sessionStorage.removeItem('preview_restore_state');
-    // Также удаляем preliminary_answers если они есть (для чистоты)
-    sessionStorage.removeItem('preliminary_answers');
-} catch (e) {
-    // Игнорируем ошибки очистки storage
-}
+    // Очищаем предыдущие состояния при загрузке
+    try {
+        sessionStorage.removeItem('preview_widget_state');
+        sessionStorage.removeItem('preview_restore_state');
+        sessionStorage.removeItem('preliminary_answers');
+    } catch (e) {
+        // Игнорируем ошибки очистки
+    }
 
     // ===== ФУНКЦИИ ДЛЯ ПРОВЕРКИ СРОКА ДАВНОСТИ =====
     function checkStatuteOfLimitations(dateText) {
@@ -134,18 +125,12 @@ try {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        // Пытаемся извлечь дату из текста
         let violationDate = null;
         
-        // Паттерны для распознавания дат
         const patterns = [
-            // "12 января 2022 года"
             /(\d{1,2})\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\s+(\d{4})/i,
-            // "12.01.2022"
             /(\d{1,2})\.(\d{1,2})\.(\d{4})/,
-            // "2022-01-12"
             /(\d{4})-(\d{1,2})-(\d{1,2})/,
-            // Только год "2022 года"
             /(\d{4})\s*год[а]?/i
         ];
         
@@ -157,24 +142,24 @@ try {
         for (const pattern of patterns) {
             const match = dateText.match(pattern);
             if (match) {
-                if (pattern === patterns[0]) { // "12 января 2022"
+                if (pattern === patterns[0]) {
                     const day = parseInt(match[1]);
                     const month = monthNames[match[2].toLowerCase()];
                     const year = parseInt(match[3]);
                     violationDate = new Date(year, month, day);
-                } else if (pattern === patterns[1]) { // "12.01.2022"
+                } else if (pattern === patterns[1]) {
                     const day = parseInt(match[1]);
                     const month = parseInt(match[2]) - 1;
                     const year = parseInt(match[3]);
                     violationDate = new Date(year, month, day);
-                } else if (pattern === patterns[2]) { // "2022-01-12"
+                } else if (pattern === patterns[2]) {
                     const year = parseInt(match[1]);
                     const month = parseInt(match[2]) - 1;
                     const day = parseInt(match[3]);
                     violationDate = new Date(year, month, day);
-                } else if (pattern === patterns[3]) { // "2022 года"
+                } else if (pattern === patterns[3]) {
                     const year = parseInt(match[1]);
-                    violationDate = new Date(year, 0, 1); // 1 января указанного года
+                    violationDate = new Date(year, 0, 1);
                 }
                 break;
             }
@@ -188,14 +173,11 @@ try {
             };
         }
         
-        // Вычисляем разницу в днях
         const timeDiff = today.getTime() - violationDate.getTime();
         const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
-        const yearsDiff = daysDiff / 365.25;
         
-        // Срок исковой давности - 3 года (1095 дней)
         const LIMIT_DAYS = 1095;
-        const WARNING_DAYS = 1000; // За 95 дней до истечения
+        const WARNING_DAYS = 1000;
         
         if (daysDiff > LIMIT_DAYS) {
             const yearsOver = (daysDiff - LIMIT_DAYS) / 365.25;
@@ -247,7 +229,6 @@ try {
             font-family: 'Open Sans', sans-serif;
         `;
         
-        // Заголовок с прогрессом
         const header = document.createElement('div');
         header.className = 'preview-header';
         header.style.marginBottom = '24px';
@@ -260,17 +241,14 @@ try {
             </div>
         `;
         
-        // Область вопроса
         const questionArea = document.createElement('div');
         questionArea.className = 'question-area';
         questionArea.style.marginBottom = '20px';
         
-        // Область ответа
         const answerArea = document.createElement('div');
         answerArea.className = 'answer-area';
         answerArea.style.marginBottom = '20px';
         
-        // Кнопки
         const buttonsArea = document.createElement('div');
         buttonsArea.className = 'buttons-area';
         buttonsArea.style.cssText = `
@@ -291,7 +269,6 @@ try {
     function updateDisplay() {
         const { header, questionArea, answerArea, buttonsArea } = window.previewWidget;
         
-        // Обновляем прогресс
         const progressFill = header.querySelector('.bot-progress-fill');
         const stepCounter = header.querySelector('.step-counter');
         if (progressFill) {
@@ -301,14 +278,12 @@ try {
             stepCounter.textContent = `Вопрос ${currentStep + 1} из ${QUESTIONS.length}`;
         }
         
-        // Очищаем области
         questionArea.innerHTML = '';
         answerArea.innerHTML = '';
         buttonsArea.innerHTML = '';
         
         const question = QUESTIONS[currentStep];
         
-        // Отображаем вопрос
         const questionText = document.createElement('div');
         questionText.className = 'question-text';
         questionText.style.cssText = `
@@ -338,7 +313,6 @@ try {
             questionArea.appendChild(exampleText);
         }
         
-        // Создаем поле ввода
         const input = document.createElement('textarea');
         input.className = 'answer-input bot-textarea';
         input.style.cssText = `
@@ -378,21 +352,15 @@ try {
         answerArea.appendChild(charCounter);
         answerArea.appendChild(errorMessage);
         
-        // Обновляем счетчик символов
         function updateCharCounter() {
             const length = input.value.length;
             charCounter.textContent = `${length} / ${question.maxLength}`;
-            if (length >= question.maxLength * 0.9) {
-                charCounter.style.color = '#dc3545';
-            } else {
-                charCounter.style.color = '#888';
-            }
+            charCounter.style.color = length >= question.maxLength * 0.9 ? '#dc3545' : '#888';
         }
         
         updateCharCounter();
         input.addEventListener('input', updateCharCounter);
         
-        // Создаем кнопки
         if (currentStep > 0) {
             const prevButton = document.createElement('button');
             prevButton.className = 'btn btn-secondary widget-button';
@@ -414,7 +382,6 @@ try {
         nextButton.addEventListener('click', () => {
             const value = input.value.trim();
             
-            // Валидация
             const validationResult = question.validator(value);
             if (validationResult !== true) {
                 input.style.borderColor = '#dc3545';
@@ -423,14 +390,11 @@ try {
                 return;
             }
             
-            // Убираем ошибку
             input.style.borderColor = '#dee2e6';
             errorMessage.style.display = 'none';
             
-            // Сохраняем ответ
             answers[question.id] = value;
             
-            // Переход к следующему шагу или анализ
             if (currentStep < QUESTIONS.length - 1) {
                 currentStep++;
                 updateDisplay();
@@ -441,7 +405,6 @@ try {
         
         buttonsArea.appendChild(nextButton);
         
-        // Enter для отправки (кроме Shift+Enter)
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -449,11 +412,10 @@ try {
             }
         });
         
-        // Автофокус
         setTimeout(() => input.focus(), 100);
     }
 
-    // Анализ ответов и рекомендация
+    // Анализ ответов
     function analyzeAnswers() {
         isProcessing = true;
         updateDisplay();
@@ -463,16 +425,13 @@ try {
             const amount = Number(answers.amount.replace(/\s/g, '').replace('₽', '').replace('руб', ''));
             const dateText = answers.date;
             
-            // ПРОВЕРКА СРОКА ДАВНОСТИ
             const dateCheck = checkStatuteOfLimitations(dateText);
             
-            // Проверка на сложный случай
             const isComplexCase = COMPLEX_KEYWORDS.some(keyword => 
                 problemText.includes(keyword)
             );
             
-            // Определяем рекомендуемый тариф
-            let recommendedPlan = 'extended'; // по умолчанию расширенный
+            let recommendedPlan = 'extended';
             let planName = 'Расширенный';
             let planPrice = '1 200 ₽';
             let reason = '';
@@ -489,7 +448,6 @@ try {
                 reason = isComplexCase ? 'сложный характер спора' : 'крупная сумма';
             }
             
-            // Определяем, решаема ли проблема
             const hasConsumerKeywords = CONSUMER_KEYWORDS.some(keyword => 
                 problemText.includes(keyword)
             );
@@ -499,7 +457,6 @@ try {
             
             const isSolvable = hasConsumerKeywords && isAmountValid && isDateValid && dateCheck.isValid;
             
-            // Сохраняем ответы для передачи в основной бот (только если не просрочено)
             if (isSolvable && dateCheck.isValid) {
                 try {
                     sessionStorage.setItem('preliminary_answers', JSON.stringify({
@@ -510,14 +467,13 @@ try {
                         collectedAt: new Date().toISOString()
                     }));
                 } catch (e) {
-                    console.warn('Не удалось сохранить ответы в sessionStorage:', e);
+                    console.warn('Не удалось сохранить ответы:', e);
                 }
             }
             
-            // Отображаем результат
             displayResult(isSolvable, dateCheck, recommendedPlan, planName, planPrice, reason);
             isProcessing = false;
-        }, 800); // Имитация обработки
+        }, 800);
     }
 
     // Отображение результата
@@ -528,7 +484,6 @@ try {
         answerArea.innerHTML = '';
         buttonsArea.innerHTML = '';
         
-        // ПРОВЕРКА ПРОСРОЧЕННОГО ДЕЛА
         if (!dateCheck.isValid) {
             const resultContainer = document.createElement('div');
             resultContainer.className = 'diagnosis-content';
@@ -568,7 +523,6 @@ try {
                 </p>
             `;
             
-            // Кнопка для начала заново
             const restartButton = document.createElement('button');
             restartButton.className = 'btn btn-secondary';
             restartButton.style.cssText = 'width: 100%; margin-top: 15px;';
@@ -584,8 +538,6 @@ try {
             return;
         }
         
-        // Если срок не просрочен, продолжаем с обычной логикой
-        // Добавляем предупреждение если близко к истечению
         let dateWarning = '';
         if (dateCheck.warning) {
             dateWarning = `
@@ -679,18 +631,15 @@ try {
                 </div>
             `;
             
-            // Добавляем кнопку для быстрого перехода
             const goToPricing = document.createElement('button');
             goToPricing.className = 'btn btn-primary';
             goToPricing.style.cssText = 'width: 100%; margin-top: 15px;';
             goToPricing.innerHTML = '<i class="fas fa-tags"></i> Выбрать тариф';
             goToPricing.addEventListener('click', () => {
-                // Плавный скролл к секции с тарифами
                 const pricingSection = document.getElementById('pricing');
                 if (pricingSection) {
                     pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     
-                    // Подсветка рекомендуемого тарифа
                     setTimeout(() => {
                         const planElement = document.querySelector(`[data-plan="${planId}"]`);
                         if (planElement && planElement.closest('.pricing-card')) {
@@ -698,7 +647,6 @@ try {
                             card.style.boxShadow = '0 0 0 3px #28a745, 0 8px 25px rgba(0,0,0,0.15)';
                             card.style.transition = 'box-shadow 0.5s ease';
                             
-                            // Анимация пульсации
                             setTimeout(() => {
                                 card.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)';
                             }, 2000);
@@ -740,7 +688,6 @@ try {
                 </ul>
             `;
             
-            // Кнопка для начала заново
             const restartButton = document.createElement('button');
             restartButton.className = 'btn btn-secondary';
             restartButton.style.cssText = 'width: 100%; margin-top: 15px;';
@@ -762,14 +709,10 @@ try {
         const interfaceElements = createInterface();
         widgetContainer.appendChild(interfaceElements.container);
         
-        // Сохраняем ссылки на элементы
         window.previewWidget = interfaceElements;
-        
-        // Начинаем с первого вопроса
         updateDisplay();
     }
 
-    // Запускаем после загрузки DOM
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
