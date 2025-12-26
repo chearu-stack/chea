@@ -24,11 +24,7 @@
         }
     }, 100);
     
-    // ===== ДАЛЕЕ ИДЁТ ВЕСЬ ОСТАЛЬНОЙ КОД ВИДЖЕТА =====
-    // Проверяем, есть ли контейнер для виджета
-    const widgetContainer = document.querySelector('.bot-widget-placeholder');
-    if (!widgetContainer) return;
-    
+    // ===== ДАЛЕЕ ИДЁТ ВЕСЬ ОСТАЛЬНОЙ КОД ВИДЖЕТА ===== 
     // ... остальной код без изменений ...
 
 (function() {
