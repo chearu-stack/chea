@@ -2,27 +2,42 @@
 // Виджет предварительного анализа для главной страницы
 
 (function() {
-    // ===== ФИКС ПРОКРУТКИ - САМОЕ ПЕРВОЕ ДЕЙСТВИЕ =====
-    // Выполняется ДО всего остального кода
-    
-    // 1. Немедленно возвращаем наверх если есть якорь #start
+    // ===== ТОЧЕЧНЫЙ ФИКС ТОЛЬКО ДЛЯ #start =====
+    // 1. Если страница загружается с якорем #start - игнорируем его
     if (window.location.hash === '#start') {
-        // Мгновенный скролл без анимации
+        // Сохраняем исходный URL без якоря
+        const cleanUrl = window.location.pathname + window.location.search;
+        
+        // Мгновенная прокрутка наверх
         window.scrollTo(0, 0);
         
-        // Убираем якорь из URL БЕЗ перезагрузки
+        // Безопасно убираем якорь из истории
         setTimeout(() => {
-            history.replaceState(null, null, window.location.pathname + window.location.search);
+            try {
+                history.replaceState(null, null, cleanUrl);
+            } catch (e) {
+                // Игнорируем ошибки истории
+            }
         }, 10);
     }
     
-    // 2. Отключаем стандартное поведение якорных ссылок
+    // 2. Отключаем ТОЛЬКО ссылки на #start, остальные работают как обычно
     document.addEventListener('DOMContentLoaded', function() {
-        const anchorLinks = document.querySelectorAll('a[href="#start"]');
-        anchorLinks.forEach(link => {
+        const startLinks = document.querySelectorAll('a[href="#start"]');
+        
+        startLinks.forEach(link => {
+            // Сохраняем оригинальный обработчик если он есть
+            const originalClick = link.onclick;
+            
             link.addEventListener('click', function(e) {
+                // Разрешаем все другие клики (Ctrl+click, Shift+click и т.д.)
+                if (e.ctrlKey || e.shiftKey || e.metaKey || e.altKey) {
+                    return; // Позволяем открыть в новой вкладке и т.п.
+                }
+                
                 e.preventDefault();
-                // Вместо якоря - плавный скролл
+                
+                // Плавный скролл к секции #start
                 const target = document.getElementById('start');
                 if (target) {
                     window.scrollTo({
@@ -30,12 +45,18 @@
                         behavior: 'smooth'
                     });
                 }
+                
+                // Вызываем оригинальный обработчик если он был
+                if (originalClick) {
+                    originalClick.call(this, e);
+                }
+                
                 return false;
-            });
+            }, { passive: false }); // passive: false чтобы preventDefault работал
         });
     });
     
-    // ===== ОСНОВНОЙ КОД ВИДЖЕТА =====
+    // ===== ОСНОВНОЙ КОД ВИДЖЕТА (без изменений) =====
     
     // Проверяем, есть ли контейнер для виджета
     const widgetContainer = document.querySelector('.bot-widget-placeholder');
@@ -643,7 +664,7 @@
                     </p>
                 </div>
                 
-                <p><strong>После оплата вы получите:</strong></p>
+                <p><strong>После оплаты вы получите:</strong></p>
                 <ul style="margin: 10px 0 20px 20px; font-size: 14px;">
                     <li>Юридический анализ соответствия вашей ситуации ЗоЗПП</li>
                     <li>Расчёт законных требований (если применимо)</li>
@@ -760,18 +781,5 @@
     } else {
         init();
     }
-
-    // ===== ДОПОЛНИТЕЛЬНЫЙ ФИКС =====
-    // Принудительно держим страницу сверху первые 2 секунды
-    let fixAttempts = 0;
-    const fixInterval = setInterval(() => {
-        if (window.scrollY > 50) {
-            window.scrollTo({ top: 0, behavior: 'auto' });
-            fixAttempts++;
-        }
-        if (fixAttempts > 5) {
-            clearInterval(fixInterval);
-        }
-    }, 100);
 
 })();
