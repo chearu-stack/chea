@@ -104,10 +104,28 @@
         }
     ];
 
-    // Состояние виджета
-    let currentStep = 0;
-    let answers = {};
-    let isProcessing = false;
+
+// Состояние виджета
+let currentStep = 0;
+let answers = {};
+let isProcessing = false;
+
+// Стало:
+// Состояние виджета - ВСЕГДА СБРАСЫВАЕМ ПРИ ЗАГРУЗКЕ
+let currentStep = 0;
+let answers = {};
+let isProcessing = false;
+
+// Принудительный сброс при каждой загрузке страницы
+// Удаляем любые сохранённые состояния
+try {
+    sessionStorage.removeItem('preview_widget_state');
+    sessionStorage.removeItem('preview_restore_state');
+    // Также удаляем preliminary_answers если они есть (для чистоты)
+    sessionStorage.removeItem('preliminary_answers');
+} catch (e) {
+    // Игнорируем ошибки очистки storage
+}
 
     // ===== ФУНКЦИИ ДЛЯ ПРОВЕРКИ СРОКА ДАВНОСТИ =====
     function checkStatuteOfLimitations(dateText) {
