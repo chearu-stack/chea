@@ -1,5 +1,35 @@
 // preview-widget.js
 // Виджет предварительного анализа для главной страницы
+(function() {
+    // ===== ФИКС ПРОКРУТКИ - САМОЕ ПЕРВОЕ ДЕЙСТВИЕ =====
+    // 1. Немедленно возвращаем наверх
+    if (window.location.hash === '#start') {
+        // Мгновенный скролл без анимации
+        window.scrollTo(0, 0);
+        
+        // Убираем якорь из URL БЕЗ перезагрузки
+        setTimeout(() => {
+            history.replaceState(null, null, window.location.pathname + window.location.search);
+        }, 10);
+    }
+    
+    // 2. Показываем якорный элемент после фикса
+    setTimeout(() => {
+        const startElement = document.getElementById('start');
+        if (startElement) {
+            startElement.style.visibility = 'visible';
+            startElement.style.opacity = '1';
+            startElement.style.height = 'auto';
+            startElement.style.overflow = 'visible';
+        }
+    }, 100);
+    
+    // ===== ДАЛЕЕ ИДЁТ ВЕСЬ ОСТАЛЬНОЙ КОД ВИДЖЕТА =====
+    // Проверяем, есть ли контейнер для виджета
+    const widgetContainer = document.querySelector('.bot-widget-placeholder');
+    if (!widgetContainer) return;
+    
+    // ... остальной код без изменений ...
 
 (function() {
     // Проверяем, есть ли контейнер для виджета
