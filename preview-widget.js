@@ -41,13 +41,11 @@
                     return 'Опишите проблему подробнее (минимум 10 символов)';
                 }
                 
-                // Валидация через guard-config, если он подключен
                 if (window.GuardConfig && window.GuardConfig.validate) {
                     const guardResult = window.GuardConfig.validate(value);
                     if (guardResult !== true) return guardResult;
                 }
                 
-                // Дополнительная проверка на потребительскую тематику
                 const lowerValue = value.toLowerCase();
                 const hasConsumerKeywords = CONSUMER_KEYWORDS.some(keyword => 
                     lowerValue.includes(keyword)
@@ -70,7 +68,6 @@
                     return 'Укажите сумму цифрами';
                 }
                 
-                // Убираем пробелы и знаки валюты
                 const cleanValue = value.replace(/\s/g, '').replace('₽', '').replace('руб', '');
                 const numValue = Number(cleanValue);
                 
@@ -706,13 +703,26 @@
 
     // Инициализация
     function init() {
+        // ФИКС: страница всегда грузится сверху, даже с якорем #start
+        if (window.location.hash === '#start') {
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+                history.replaceState(null, null, ' ');
+            }, 50);
+        }
+        
+        // Создаем интерфейс виджета
         const interfaceElements = createInterface();
         widgetContainer.appendChild(interfaceElements.container);
         
+        // Сохраняем ссылки на элементы
         window.previewWidget = interfaceElements;
+        
+        // Начинаем с первого вопроса
         updateDisplay();
     }
 
+    // Запускаем после загрузки DOM
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
