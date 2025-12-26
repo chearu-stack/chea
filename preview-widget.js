@@ -109,6 +109,113 @@
     let answers = {};
     let isProcessing = false;
 
+    // ===== ФУНКЦИИ ДЛЯ ПРОВЕРКИ СРОКА ДАВНОСТИ =====
+    function checkStatuteOfLimitations(dateText) {
+        if (!dateText) return { isValid: true, warning: 'Дата не указана, требуется уточнение' };
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Пытаемся извлечь дату из текста
+        let violationDate = null;
+        
+        // Паттерны для распознавания дат
+        const patterns = [
+            // "12 января 2022 года"
+            /(\d{1,2})\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\s+(\d{4})/i,
+            // "12.01.2022"
+            /(\d{1,2})\.(\d{1,2})\.(\d{4})/,
+            // "2022-01-12"
+            /(\d{4})-(\d{1,2})-(\d{1,2})/,
+            // Только год "2022 года"
+            /(\d{4})\s*год[а]?/i
+        ];
+        
+        const monthNames = {
+            'января': 0, 'февраля': 1, 'марта': 2, 'апреля': 3, 'мая': 4, 'июня': 5,
+            'июля': 6, 'августа': 7, 'сентября': 8, 'октября': 9, 'ноября': 10, 'декабря': 11
+        };
+        
+        for (const pattern of patterns) {
+            const match = dateText.match(pattern);
+            if (match) {
+                if (pattern === patterns[0]) { // "12 января 2022"
+                    const day = parseInt(match[1]);
+                    const month = monthNames[match[2].toLowerCase()];
+                    const year = parseInt(match[3]);
+                    violationDate = new Date(year, month, day);
+                } else if (pattern === patterns[1]) { // "12.01.2022"
+                    const day = parseInt(match[1]);
+                    const month = parseInt(match[2]) - 1;
+                    const year = parseInt(match[3]);
+                    violationDate = new Date(year, month, day);
+                } else if (pattern === patterns[2]) { // "2022-01-12"
+                    const year = parseInt(match[1]);
+                    const month = parseInt(match[2]) - 1;
+                    const day = parseInt(match[3]);
+                    violationDate = new Date(year, month, day);
+                } else if (pattern === patterns[3]) { // "2022 года"
+                    const year = parseInt(match[1]);
+                    violationDate = new Date(year, 0, 1); // 1 января указанного года
+                }
+                break;
+            }
+        }
+        
+        if (!violationDate || isNaN(violationDate.getTime())) {
+            return { 
+                isValid: true, 
+                warning: 'Не удалось точно определить дату. Требуется уточнение при анализе.',
+                date: null
+            };
+        }
+        
+        // Вычисляем разницу в днях
+        const timeDiff = today.getTime() - violationDate.getTime();
+        const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
+        const yearsDiff = daysDiff / 365.25;
+        
+        // Срок исковой давности - 3 года (1095 дней)
+        const LIMIT_DAYS = 1095;
+        const WARNING_DAYS = 1000; // За 95 дней до истечения
+        
+        if (daysDiff > LIMIT_DAYS) {
+            const yearsOver = (daysDiff - LIMIT_DAYS) / 365.25;
+            return { 
+                isValid: false, 
+                reason: `С момента нарушения прошло ${Math.floor(daysDiff/365.25)} ${getRussianYears(Math.floor(daysDiff/365.25))} (${daysDiff} дней). Срок исковой давности (3 года) истёк ${Math.floor(yearsOver*12)} месяцев назад.`,
+                daysDiff: daysDiff,
+                date: violationDate
+            };
+        } else if (daysDiff > WARNING_DAYS) {
+            const daysLeft = LIMIT_DAYS - daysDiff;
+            return { 
+                isValid: true, 
+                warning: `Внимание: до истечения срока исковой давности осталось ${daysLeft} ${getRussianDays(daysLeft)}.`,
+                daysDiff: daysDiff,
+                date: violationDate
+            };
+        }
+        
+        return { 
+            isValid: true, 
+            daysDiff: daysDiff,
+            date: violationDate
+        };
+    }
+
+    function getRussianYears(number) {
+        if (number % 10 === 1 && number % 100 !== 11) return 'год';
+        if ([2, 3, 4].includes(number % 10) && ![12, 13, 14].includes(number % 100)) return 'года';
+        return 'лет';
+    }
+
+    function getRussianDays(number) {
+        if (number % 10 === 1 && number % 100 !== 11) return 'день';
+        if ([2, 3, 4].includes(number % 10) && ![12, 13, 14].includes(number % 100)) return 'дня';
+        return 'дней';
+    }
+
     // Создаем интерфейс
     function createInterface() {
         const container = document.createElement('div');
@@ -335,8 +442,11 @@
         
         setTimeout(() => {
             const problemText = answers.problem.toLowerCase();
-            const amount = Number(answers.amount.replace(/\s/g, '').replace('₽', '').replace('руb', ''));
+            const amount = Number(answers.amount.replace(/\s/g, '').replace('₽', '').replace('руб', ''));
             const dateText = answers.date;
+            
+            // ПРОВЕРКА СРОКА ДАВНОСТИ
+            const dateCheck = checkStatuteOfLimitations(dateText);
             
             // Проверка на сложный случай
             const isComplexCase = COMPLEX_KEYWORDS.some(keyword => 
@@ -349,7 +459,7 @@
             let planPrice = '1 200 ₽';
             let reason = '';
             
-            if (amount < 20000 && !isComplexCase) {
+            if (amount < 20000 && !isComplexCase && dateCheck.isValid) {
                 recommendedPlan = 'basic';
                 planName = 'Базовый';
                 planPrice = '500 ₽';
@@ -369,15 +479,16 @@
             const isAmountValid = !isNaN(amount) && amount > 0;
             const isDateValid = dateText && dateText.trim().length >= 2;
             
-            const isSolvable = hasConsumerKeywords && isAmountValid && isDateValid;
+            const isSolvable = hasConsumerKeywords && isAmountValid && isDateValid && dateCheck.isValid;
             
-            // Сохраняем ответы для передачи в основной бот
-            if (isSolvable) {
+            // Сохраняем ответы для передачи в основной бот (только если не просрочено)
+            if (isSolvable && dateCheck.isValid) {
                 try {
                     sessionStorage.setItem('preliminary_answers', JSON.stringify({
                         problem: answers.problem,
                         amount: amount,
                         date: answers.date,
+                        dateCheck: dateCheck,
                         collectedAt: new Date().toISOString()
                     }));
                 } catch (e) {
@@ -386,38 +497,118 @@
             }
             
             // Отображаем результат
-            displayResult(isSolvable, recommendedPlan, planName, planPrice, reason);
+            displayResult(isSolvable, dateCheck, recommendedPlan, planName, planPrice, reason);
             isProcessing = false;
         }, 800); // Имитация обработки
     }
 
     // Отображение результата
-    function displayResult(isSolvable, planId, planName, planPrice, reason) {
+    function displayResult(isSolvable, dateCheck, planId, planName, planPrice, reason) {
         const { questionArea, answerArea, buttonsArea } = window.previewWidget;
         
         questionArea.innerHTML = '';
         answerArea.innerHTML = '';
         buttonsArea.innerHTML = '';
         
+        // ПРОВЕРКА ПРОСРОЧЕННОГО ДЕЛА
+        if (!dateCheck.isValid) {
+            const resultContainer = document.createElement('div');
+            resultContainer.className = 'diagnosis-content';
+            resultContainer.style.cssText = `
+                padding: 20px;
+                border-radius: 8px;
+                margin: 20px 0;
+                animation: fadeIn 0.5s ease;
+                background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+                border: 2px solid #dc3545;
+                color: #721c24;
+            `;
+            
+            resultContainer.innerHTML = `
+                <h3 style="margin-top: 0; color: #721c24;">
+                    <i class="fas fa-hourglass-end"></i> Проблема со сроком давности
+                </h3>
+                <p><strong>${dateCheck.reason}</strong></p>
+                
+                <div style="background: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; margin: 15px 0; border-radius: 4px;">
+                    <p style="margin: 0; color: #721c24;">
+                        <i class="fas fa-exclamation-circle"></i> <strong>Юридическое заключение:</strong> 
+                        Шансы на успешное досудебное урегулирование <strong>крайне низки</strong>. 
+                        Суд, вероятно, откажет в иске по причине истечения срока давности.
+                    </p>
+                </div>
+                
+                <p><strong>Рекомендация:</strong></p>
+                <ul style="margin: 10px 0 20px 20px;">
+                    <li>Обратитесь к юристу для консультации о возможности восстановления срока</li>
+                    <li>Рассмотрите альтернативные способы решения проблемы (переговоры, жалобы)</li>
+                    <li>В будущем обращайтесь за защитой прав своевременно</li>
+                </ul>
+                
+                <p style="font-size: 14px; color: #6c757d;">
+                    <i class="fas fa-info-circle"></i> Срок исковой давности по делам о защите прав потребителей — 3 года со дня обнаружения нарушения.
+                </p>
+            `;
+            
+            // Кнопка для начала заново
+            const restartButton = document.createElement('button');
+            restartButton.className = 'btn btn-secondary';
+            restartButton.style.cssText = 'width: 100%; margin-top: 15px;';
+            restartButton.innerHTML = '<i class="fas fa-redo"></i> Описать другую ситуацию';
+            restartButton.addEventListener('click', () => {
+                currentStep = 0;
+                answers = {};
+                updateDisplay();
+            });
+            
+            answerArea.appendChild(resultContainer);
+            buttonsArea.appendChild(restartButton);
+            return;
+        }
+        
+        // Если срок не просрочен, продолжаем с обычной логикой
+        // Добавляем предупреждение если близко к истечению
+        let dateWarning = '';
+        if (dateCheck.warning) {
+            dateWarning = `
+                <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 15px; margin: 15px 0; border-radius: 4px;">
+                    <p style="margin: 0; color: #856404; font-size: 14px;">
+                        <i class="fas fa-clock"></i> <strong>${dateCheck.warning}</strong>
+                    </p>
+                </div>
+            `;
+        }
+        
         const resultContainer = document.createElement('div');
         resultContainer.className = 'diagnosis-content';
-        resultContainer.style.cssText = `
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-            animation: fadeIn 0.5s ease;
-            background: ${isSolvable ? 'linear-gradient(135deg, #d4edda, #c3e6cb)' : 'linear-gradient(135deg, #f8d7da, #f5c6cb)'};
-            border: 2px solid ${isSolvable ? '#28a745' : '#dc3545'};
-            color: ${isSolvable ? '#155724' : '#721c24'};
-        `;
         
         if (isSolvable) {
+            resultContainer.style.cssText = `
+                padding: 20px;
+                border-radius: 8px;
+                margin: 20px 0;
+                animation: fadeIn 0.5s ease;
+                background: linear-gradient(135deg, #d4edda, #c3e6cb);
+                border: 2px solid #28a745;
+                color: #155724;
+            `;
+            
             resultContainer.innerHTML = `
                 <h3 style="margin-top: 0; color: #155724;">
-                    <i class="fas fa-check-circle"></i> Нарушения потребительских прав обнаружены
+                    <i class="fas fa-search"></i> Признаки возможного нарушения потребительских прав обнаружены
                 </h3>
-                <p><strong>Ваша ситуация подпадает под действие Закона о защите прав потребителей.</strong></p>
-                <p>На основе предоставленной информации:</p>
+                <p><strong>На основе вашего описания ситуация <u>может подпадать</u> под действие Закона о защите прав потребителей.</strong></p>
+                
+                <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 15px; margin: 15px 0; border-radius: 4px;">
+                    <p style="margin: 0; color: #856404; font-size: 14px;">
+                        <i class="fas fa-exclamation-triangle"></i> <strong>Внимание:</strong> Это предварительная оценка на основе ключевых слов. 
+                        Точный правовой анализ будет выполнен после оплаты.
+                    </p>
+                </div>
+                
+                ${dateWarning}
+                
+                <p><strong>Предварительная оценка:</strong></p>
                 <ul style="margin: 10px 0 20px 20px;">
                     <li>Сумма спора: <strong>${parseInt(answers.amount).toLocaleString('ru-RU')} руб.</strong></li>
                     <li>Характер: ${answers.problem.substring(0, 80)}${answers.problem.length > 80 ? '...' : ''}</li>
@@ -444,13 +635,20 @@
                     ">РЕКОМЕНДУЕМ</div>
                     <h4 style="margin: 5px 0; color: #212529;">Тариф «${planName}» — ${planPrice}</h4>
                     <p style="margin: 8px 0; font-size: 14px;">
-                        Рекомендуем этот тариф, так как ${reason}.
+                        ${planId === 'basic' ? 'Для типовых ситуаций с суммой до 20 000 руб.' : ''}
                         ${planId === 'extended' ? 'Включает расчёт неустойки и полный пакет документов.' : ''}
-                        ${planId === 'subscription' ? 'Включает стратегию борьбы с отписками и расширенный расчёт.' : ''}
+                        ${planId === 'subscription' ? 'Для сложных споров и крупных сумм.' : ''}
                     </p>
                 </div>
                 
-                <p><strong>Выберите подходящий тариф ниже для подготовки документов и точного расчёта.</strong></p>
+                <p><strong>После оплаты вы получите:</strong></p>
+                <ul style="margin: 10px 0 20px 20px; font-size: 14px;">
+                    <li>Юридический анализ соответствия вашей ситуации ЗоЗПП</li>
+                    <li>Расчёт законных требований (если применимо)</li>
+                    <li>Готовые документы для досудебного урегулирования</li>
+                </ul>
+                
+                <p><strong>Выберите подходящий тариф ниже для проведения полного юридического анализа.</strong></p>
                 
                 <div class="scroll-hint" style="
                     text-align: center;
@@ -494,9 +692,19 @@
             buttonsArea.appendChild(goToPricing);
             
         } else {
+            resultContainer.style.cssText = `
+                padding: 20px;
+                border-radius: 8px;
+                margin: 20px 0;
+                animation: fadeIn 0.5s ease;
+                background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+                border: 2px solid #dc3545;
+                color: #721c24;
+            `;
+            
             resultContainer.innerHTML = `
                 <h3 style="margin-top: 0; color: #721c24;">
-                    <i class="fas fa-exclamation-triangle"></i> Не удалось обнаружить нарушений потребительских прав
+                    <i class="fas fa-exclamation-triangle"></i> Не удалось обнаружить признаков нарушения потребительских прав
                 </h3>
                 <p><strong>На основе описания не обнаружено признаков нарушения прав потребителя, регулируемых ЗоЗПП РФ.</strong></p>
                 <p>Возможные причины:</p>
