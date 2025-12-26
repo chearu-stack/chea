@@ -1,8 +1,11 @@
 // preview-widget.js
 // Виджет предварительного анализа для главной страницы
+
 (function() {
     // ===== ФИКС ПРОКРУТКИ - САМОЕ ПЕРВОЕ ДЕЙСТВИЕ =====
-    // 1. Немедленно возвращаем наверх
+    // Выполняется ДО всего остального кода
+    
+    // 1. Немедленно возвращаем наверх если есть якорь #start
     if (window.location.hash === '#start') {
         // Мгновенный скролл без анимации
         window.scrollTo(0, 0);
@@ -13,21 +16,27 @@
         }, 10);
     }
     
-    // 2. Показываем якорный элемент после фикса
-    setTimeout(() => {
-        const startElement = document.getElementById('start');
-        if (startElement) {
-            startElement.style.visibility = 'visible';
-            startElement.style.opacity = '1';
-            startElement.style.height = 'auto';
-            startElement.style.overflow = 'visible';
-        }
-    }, 100);
+    // 2. Отключаем стандартное поведение якорных ссылок
+    document.addEventListener('DOMContentLoaded', function() {
+        const anchorLinks = document.querySelectorAll('a[href="#start"]');
+        anchorLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                // Вместо якоря - плавный скролл
+                const target = document.getElementById('start');
+                if (target) {
+                    window.scrollTo({
+                        top: target.offsetTop - 20,
+                        behavior: 'smooth'
+                    });
+                }
+                return false;
+            });
+        });
+    });
     
-    // ===== ДАЛЕЕ ИДЁТ ВЕСЬ ОСТАЛЬНОЙ КОД ВИДЖЕТА ===== 
-    // ... остальной код без изменений ...
-
-(function() {
+    // ===== ОСНОВНОЙ КОД ВИДЖЕТА =====
+    
     // Проверяем, есть ли контейнер для виджета
     const widgetContainer = document.querySelector('.bot-widget-placeholder');
     if (!widgetContainer) return;
@@ -634,7 +643,7 @@
                     </p>
                 </div>
                 
-                <p><strong>После оплаты вы получите:</strong></p>
+                <p><strong>После оплата вы получите:</strong></p>
                 <ul style="margin: 10px 0 20px 20px; font-size: 14px;">
                     <li>Юридический анализ соответствия вашей ситуации ЗоЗПП</li>
                     <li>Расчёт законных требований (если применимо)</li>
@@ -729,12 +738,9 @@
 
     // Инициализация
     function init() {
-        // ФИКС: страница всегда грузится сверху, даже с якорем #start
-        if (window.location.hash === '#start') {
-            setTimeout(() => {
-                window.scrollTo(0, 0);
-                history.replaceState(null, null, ' ');
-            }, 50);
+        // Дополнительная проверка на всякий случай
+        if (window.location.hash === '#start' && window.scrollY > 100) {
+            window.scrollTo(0, 0);
         }
         
         // Создаем интерфейс виджета
@@ -754,5 +760,18 @@
     } else {
         init();
     }
+
+    // ===== ДОПОЛНИТЕЛЬНЫЙ ФИКС =====
+    // Принудительно держим страницу сверху первые 2 секунды
+    let fixAttempts = 0;
+    const fixInterval = setInterval(() => {
+        if (window.scrollY > 50) {
+            window.scrollTo({ top: 0, behavior: 'auto' });
+            fixAttempts++;
+        }
+        if (fixAttempts > 5) {
+            clearInterval(fixInterval);
+        }
+    }, 100);
 
 })();
