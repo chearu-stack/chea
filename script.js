@@ -1,7 +1,35 @@
+// ГЛОБАЛЬНЫЙ ОБЪЕКТ СОСТОЯНИЯ СИСТЕМЫ
+window.AMG_State = window.AMG_State || {
+    // Флаги состояний
+    systemReady: false,
+    scrollAllowed: false,
+    widgetActive: false,
+    
+    // Данные
+    currentPlan: null,
+    userFP: null,
+    
+    // Методы управления
+    blockSystem: function(reason) {
+        console.log(`🔒 Блокировка системы: ${reason}`);
+        this.systemReady = false;
+        this.scrollAllowed = false;
+    },
+    
+    unblockSystem: function() {
+        console.log('✅ Система разблокирована');
+        this.systemReady = true;
+        this.scrollAllowed = true;
+    }
+};
+
 /**
  * АДВОКАТ МЕДНОГО ГРОША — script.js
  * ВЕРСИЯ: FERRARI EDITION (С блокировкой и отпечатком)
  */
+
+// БЛОКИРОВКА СИСТЕМЫ ПРИ ЗАГРУЗКЕ
+window.AMG_State.blockSystem('Загрузка script.js');
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("🚀 Система АМГ: Ferrari Mode активирована.");
@@ -24,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return btoa(`${s.width}${s.height}${b}${s.colorDepth}`).substring(0, 12);
     };
     const userFP = getFP();
+    window.AMG_State.userFP = userFP; // Сохраняем в глобальное состояние
 
     function generateOrderIdentifier(planKey) {
         const now = new Date();
@@ -44,6 +73,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 2. ЛОГИКА ПОДМЕНЫ КАРТОЧКИ (ГЛАВНАЯ) ---
     function renderWaitingCard(planKey) {
+        // ПРОВЕРКА: если система заблокирована - ждём
+        if (!window.AMG_State.systemReady) {
+            setTimeout(() => renderWaitingCard(planKey), 100);
+            return;
+        }
+        
         const plan = planDetails[planKey] || planDetails['extended'];
         const header = document.querySelector('.card-header');
         const body = document.querySelector('.card-body');
@@ -140,6 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const lockTime = localStorage.getItem('lockTime');
 
     if (savedPlan && lockTime && (Date.now() - lockTime < 24 * 60 * 60 * 1000)) {
+        window.AMG_State.currentPlan = savedPlan;
         renderWaitingCard(savedPlan);
         setInterval(checkActivation, 10000);
     }
@@ -166,4 +202,10 @@ document.addEventListener('DOMContentLoaded', () => {
             qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(baseQR + '&sum=' + price + '&label=' + orderID)}`;
         }
     }
+    
+    // --- 6. РАЗБЛОКИРОВКА СИСТЕМЫ ---
+    setTimeout(() => {
+        window.AMG_State.unblockSystem();
+        console.log('🚀 Система АМГ: Ferrari Mode ГОТОВ К РАБОТЕ');
+    }, 300);
 });
