@@ -274,18 +274,21 @@ h1, h2, h3, h4 { font-family: 'Merriweather', serif; font-weight: 700; color: #1
 
 /* ===== СЕКЦИЯ ОПРОСА ===== */
 .cta-section {
-    padding: 60px 0;
-    background: linear-gradient(135deg, #1a365d 0%, #2d3748 100%);
-    color: white;
+    /* color: white УБРАН отсюда! */
 }
 
-.cta-content {
-    width: 100%;
-    margin: 0 auto;
-    text-align: center;
+/* Белый цвет ТОЛЬКО для конкретных элементов */
+.cta-section,
+.cta-section .section-title,
+.cta-section p,
+.cta-section .form-note {
+    color: white; /* Контролируемое применение */
 }
 
-.cta-section .section-title { color: white; }
+/* Виджет исключён из наследования */
+.bot-widget-placeholder {
+    color: initial; /* Сброс к значению по умолчанию */
+}
 
 .bot-widget-placeholder {
     min-height: 300px;
