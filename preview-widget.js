@@ -1,11 +1,11 @@
 // ===================================================================
-// PREVIEW-WIDGET.JS - ВЕРСИЯ С ИСПРАВЛЕНИЕМ ТЕКСТА И ПОДСКАЗКАМИ
+// PREVIEW-WIDGET.JS - ВЕРСИЯ С ИСПРАВЛЕННОЙ НЕКОРРЕКТНОЙ КНОПКОЙ ОПЛАТЫ
 // ===================================================================
 
 (function() {
     'use strict';
     
-    console.log('🎯 Виджет: запуск версии с исправленным текстом и подсказками');
+    console.log('🎯 Виджет: запуск версии с исправленной кнопкой оплаты');
     
     // Конфигурация
     const CONFIG = {
@@ -322,7 +322,7 @@
             isSolvable = false; // требует уточнения
         }
         
-        // Определение тарифа
+        // Определение тарифа (логика сохранена для аналитики)
         let planId = 'extended';
         if (amount > 0) {
             if (amount < 20000) planId = 'basic';
@@ -382,22 +382,20 @@
                 
                 ${isSolvable ? `
                 <div style="background: white; padding: 16px; border-radius: 8px; margin: 16px 0; color: #212529 !important;">
-                    <strong>Рекомендуем:</strong><br>
+                    <strong>Рекомендуемый план:</strong><br>
                     ${planNames[planId]}
                 </div>
                 
-                <button id="payment-btn" style="
-                    width: 100%;
+                <div style="
+                    background: #f8f9fa;
                     padding: 12px;
-                    background: #28a745;
-                    color: white;
-                    border: none;
                     border-radius: 6px;
-                    margin-top: 10px;
-                    cursor: pointer;
-                    font-weight: 500;">
-                    Перейти к оплате
-                </button>
+                    margin: 16px 0;
+                    text-align: center;
+                    color: #666 !important;
+                    font-size: 14px;">
+                    ⚠️ Оплата тарифа будет доступна после уточнения деталей
+                </div>
                 ` : ''}
                 
                 <button id="restart-btn" style="
@@ -420,11 +418,6 @@
             answers = {};
             showQuestion();
         });
-        
-        document.getElementById('payment-btn')?.addEventListener('click', function() {
-            const prices = { basic: 500, extended: 1200, subscription: 2500 };
-            window.location.href = `payment.html?plan=${planId}&price=${prices[planId] || 1200}`;
-        });
     }
     
     // Инициализация
@@ -432,7 +425,7 @@
         const container = document.querySelector('.bot-widget-placeholder');
         if (container) {
             showQuestion();
-            console.log('✅ Виджет запущен (исправлены тексты и добавлены подсказки)');
+            console.log('✅ Виджет запущен (кнопка оплаты удалена)');
         }
     }
     
