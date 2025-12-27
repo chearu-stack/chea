@@ -101,9 +101,9 @@ h1, h2, h3, h4 { font-family: 'Merriweather', serif; font-weight: 700; color: #1
 
 .nav-links a:hover { color: #c53030; }
 
-.nav-button {
+.main-nav .nav-links .nav-button {
     background-color: #c53030;
-    color: white !important;
+    color: white; /* БЕЗ !important */
     padding: 8px 16px;
     border-radius: 6px;
 }
