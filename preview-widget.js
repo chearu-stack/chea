@@ -245,7 +245,7 @@ window.AMG_ScrollController = {
     // === КОНСТАНТЫ И КОНФИГУРАЦИЯ ===
     const CONFIG = {
         // Таймауты
-        SYSTEM_WAIT_TIMEOUT: 5000,    // Макс. время ожидания системы
+        SYSTEM_WAIT_TIMEOUT: 10000,    // Макс. время ожидания системы
         SCROLL_DEBOUNCE: 300,         // Задержка между скроллами
         
         // Селекторы
