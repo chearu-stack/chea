@@ -1,3 +1,46 @@
+// ===== КРИТИЧЕСКАЯ ОТЛАДКА: ИЩЕМ ВСЕ СКРОЛЛИНГИ =====
+console.log("🔍 Отладка: поиск всех скроллингов...");
+
+// 1. Блокируем ВСЕ скроллинги до загрузки
+window.scrollTo = function() {
+    console.warn("❌ БЛОКИРОВКА window.scrollTo вызвана:", arguments, new Error().stack);
+    return;
+};
+
+// 2. Блокируем scrollIntoView
+Element.prototype.scrollIntoView = function() {
+    console.warn("❌ БЛОКИРОВКА scrollIntoView вызвана на элементе:", this, arguments, new Error().stack);
+    return;
+};
+
+// 3. Перехватываем ВСЕ addEventListener для скролла
+const originalAddEventListener = EventTarget.prototype.addEventListener;
+EventTarget.prototype.addEventListener = function(type, handler, options) {
+    if (type.includes('scroll') || type.includes('hash') || type.includes('click')) {
+        console.warn("⚠️ Регистрация обработчика:", type, "на элементе:", this);
+    }
+    return originalAddEventListener.call(this, type, handler, options);
+};
+
+// 4. Проверяем, не было ли уже вызвано что-то
+console.log("📍 Текущая позиция скролла:", window.scrollY);
+console.log("📍 Хэш в URL:", window.location.hash);
+
+// 5. Восстанавливаем функции через 3 секунды (чтобы виджет заработал)
+setTimeout(() => {
+    console.log("✅ Восстанавливаем нормальные функции скролла");
+    window.scrollTo = function(x, y) {
+        window.scrollX = x;
+        window.scrollY = y;
+        console.log("✅ Разрешённый скролл к:", x, y);
+    };
+    
+    Element.prototype.scrollIntoView = function(options) {
+        console.log("✅ Разрешённый scrollIntoView для:", this);
+        const rect = this.getBoundingClientRect();
+        window.scrollTo(rect.left, rect.top);
+    };
+}, 3000);
 // preview-widget.js
 // Виджет предварительного анализа для главной страницы
 
