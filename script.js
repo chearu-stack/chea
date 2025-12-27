@@ -1,8 +1,6 @@
 /**
  * АДВОКАТ МЕДНОГО ГРОША — script.js
  * ВЕРСИЯ: FERRARI EDITION (С блокировкой и отпечатком)
- * ТОЛЬКО бизнес-логика — управление тарифами, платежами и статусами
- * ВСЁ про скролл удалено — управление скроллом только в preview-widget.js
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -47,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 2. ЛОГИКА ПОДМЕНЫ КАРТОЧКИ (ГЛАВНАЯ) ---
     function renderWaitingCard(planKey) {
         const plan = planDetails[planKey] || planDetails['extended'];
-        const header = document.querySelector('.card-header'); // Твой блок "Пример расчета"
+        const header = document.querySelector('.card-header');
         const body = document.querySelector('.card-body');
         const orderID = localStorage.getItem('lastOrderID') || "ID ГЕНЕРИРУЕТСЯ...";
 
@@ -87,10 +85,18 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { console.log("Проверка..."); }
     }
 
-    // --- 3. ОБРАБОТКА ТАРИФОВ (ИСПРАВЛЕНО: ТЕПЕРЬ РЕГИСТРИРУЕМ В БАЗЕ) ---
-    const tariffButtons = document.querySelectorAll('.pricing-card .btn');
+    // --- 3. ИСПРАВЛЕННАЯ ОБРАБОТКА ТАРИФОВ ---
+    const tariffButtons = document.querySelectorAll('.pricing-card .btn[data-plan]');
     tariffButtons.forEach(button => {
-        button.addEventListener('click', async function(e) {
+        // Удаляем старый обработчик (если есть)
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+        
+        // Вешаем новый с preventDefault
+        newButton.addEventListener('click', async function(e) {
+            e.preventDefault(); // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ!
+            e.stopPropagation();
+            
             const card = this.closest('.pricing-card');
             const planKey = this.getAttribute('data-plan');
             const priceText = card.querySelector('.price').textContent.replace(/\s/g, '');
@@ -106,7 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const capsLimits = { 'basic': 30000, 'extended': 60000, 'subscription': 90000 };
                 
-                // Это заставит сервер создать строку в Supabase
                 fetch('https://chea.onrender.com/generate-code', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -114,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         code: newID,
                         package: planKey,
                         caps_limit: capsLimits[planKey] || 30000,
-                        fingerprint: userFP // Тот самый отпечаток!
+                        fingerprint: userFP
                     })
                 });
                 
@@ -123,31 +128,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error("❌ Ошибка связи с сервером:", err);
             }
 
-            // Переход на payment.html не прерываем, всё идет штатно
+            // 3. ТОЛЬКО ПОСЛЕ обработки — переход на payment.html
+            setTimeout(() => {
+                window.location.href = this.getAttribute('href');
+            }, 100);
         });
     });
+    
     // --- 4. ПРОВЕРКА СОСТОЯНИЯ ПРИ ЗАГРУЗКЕ ---
     const savedPlan = localStorage.getItem('selectedPlan');
     const lockTime = localStorage.getItem('lockTime');
 
     if (savedPlan && lockTime && (Date.now() - lockTime < 24 * 60 * 60 * 1000)) {
         renderWaitingCard(savedPlan);
-        setInterval(checkActivation, 10000); // "Бодрячок" для Render
+        setInterval(checkActivation, 10000);
     }
 
-    // --- 5. ЛОГИКА СТРАНИЦЫ ОПЛАТЫ (Твой старый код для payment.html) ---
+    // --- 5. ЛОГИКА СТРАНИЦЫ ОПЛАТЫ ---
     if (window.location.pathname.includes('payment.html')) {
         const urlParams = new URLSearchParams(window.location.search);
         const planKey = urlParams.get('plan') || 'extended';
         const price = urlParams.get('price') || '1200';
         const orderID = localStorage.getItem('lastOrderID');
 
-        // Обновление контента оплаты
-        if (document.getElementById('selectedPlanName')) document.getElementById('selectedPlanName').textContent = planDetails[planKey].name;
-        const priceEl = document.getElementById('selectedPlanPrice');
-        if (priceEl) priceEl.innerHTML = `${price} ₽ <br><span style="color:red; font-size:1rem;">ID: ${orderID}</span>`;
+        if (document.getElementById('selectedPlanName')) {
+            document.getElementById('selectedPlanName').textContent = planDetails[planKey].name;
+        }
         
-        // QR-код
+        const priceEl = document.getElementById('selectedPlanPrice');
+        if (priceEl) {
+            priceEl.innerHTML = `${price} ₽ <br><span style="color:red; font-size:1rem;">ID: ${orderID}</span>`;
+        }
+        
         const qrImg = document.getElementById('qrCodeImage');
         if (qrImg) {
             const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
