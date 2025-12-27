@@ -1,51 +1,37 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <!-- ПЕРВЫЙ ТЕГ ПОСЛЕ <head> -->
+    <!-- КРИТИЧЕСКИЙ ФИКС: РАННЯЯ БЛОКИРОВКА БРАУЗЕРНОГО СКРОЛЛА -->
     <script>
-       // preview-widget.js - ОБНОВЛЁННЫЙ НАЧАЛО
-
-// Проверяем, была ли уже блокировка
-if (window._AMG_HASH_BLOCKED) {
-    console.log('✅ [PreviewWidget] Hash был заблокирован на раннем этапе');
-    console.log('✅ [PreviewWidget] Оригинальный hash:', window._AMG_ORIGINAL_HASH);
-}
-
-// ГЛОБАЛЬНЫЙ ОБЪЕКТ СОСТОЯНИЯ СИСТЕМЫ
-window.AMG_State = window.AMG_State || {
-    // ... остальной код без изменений ...
-};
-
-// ДОБАВИТЬ функцию для проверки ранней блокировки
-function checkEarlyBlock() {
-    if (window._AMG_HASH_BLOCKED) {
-        console.log('🛡️ [EarlyBlockCheck] Hash был заблокирован браузерным фиксом');
-        
-        // Дополнительная страховка
-        if (window.location.hash) {
-            console.warn('⚠️ [EarlyBlockCheck] Hash ВСЁ ЕЩЕ присутствует! Экстренная очистка');
-            try {
-                history.replaceState(null, '', window.location.pathname + window.location.search);
-                window.scrollTo(0, 0);
-            } catch(e) {}
-        }
-        
-        return true;
-    }
-    return false;
-}
-
-// ВЫЗВАТЬ сразу
-checkEarlyBlock();
-
-// ... остальной код без изменений ...
+        (function() {
+            'use strict';
+            
+            console.log('🚨 [EARLY BLOCK] Ранняя блокировка браузерного скролла');
+            
+            // Проверяем hash в URL
+            var initialHash = window.location.hash;
+            console.log('🚨 [EARLY BLOCK] Исходный URL:', window.location.href);
+            
+            if (initialHash) {
+                // НЕМЕДЛЕННАЯ очистка URL
+                try {
+                    var cleanUrl = window.location.pathname + window.location.search;
+                    history.replaceState(null, '', cleanUrl);
+                    console.log('🚨 [EARLY BLOCK] URL очищен:', cleanUrl);
+                    
+                    // Сохраняем информацию
+                    window._AMG_HASH_BLOCKED = true;
+                    window._AMG_ORIGINAL_HASH = initialHash;
+                    
+                    // Принудительный скролл вверх
+                    window.scrollTo(0, 0);
+                } catch(e) {
+                    console.error('🚨 [EARLY BLOCK] Ошибка:', e);
+                }
+            }
+        })();
     </script>
     
-    <!-- Остальной <head> -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- ... -->    
-<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Адвокат Медного Гроша — цифровой защитник прав потребителей</title>
@@ -54,14 +40,56 @@ checkEarlyBlock();
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Стили для кликабельного логотипа -->
+    <style>
+        .nav-logo {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: inherit;
+            user-select: none;
+        }
+        
+        .nav-logo:hover {
+            transform: scale(1.05);
+            color: #2c3e50;
+        }
+        
+        .nav-logo:active {
+            transform: scale(0.98);
+        }
+        
+        .nav-logo:hover i {
+            color: #e74c3c;
+            transform: rotate(-5deg);
+        }
+        
+        /* Анимация для обратной связи */
+        @keyframes logoClick {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+        
+        .nav-logo.clicked {
+            animation: logoClick 0.3s ease;
+        }
+    </style>
 </head>
 <body>
+    <!-- НАВИГАЦИЯ С КЛИКАБЕЛЬНЫМ ЛОГОТИПОМ -->
     <nav class="main-nav">
         <div class="nav-container">
-            <div class="nav-logo">
+            <!-- ЛОГОТИП КАК ССЫЛКА НАВЕРХ -->
+            <div class="nav-logo" id="navLogo" title="Вернуться наверх">
                 <i class="fas fa-balance-scale"></i>
                 <span>Адвокат Медного Гроша</span>
             </div>
+            
             <div class="nav-links">
                 <a href="javascript:void(0)" data-scroll-to="features">Работа</a>
                 <a href="javascript:void(0)" data-scroll-to="pricing">Тарифы</a>
@@ -72,6 +100,7 @@ checkEarlyBlock();
         </div>
     </nav>
 
+    <!-- ОСТАЛЬНОЙ КОД БЕЗ ИЗМЕНЕНИЙ -->
     <header class="hero-section">
         <div class="container">
             <div class="hero-content">
@@ -252,7 +281,7 @@ checkEarlyBlock();
         <div class="container">
             <div class="cta-content">
                 <h2 class="section-title">Проанализируйте ситуацию за 2 минуты</h2>
-                <p>Задайте 3 вопроса → получите диагноз нарушения → выберите вариант оплаты.</p>
+                <p>Задайте 3 вопроса → получите диагноз нарушения → выберите вариант оплата.</p>
                 <form class="cta-form" id="problemForm">
                     <div class="bot-widget-placeholder">
                         <div class="loading-spinner">
