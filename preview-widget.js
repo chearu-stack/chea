@@ -1,11 +1,11 @@
 // ===================================================================
-// PREVIEW-WIDGET.JS - ПОЛНАЯ ИСПРАВЛЕННАЯ ВЕРСИЯ
+// PREVIEW-WIDGET.JS - ВЕРСИЯ С ИСПРАВЛЕНИЕМ ТЕКСТА И ПОДСКАЗКАМИ
 // ===================================================================
 
 (function() {
     'use strict';
     
-    console.log('🎯 Виджет: запуск полной версии');
+    console.log('🎯 Виджет: запуск версии с исправленным текстом и подсказками');
     
     // Конфигурация
     const CONFIG = {
@@ -22,16 +22,18 @@
         CURRENT_YEAR: new Date().getFullYear()
     };
     
-    // Вопросы
+    // Вопросы с примерами-подсказками
     const QUESTIONS = [
         {
             id: 'problem',
             text: 'Опишите проблему коротко (что произошло, с каким товаром/услугой)?',
+            example: 'Например: Купил телефон, быстро разряжается, магазин не отвечает',
             maxLength: 200
         },
         {
             id: 'amount',
             text: 'Укажите сумму покупки, ущерба или стоимость услуги (в рублях)?',
+            example: 'Например: 25000, 100000, 5000 рублей',
             maxLength: 20,
             validator: (value) => {
                 const num = parseInt(value.replace(/\D/g, '')) || 0;
@@ -41,6 +43,7 @@
         {
             id: 'date',
             text: 'Когда это произошло (укажите дату или срок в днях/месяцах)?',
+            example: 'Например: 2 недели назад, в марте 2024, 10.05.2023',
             maxLength: 100,
             validator: (value) => {
                 return extractYearFromText(value) > 0;
@@ -88,6 +91,24 @@
                 box-shadow: 0 4px 12px rgba(0,0,0,0.08);
                 margin: 20px 0;
             ">
+                <!-- ЗАГОЛОВОК ВИДЖЕТА (ранее скрытый) -->
+                <div style="
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white !important;
+                    padding: 16px;
+                    border-radius: 8px;
+                    margin-bottom: 20px;
+                    text-align: center;
+                ">
+                    <h3 style="margin: 0 0 8px 0; font-size: 20px; color: white !important;">
+                        Проанализируйте ситуацию за 2 минуты
+                    </h3>
+                    <p style="margin: 0; opacity: 0.9; font-size: 14px; color: white !important;">
+                        Задайте 3 вопроса → получите диагноз нарушения → выберите вариант оплаты
+                    </p>
+                </div>
+                
+                <!-- Прогресс-бар -->
                 <div style="margin-bottom: 20px;">
                     <div style="height: 6px; background: #e9ecef; border-radius: 3px;">
                         <div style="height: 100%; background: #007bff; width: ${((currentStep + 1) / QUESTIONS.length) * 100}%;"></div>
@@ -97,10 +118,25 @@
                     </div>
                 </div>
                 
-                <div style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #212529 !important;">
+                <!-- Вопрос -->
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 12px; color: #212529 !important;">
                     ${question.text}
                 </div>
                 
+                <!-- ПОДСКАЗКА/ПРИМЕР -->
+                <div style="
+                    background: #e7f3ff;
+                    border-left: 4px solid #007bff;
+                    padding: 10px 12px;
+                    margin-bottom: 16px;
+                    border-radius: 0 4px 4px 0;
+                    color: #2c5282 !important;
+                    font-size: 14px;
+                ">
+                    💡 ${question.example}
+                </div>
+                
+                <!-- Поле ввода -->
                 <textarea id="widget-input" style="
                     width: 100%;
                     min-height: 100px;
@@ -113,6 +149,12 @@
                     placeholder="Введите ответ..." 
                     maxlength="${question.maxLength}"></textarea>
                 
+                <!-- Счетчик символов -->
+                <div style="text-align: right; font-size: 12px; color: #666 !important; margin-bottom: 16px;">
+                    <span id="char-count">0</span> / ${question.maxLength} символов
+                </div>
+                
+                <!-- Кнопки навигации -->
                 <div style="display: flex; gap: 10px;">
                     ${currentStep > 0 ? `
                     <button id="prev-btn" style="
@@ -122,7 +164,8 @@
                         color: white;
                         border: none;
                         border-radius: 6px;
-                        cursor: pointer;">
+                        cursor: pointer;
+                        font-weight: 500;">
                         Назад
                     </button>
                     ` : '<div style="flex: 1"></div>'}
@@ -134,7 +177,8 @@
                         color: white;
                         border: none;
                         border-radius: 6px;
-                        cursor: pointer;">
+                        cursor: pointer;
+                        font-weight: 500;">
                         ${currentStep < QUESTIONS.length - 1 ? 'Далее' : 'Анализировать'}
                     </button>
                 </div>
@@ -145,10 +189,25 @@
         document.getElementById('prev-btn')?.addEventListener('click', prevStep);
         document.getElementById('next-btn')?.addEventListener('click', nextStep);
         
-        // ФИКС 1: preventScroll при фокусе
-        setTimeout(() => {
-            const input = document.getElementById('widget-input');
-            if (input) {
+        // Счетчик символов
+        const input = document.getElementById('widget-input');
+        const charCount = document.getElementById('char-count');
+        
+        if (input && charCount) {
+            input.addEventListener('input', function() {
+                charCount.textContent = this.value.length;
+                // Изменение цвета при приближении к лимиту
+                if (this.value.length > question.maxLength * 0.9) {
+                    charCount.style.color = '#dc3545';
+                } else if (this.value.length > question.maxLength * 0.7) {
+                    charCount.style.color = '#ffc107';
+                } else {
+                    charCount.style.color = '#666';
+                }
+            });
+            
+            // ФИКС: preventScroll при фокусе
+            setTimeout(() => {
                 const scrollY = window.scrollY;
                 try {
                     input.focus({ preventScroll: true });
@@ -156,8 +215,8 @@
                     input.focus();
                     window.scrollTo(0, scrollY);
                 }
-            }
-        }, 150);
+            }, 150);
+        }
     }
     
     function prevStep() {
@@ -335,7 +394,8 @@
                     border: none;
                     border-radius: 6px;
                     margin-top: 10px;
-                    cursor: pointer;">
+                    cursor: pointer;
+                    font-weight: 500;">
                     Перейти к оплате
                 </button>
                 ` : ''}
@@ -348,7 +408,8 @@
                     border: none;
                     border-radius: 6px;
                     margin-top: 10px;
-                    cursor: pointer;">
+                    cursor: pointer;
+                    font-weight: 500;">
                     ${isSolvable ? 'Новый анализ' : 'Попробовать снова'}
                 </button>
             </div>
@@ -371,7 +432,7 @@
         const container = document.querySelector('.bot-widget-placeholder');
         if (container) {
             showQuestion();
-            console.log('✅ Виджет запущен (полная версия с логикой)');
+            console.log('✅ Виджет запущен (исправлены тексты и добавлены подсказки)');
         }
     }
     
