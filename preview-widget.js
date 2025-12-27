@@ -1,12 +1,84 @@
 // preview-widget.js
 // Виджет предварительного анализа для главной страницы
 
-// ===== КРИТИЧЕСКИЙ ФИКС: УСТРАНЕНИЕ ПРИНУДИТЕЛЬНОЙ ПРОКРУТКИ ПРИ ЗАГРУЗКЕ =====
-// ВЫПОЛНЯЕТСЯ СРАЗУ, ДО ВСЕГО ОСТАЛЬНОГО КОДА
+// ===== ЕДИНЫЙ КОНТРОЛЛЕР ВСЕХ СКРОЛЛОВ =====
 (function() {
     'use strict';
     
-    // Если страница загрузилась с #start - убираем якорь БЕЗ скролла
+    // ===== ФУНКЦИЯ ДЛЯ СКРОЛЛА К ЭЛЕМЕНТУ =====
+    function scrollToElement(elementId, options = {}) {
+        const element = document.getElementById(elementId);
+        if (!element) return false;
+        
+        const scrollOptions = {
+            behavior: 'smooth',
+            block: 'start',
+            ...options
+        };
+        
+        element.scrollIntoView(scrollOptions);
+        return true;
+    }
+    
+    // ===== НАСТРОЙКА ВСЕХ СКРОЛЛОВ НА СТРАНИЦЕ =====
+    function setupAllScrolls() {
+        // 1. КНОПКИ "СТАРТ" (прокрутка к виджету)
+        document.querySelectorAll('.start-scroll-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                
+                if (scrollToElement('start-section')) {
+                    // Фокус на поле ввода через небольшой таймаут
+                    setTimeout(() => {
+                        const textarea = document.querySelector('.answer-input');
+                        if (textarea) {
+                            textarea.focus();
+                            // Подсветка секции
+                            const ctaSection = document.getElementById('start-section');
+                            ctaSection.style.boxShadow = '0 0 0 3px #4CAF50';
+                            setTimeout(() => {
+                                ctaSection.style.boxShadow = '';
+                            }, 2000);
+                        }
+                    }, 500);
+                }
+                return false;
+            }, true);
+        });
+        
+        // 2. НАВИГАЦИЯ "РАБОТА"/"ТАРИФЫ" (data-scroll-to)
+        document.querySelectorAll('[data-scroll-to]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                
+                const target = e.target.getAttribute('data-scroll-to');
+                scrollToElement(target);
+                return false;
+            }, true);
+        });
+        
+        // 3. БЛОКИРОВКА НАТИВНЫХ ЯКОРЕЙ НА 100мс
+        let blockNativeAnchors = true;
+        window.addEventListener('click', (e) => {
+            if (!blockNativeAnchors) return;
+            
+            const anchor = e.target.closest('a');
+            if (anchor && anchor.hash) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+            }
+        }, true);
+        
+        // Отключаем блокировку через 100мс (после загрузки JS)
+        setTimeout(() => {
+            blockNativeAnchors = false;
+        }, 100);
+    }
+    
+    // ===== КРИТИЧЕСКИЙ ФИКС: УСТРАНЕНИЕ ПРИНУДИТЕЛЬНОЙ ПРОКРУТКИ ПРИ ЗАГРУЗКЕ =====
+    // ВЫПОЛНЯЕТСЯ СРАЗУ, ДО ВСЕГО ОСТАЛЬНОГО КОДА
     if (window.location.hash === '#start') {
         // Только чистим URL, НЕ скроллим
         setTimeout(function() {
@@ -16,61 +88,20 @@
             } catch(e) {}
         }, 0);
     }
-})();
-
-// ===== ОСНОВНОЙ КОД ВИДЖЕТА С ИСПРАВЛЕННЫМ УПРАВЛЕНИЕМ СКРОЛЛОМ =====
-(function() {
-    'use strict';
     
-    // ===== 1. УПРАВЛЕНИЕ КНОПКАМИ "СТАРТ" (РАБОТАЕТ С ПЕРВОГО КЛИКА) =====
-    function setupScrollButtons() {
-        const startButtons = document.querySelectorAll('.start-scroll-btn');
-        const ctaSection = document.getElementById('start-section');
-        
-        if (!ctaSection) return;
-        
-        // Функция прокрутки
-        function scrollToWidget() {
-            ctaSection.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-            
-            // Фокус на поле ввода через небольшой таймаут
-            setTimeout(() => {
-                const textarea = document.querySelector('.answer-input');
-                if (textarea) {
-                    textarea.focus();
-                    // Подсветка секции
-                    ctaSection.style.boxShadow = '0 0 0 3px #4CAF50';
-                    setTimeout(() => {
-                        ctaSection.style.boxShadow = '';
-                    }, 2000);
-                }
-            }, 500);
-        }
-        
-        // Вешаем обработчики на ВСЕ кнопки "Старт"
-        startButtons.forEach(button => {
-            // Удаляем все существующие обработчики
-            const newButton = button.cloneNode(true);
-            button.parentNode.replaceChild(newButton, button);
-            
-            // Вешаем ОДИН надежный обработчик
-            newButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopImmediatePropagation();
-                scrollToWidget();
-                return false;
-            }, true);
-        });
-    }
-    
-    // ===== 2. ВАШ ОРИГИНАЛЬНЫЙ КОД ВИДЖЕТА (БЕЗ ИЗМЕНЕНИЙ) =====
+    // ===== ОСНОВНОЙ КОД ВИДЖЕТА (БЕЗ ДУБЛИРОВАНИЯ СКРОЛЛА) =====
     
     // Проверяем, есть ли контейнер для виджета
     const widgetContainer = document.querySelector('.bot-widget-placeholder');
-    if (!widgetContainer) return;
+    if (!widgetContainer) {
+        // Если нет виджета, всё равно настраиваем скроллы
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupAllScrolls);
+        } else {
+            setupAllScrolls();
+        }
+        return;
+    }
 
     // Очищаем контейнер
     widgetContainer.innerHTML = '';
@@ -701,7 +732,7 @@
             goToPricing.addEventListener('click', () => {
                 const pricingSection = document.getElementById('pricing');
                 if (pricingSection) {
-                    pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    scrollToElement('pricing');
                     
                     setTimeout(() => {
                         const planElement = document.querySelector(`[data-plan="${planId}"]`);
@@ -767,22 +798,19 @@
         answerArea.appendChild(resultContainer);
     }
 
-    // ===== 3. ИНИЦИАЛИЗАЦИЯ ВСЕГО ВИДЖЕТА =====
+    // ===== ИНИЦИАЛИЗАЦИЯ ВСЕГО ВИДЖЕТА И СКРОЛЛОВ =====
     function init() {
-        // 1. НАСТРАИВАЕМ КНОПКИ СКРОЛЛА (ТОЛЬКО ЭТО!)
-        setupScrollButtons();
+        // 1. НАСТРАИВАЕМ ВСЕ СКРОЛЛЫ НА СТРАНИЦЕ
+        setupAllScrolls();
         
-        // 2. НИКАКИХ ПРОВЕРОК СКРОЛЛА!
-        // НЕ ВЫЗЫВАЕМ checkInitialHash() - ЭТОЙ ФУНКЦИИ БОЛЬШЕ НЕТ!
-        
-        // 3. Создаем интерфейс виджета
+        // 2. Создаем интерфейс виджета
         const interfaceElements = createInterface();
         widgetContainer.appendChild(interfaceElements.container);
         
-        // 4. Сохраняем ссылки на элементы
+        // 3. Сохраняем ссылки на элементы
         window.previewWidget = interfaceElements;
         
-        // 5. Начинаем с первого вопроса
+        // 4. Начинаем с первого вопроса
         updateDisplay();
     }
 
