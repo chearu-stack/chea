@@ -1,6 +1,58 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+    <!-- ПЕРВЫЙ ТЕГ ПОСЛЕ <head> -->
+    <script>
+        // КРИТИЧЕСКИЙ ФИКС: БЛОКИРОВКА БРАУЗЕРНОГО СКРОЛЛА ПРИ ЗАГРУЗКЕ
+        (function() {
+            'use strict';
+            
+            // 1. Если есть hash - СРАЗУ блокируем поведение
+            if (window.location.hash) {
+                console.log('🚫 [CriticalFix] Блокировка браузерного скролла к:', window.location.hash);
+                
+                // 2. Сохраняем текущую позицию
+                const saveScroll = function() {
+                    // Запоминаем позицию ДО любых действий браузера
+                    window._AMG_initialScroll = 0;
+                    
+                    // Добавляем обработчик scroll ДО браузера
+                    window.addEventListener('scroll', function preventAutoScroll(e) {
+                        if (window._AMG_blockAutoScroll) {
+                            window.scrollTo(0, 0);
+                            window.removeEventListener('scroll', preventAutoScroll);
+                        }
+                    }, { passive: false, once: true });
+                    
+                    // Включаем блокировку
+                    window._AMG_blockAutoScroll = true;
+                };
+                
+                // 3. Запускаем ДО загрузки DOM
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', saveScroll);
+                } else {
+                    saveScroll();
+                }
+                
+                // 4. Мгновенная очистка URL БЕЗ истории
+                try {
+                    // Используем replaceState БЕЗ вызова popstate
+                    const cleanUrl = window.location.pathname + window.location.search;
+                    history.replaceState(null, '', cleanUrl);
+                    console.log('🧹 [CriticalFix] URL очищен немедленно');
+                } catch(e) {
+                    console.error('❌ [CriticalFix] Ошибка очистки URL:', e);
+                }
+            }
+        })();
+    </script>
+    
+    <!-- Остальной <head> -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- ... -->    
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Адвокат Медного Гроша — цифровой защитник прав потребителей</title>
