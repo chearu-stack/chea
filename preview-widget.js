@@ -1,12 +1,37 @@
 // preview-widget.js
 // Виджет предварительного анализа для главной страницы
 
+// ГЛОБАЛЬНЫЙ ОБЪЕКТ СОСТОЯНИЯ СИСТЕМЫ (если не объявлен)
+window.AMG_State = window.AMG_State || {
+    systemReady: false,
+    scrollAllowed: false,
+    widgetActive: false,
+    currentPlan: null,
+    userFP: null,
+    blockSystem: function(reason) {
+        console.log(`🔒 Блокировка системы: ${reason}`);
+        this.systemReady = false;
+        this.scrollAllowed = false;
+    },
+    unblockSystem: function() {
+        console.log('✅ Система разблокирована');
+        this.systemReady = true;
+        this.scrollAllowed = true;
+    }
+};
+
 // ===== ЕДИНЫЙ КОНТРОЛЛЕР ВСЕХ СКРОЛЛОВ =====
 (function() {
     'use strict';
     
     // ===== ФУНКЦИЯ ДЛЯ СКРОЛЛА К ЭЛЕМЕНТУ =====
     function scrollToElement(elementId, options = {}) {
+        // ПРОВЕРКА РАЗРЕШЕНИЯ НА СКРОЛЛ
+        if (!window.AMG_State.scrollAllowed) {
+            console.log('⏸️ Скролл заблокирован системой');
+            return false;
+        }
+        
         const element = document.getElementById(elementId);
         if (!element) return false;
         
@@ -59,7 +84,7 @@
             }, true);
         });
         
-        // 3. БЛОКИРОВКА НАТИВНЫХ ЯКОРЕЙ НА 100мс
+        // 3. БЛОКИРОВКА НАТИВНЫХ ЯКОРЕЙ
         let blockNativeAnchors = true;
         window.addEventListener('click', (e) => {
             if (!blockNativeAnchors) return;
@@ -68,33 +93,48 @@
             if (anchor && anchor.hash) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
+                console.log('🚫 Блокирован нативный якорь:', anchor.hash);
             }
         }, true);
         
-        // Отключаем блокировку через 100мс (после загрузки JS)
+        // Отключаем блокировку через 500мс
         setTimeout(() => {
             blockNativeAnchors = false;
-        }, 100);
+            console.log('✅ Нативные якоря разблокированы');
+        }, 500);
     }
     
     // ===== КРИТИЧЕСКИЙ ФИКС: УСТРАНЕНИЕ ПРИНУДИТЕЛЬНОЙ ПРОКРУТКИ ПРИ ЗАГРУЗКЕ =====
-    // ВЫПОЛНЯЕТСЯ СРАЗУ, ДО ВСЕГО ОСТАЛЬНОГО КОДА
-    if (window.location.hash === '#start') {
-        // Только чистим URL, НЕ скроллим
-        setTimeout(function() {
+    function safeHashCleanup() {
+        if (window.location.hash) {
+            console.log('🧹 Очистка hash без скролла:', window.location.hash);
+            
+            // Запоминаем текущую позицию скролла
+            const scrollY = window.pageYOffset;
+            
+            // Очищаем URL БЕЗ скролла
             try {
-                window.history.replaceState(null, null, 
-                    window.location.pathname + window.location.search);
+                history.replaceState(
+                    null, 
+                    null, 
+                    window.location.pathname + window.location.search
+                );
             } catch(e) {}
-        }, 0);
+            
+            // Восстанавливаем позицию, если браузер сдвинулся
+            if (window.pageYOffset !== scrollY) {
+                window.scrollTo(0, scrollY);
+            }
+        }
     }
     
-    // ===== ОСНОВНОЙ КОД ВИДЖЕТА (БЕЗ ДУБЛИРОВАНИЯ СКРОЛЛА) =====
+    // ===== ОСНОВНОЙ КОД ВИДЖЕТА =====
     
     // Проверяем, есть ли контейнер для виджета
     const widgetContainer = document.querySelector('.bot-widget-placeholder');
     if (!widgetContainer) {
-        // Если нет виджета, всё равно настраиваем скроллы
+        // Если нет виджета, настраиваем только скроллы
+        safeHashCleanup();
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', setupAllScrolls);
         } else {
@@ -103,10 +143,38 @@
         return;
     }
 
-    // Очищаем контейнер
-    widgetContainer.innerHTML = '';
-    widgetContainer.style.minHeight = '300px';
-    widgetContainer.classList.add('preview-container');
+    // ФУНКЦИЯ ОЖИДАНИЯ ГОТОВНОСТИ СИСТЕМЫ
+    function waitForSystemReady(callback) {
+        if (window.AMG_State && window.AMG_State.systemReady) {
+            callback();
+        } else {
+            console.log('⏳ Виджет ждёт готовности системы...');
+            setTimeout(() => waitForSystemReady(callback), 100);
+        }
+    }
+    
+    // ЗАПУСК ВИДЖЕТА ПОСЛЕ ГОТОВНОСТИ СИСТЕМЫ
+    waitForSystemReady(function() {
+        console.log('✅ Система готова, запускаем виджет');
+        initWidget();
+    });
+    
+    function initWidget() {
+        // Очищаем контейнер
+        widgetContainer.innerHTML = '';
+        widgetContainer.style.minHeight = '300px';
+        widgetContainer.classList.add('preview-container');
+        
+        // Отмечаем, что виджет активен
+        window.AMG_State.widgetActive = true;
+        
+        // НАСТРАИВАЕМ СКРОЛЛЫ
+        safeHashCleanup();
+        setupAllScrolls();
+        
+        // ЗАПУСКАЕМ ЛОГИКУ ВИДЖЕТА
+        initWidgetLogic();
+    }
 
     // Ключевые слова для определения потребительской проблемы
     const CONSUMER_KEYWORDS = [
@@ -202,6 +270,7 @@
     let currentStep = 0;
     let answers = {};
     let isProcessing = false;
+    let widgetInterface = null;
 
     // Очищаем предыдущие состояния при загрузке
     try {
@@ -267,7 +336,7 @@
             };
         }
         
-        const timeDiff = today.getTime() - violationDate.getTime();
+        const timeDiff = today.getTime() - violationDate.getTime());
         const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
         
         const LIMIT_DAYS = 1095;
@@ -361,7 +430,9 @@
 
     // Обновление отображения
     function updateDisplay() {
-        const { header, questionArea, answerArea, buttonsArea } = window.previewWidget;
+        if (!widgetInterface) return;
+        
+        const { header, questionArea, answerArea, buttonsArea } = widgetInterface;
         
         const progressFill = header.querySelector('.bot-progress-fill');
         const stepCounter = header.querySelector('.step-counter');
@@ -572,7 +643,9 @@
 
     // Отображение результата
     function displayResult(isSolvable, dateCheck, planId, planName, planPrice, reason) {
-        const { questionArea, answerArea, buttonsArea } = window.previewWidget;
+        if (!widgetInterface) return;
+        
+        const { questionArea, answerArea, buttonsArea } = widgetInterface;
         
         questionArea.innerHTML = '';
         answerArea.innerHTML = '';
@@ -730,23 +803,20 @@
             goToPricing.style.cssText = 'width: 100%; margin-top: 15px;';
             goToPricing.innerHTML = '<i class="fas fa-tags"></i> Выбрать тариф';
             goToPricing.addEventListener('click', () => {
-                const pricingSection = document.getElementById('pricing');
-                if (pricingSection) {
-                    scrollToElement('pricing');
-                    
-                    setTimeout(() => {
-                        const planElement = document.querySelector(`[data-plan="${planId}"]`);
-                        if (planElement && planElement.closest('.pricing-card')) {
-                            const card = planElement.closest('.pricing-card');
-                            card.style.boxShadow = '0 0 0 3px #28a745, 0 8px 25px rgba(0,0,0,0.15)';
-                            card.style.transition = 'box-shadow 0.5s ease';
-                            
-                            setTimeout(() => {
-                                card.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)';
-                            }, 2000);
-                        }
-                    }, 500);
-                }
+                scrollToElement('pricing');
+                
+                setTimeout(() => {
+                    const planElement = document.querySelector(`[data-plan="${planId}"]`);
+                    if (planElement && planElement.closest('.pricing-card')) {
+                        const card = planElement.closest('.pricing-card');
+                        card.style.boxShadow = '0 0 0 3px #28a745, 0 8px 25px rgba(0,0,0,0.15)';
+                        card.style.transition = 'box-shadow 0.5s ease';
+                        
+                        setTimeout(() => {
+                            card.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)';
+                        }, 2000);
+                    }
+                }, 500);
             });
             
             buttonsArea.appendChild(goToPricing);
@@ -798,27 +868,16 @@
         answerArea.appendChild(resultContainer);
     }
 
-    // ===== ИНИЦИАЛИЗАЦИЯ ВСЕГО ВИДЖЕТА И СКРОЛЛОВ =====
-    function init() {
-        // 1. НАСТРАИВАЕМ ВСЕ СКРОЛЛЫ НА СТРАНИЦЕ
-        setupAllScrolls();
-        
-        // 2. Создаем интерфейс виджета
+    // Инициализация логики виджета
+    function initWidgetLogic() {
         const interfaceElements = createInterface();
         widgetContainer.appendChild(interfaceElements.container);
         
-        // 3. Сохраняем ссылки на элементы
-        window.previewWidget = interfaceElements;
+        // Сохраняем ссылки на элементы
+        widgetInterface = interfaceElements;
         
-        // 4. Начинаем с первого вопроса
+        // Начинаем с первого вопроса
         updateDisplay();
-    }
-
-    // Запускаем после загрузки DOM
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
     }
 
 })();
