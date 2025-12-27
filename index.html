@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Адвокат Медного Гроша — цифровой защитник прав потребителей</title>
     
-    <!-- КРИТИЧЕСКИЙ ФИКС: БЛОКИРОВКА АВТОСКРОЛЛА -->
     <style>
-        /* Блокируем скролл пока страница не готова */
         body.preload {
             overflow: hidden !important;
             position: fixed !important;
@@ -15,134 +13,62 @@
         }
     </style>
     
-
-      <!-- ДИАГНОСТИКА ПРИЧИНЫ АВТОСКРОЛЛА -->
-<!-- ДИАГНОСТИКА С ИСПРАВЛЕНИЕМ ОШИБКИ -->
-<script>
-    (function() {
-        'use strict';
-        
-        console.log('[Диагностика] Инициализация. Текущий scrollY:', window.pageYOffset);
-        console.log('[Диагностика] Хэш в URL:', window.location.hash);
-        
-        // 1. НЕМЕДЛЕННО фиксируем позицию ДО любых других действий
-        window.scrollTo(0, 0);
-        if (document.documentElement) {
-            document.documentElement.style.scrollBehavior = 'auto'; // Отключаем smooth scroll
-        }
-        
-        // 2. Фиксация через style для надёжности (с проверкой существования элементов)
-        if (document.documentElement) {
-            document.documentElement.style.overflow = 'hidden';
-        }
-        if (document.body) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            // Если body ещё нет, ждём его появления
-            document.addEventListener('DOMContentLoaded', function() {
-                if (document.body) {
-                    document.body.style.overflow = 'hidden';
-                }
-            });
-        }
-        
-        // 3. Логируем все попытки скролла (только после загрузки body)
-        var scrollHandler = function() {
-            if (window.pageYOffset !== 0) {
-                console.warn('[Диагностика] Обнаружен неавторизованный скролл! Y:', window.pageYOffset, 'Время:', performance.now().toFixed(2) + 'ms');
+    <!-- ФИКС АВТОСКРОЛЛА: ПРИОРИТЕТНЫЙ КОНТРОЛЬ -->
+    <script>
+        (function() {
+            'use strict';
+            
+            // АГРЕССИВНЫЙ КОНТРОЛЬ СКРОЛЛА
+            var forceScrollTop = function() {
                 window.scrollTo(0, 0);
-            }
-        };
-        
-        // 4. Проверяем элементы, которые могут вызывать автофокус/автоскролл
-        var checkAutoFocus = function() {
-            console.log('[Диагностика] Проверка элементов DOM...');
-            
-            // Проверяем все элементы, которые могут иметь автофокус
-            var autoFocusElements = document.querySelectorAll('[autofocus], input, textarea, button, select');
-            var foundAutofocus = false;
-            autoFocusElements.forEach(function(el, i) {
-                if (el.hasAttribute('autofocus')) {
-                    console.error('[Диагностика] Найден элемент с autofocus:', el.tagName, el.id || el.className);
-                    el.removeAttribute('autofocus');
-                    foundAutofocus = true;
+                if (window.pageYOffset !== 0) {
+                    document.documentElement.scrollTop = 0;
+                    document.body.scrollTop = 0;
                 }
-            });
-            if (!foundAutofocus) {
-                console.log('[Диагностика] Элементов с autofocus не найдено');
-            }
+            };
             
-            // Проверяем все якорные ссылки
-            var anchorLinks = document.querySelectorAll('a[href^="#"]');
-            console.log('[Диагностика] Найдено якорных ссылок:', anchorLinks.length);
+            // 1. Немедленный скролл при инициализации
+            forceScrollTop();
             
-            // Проверяем, нет ли скрытого хэша в CSS или JS
-            var computedStyles = window.getComputedStyle(document.documentElement);
-            console.log('[Диагностика] Проверка CSS: overflow на html:', computedStyles.overflow);
-        };
-        
-        // 5. Запускаем проверку после загрузки DOM
-        if (document.readyState === 'loading') {
+            // 2. Блокируем ВСЕ попытки скролла до полной загрузки
+            var blockAllScroll = function(e) {
+                if (window.pageYOffset !== 0) {
+                    forceScrollTop();
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            };
+            
+            window.addEventListener('scroll', blockAllScroll, { passive: false, capture: true });
+            window.addEventListener('wheel', blockAllScroll, { passive: false, capture: true });
+            window.addEventListener('touchmove', blockAllScroll, { passive: false, capture: true });
+            
+            // 3. Перехватываем ВСЕ события, которые могут вызвать скролл
             document.addEventListener('DOMContentLoaded', function() {
-                checkAutoFocus();
-                // Теперь можно добавить обработчик скролла
-                window.addEventListener('scroll', scrollHandler);
+                document.querySelectorAll('[autofocus]').forEach(function(el) {
+                    el.removeAttribute('autofocus');
+                });
+                
+                if (window.location.hash) {
+                    history.replaceState(null, '', window.location.pathname + window.location.search);
+                }
             });
-        } else {
-            checkAutoFocus();
-            window.addEventListener('scroll', scrollHandler);
-        }
-        
-        // 6. Полная загрузка - снимаем блокировки
-        window.addEventListener('load', function() {
-            console.log('[Диагностика] Страница полностью загружена. Текущий scrollY:', window.pageYOffset);
             
-            // Проверяем, какие скрипты могли вызвать скролл
-            console.log('[Диагностика] Загруженные скрипты: script.js, preview-widget.js');
+            // 4. Откладываем загрузку потенциально проблемных скриптов
+            window.addEventListener('load', function() {
+                setTimeout(forceScrollTop, 0);
+                
+                setTimeout(function() {
+                    window.removeEventListener('scroll', blockAllScroll, { capture: true });
+                    window.removeEventListener('wheel', blockAllScroll, { capture: true });
+                    window.removeEventListener('touchmove', blockAllScroll, { capture: true });
+                    document.documentElement.classList.remove('preload');
+                }, 1000);
+            });
             
-            // Даём время на завершение всех асинхронных операций
-            setTimeout(function() {
-                // Убираем обработчик скролла
-                window.removeEventListener('scroll', scrollHandler);
-                
-                // Восстанавливаем стили
-                if (document.documentElement) {
-                    document.documentElement.style.overflow = '';
-                    document.documentElement.style.scrollBehavior = '';
-                }
-                if (document.body) {
-                    document.body.style.overflow = '';
-                }
-                
-                // Финальный скролл наверх
-                if (window.pageYOffset !== 0) {
-                    console.error('[Диагностика] КРИТИЧЕСКОЕ СОСТОЯНИЕ: скролл не на нуле после load! Y:', window.pageYOffset);
-                    window.scrollTo(0, 0);
-                }
-                
-                console.log('[Диагностика] Диагностика завершена. Финальный scrollY:', window.pageYOffset);
-                
-            }, 500); // Увеличенная задержка для надёжности
-        });
-        
-        // 7. Дополнительная защита: перехват попыток скролла через requestAnimationFrame
-        var lastScrollCheck = performance.now();
-        var animationFrameCheck = function() {
-            var now = performance.now();
-            if (now - lastScrollCheck > 100) { // Проверяем каждые 100мс
-                if (window.pageYOffset !== 0) {
-                    console.error('[Диагностика] RAF: Обнаружен скролл во время анимации! Y:', window.pageYOffset);
-                    window.scrollTo(0, 0);
-                }
-                lastScrollCheck = now;
-            }
-            requestAnimationFrame(animationFrameCheck);
-        };
-        requestAnimationFrame(animationFrameCheck);
-        
-    })();
-</script>
-
+        })();
+    </script>
     
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
