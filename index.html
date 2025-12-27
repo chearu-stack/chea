@@ -1,47 +1,62 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <!-- КРИТИЧЕСКИЙ ФИКС: РАННЯЯ БЛОКИРОВКА БРАУЗЕРНОГО СКРОЛЛА -->
-    <!-- КРИТИЧЕСКИЙ ФИКС: РАННЯЯ БЛОКИРОВКА БРАУЗЕРНОГО СКРОЛЛА -->
-<script>
-    (function() {
-        'use strict';
-        
-        console.log('🚨 [EARLY BLOCK] Ранняя блокировка браузерного скролла');
-        
-        // 1. НЕМЕДЛЕННЫЙ скролл вверх
-        window.scrollTo(0, 0);
-        
-        // 2. Блокировка скролла до полной загрузки
-        document.body.style.overflow = 'hidden';
-        
-        // 3. Проверяем hash в URL
-        var initialHash = window.location.hash;
-        
-        if (initialHash) {
-            // НЕМЕДЛЕННАЯ очистка URL без скролла
-            try {
-                var cleanUrl = window.location.pathname + window.location.search;
-                history.replaceState(null, '', cleanUrl);
-                console.log('🚨 [EARLY BLOCK] URL очищен от hash:', initialHash);
-                
-                // Сохраняем информацию для отладки
-                window._AMG_HASH_BLOCKED = true;
-                window._AMG_ORIGINAL_HASH = initialHash;
-            } catch(e) {
-                console.error('🚨 [EARLY BLOCK] Ошибка:', e);
-            }
+    <!-- КРИТИЧЕСКИЙ ФИКС: БЛОКИРОВКА ЧЕРЕЗ CSS, УДАЛЕНИЕ HASH -->
+    <style>
+        /* 1. БЛОКИРОВКА СКРОЛЛА ЧЕРЕЗ CSS - СРАЗУ */
+        body.amg-loading {
+            overflow: hidden !important;
+            height: 100vh !important;
+            position: fixed !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
         
-        // 4. Разблокировка скролла после загрузки
-        window.addEventListener('load', function() {
+        /* 2. СКРЫТИЕ ВИДЖЕТА ПОКА НЕ ГОТОВО */
+        .bot-widget-placeholder.amg-loading {
+            opacity: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+    </style>
+    
+    <script>
+        // МИНИМАЛЬНЫЙ СКРИПТ: ТОЛЬКО УДАЛЕНИЕ HASH
+        (function() {
+            'use strict';
+            
+            // СРАЗУ ДОБАВЛЯЕМ КЛАСС БЛОКИРОВКИ
+            document.documentElement.classList.add('amg-loading');
+            
+            // САМОЕ ГЛАВНОЕ: УБИВАЕМ HASH ЕЩЁ ДО ЗАГРУЗКИ BODY
+            if (window.location.hash) {
+                try {
+                    history.replaceState(null, '', window.location.pathname + window.location.search);
+                    console.log('🗑️ Hash удалён при загрузке');
+                } catch(e) {
+                    // Молча игнорируем ошибки
+                }
+            }
+            
+            // ФОРСИРОВАННЫЙ СКРОЛЛ ВВЕРХ
             setTimeout(function() {
-                document.body.style.overflow = '';
-                console.log('🚨 [EARLY BLOCK] Скролл разблокирован после загрузки');
-            }, 100);
-        });
-    })();
-</script>
+                window.scrollTo(0, 0);
+                window.scrollTo(0, 0); // ДВАЖДЫ ДЛЯ НАДЁЖНОСТИ
+            }, 0);
+            
+            // РАЗБЛОКИРОВКА ПОСЛЕ ЗАГРУЗКИ
+            window.addEventListener('load', function() {
+                setTimeout(function() {
+                    document.documentElement.classList.remove('amg-loading');
+                    console.log('✅ Страница разблокирована');
+                }, 50);
+            });
+            
+        })();
+    </script>
     
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -294,7 +309,7 @@
                 <h2 class="section-title">Проанализируйте ситуацию за 2 минуты</h2>
                 <p>Задайте 3 вопроса → получите диагноз нарушения → выберите вариант оплата.</p>
                 <form class="cta-form" id="problemForm">
-                    <div class="bot-widget-placeholder">
+                    <div class="bot-widget-placeholder amg-loading">
                         <div class="loading-spinner">
                             <i class="fas fa-spinner fa-spin"></i> Загрузка анализатора...
                         </div>
