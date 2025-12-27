@@ -2,35 +2,46 @@
 <html lang="ru">
 <head>
     <!-- КРИТИЧЕСКИЙ ФИКС: РАННЯЯ БЛОКИРОВКА БРАУЗЕРНОГО СКРОЛЛА -->
-    <script>
-        (function() {
-            'use strict';
-            
-            console.log('🚨 [EARLY BLOCK] Ранняя блокировка браузерного скролла');
-            
-            // Проверяем hash в URL
-            var initialHash = window.location.hash;
-            console.log('🚨 [EARLY BLOCK] Исходный URL:', window.location.href);
-            
-            if (initialHash) {
-                // НЕМЕДЛЕННАЯ очистка URL
-                try {
-                    var cleanUrl = window.location.pathname + window.location.search;
-                    history.replaceState(null, '', cleanUrl);
-                    console.log('🚨 [EARLY BLOCK] URL очищен:', cleanUrl);
-                    
-                    // Сохраняем информацию
-                    window._AMG_HASH_BLOCKED = true;
-                    window._AMG_ORIGINAL_HASH = initialHash;
-                    
-                    // Принудительный скролл вверх
-                    window.scrollTo(0, 0);
-                } catch(e) {
-                    console.error('🚨 [EARLY BLOCK] Ошибка:', e);
-                }
+    <!-- КРИТИЧЕСКИЙ ФИКС: РАННЯЯ БЛОКИРОВКА БРАУЗЕРНОГО СКРОЛЛА -->
+<script>
+    (function() {
+        'use strict';
+        
+        console.log('🚨 [EARLY BLOCK] Ранняя блокировка браузерного скролла');
+        
+        // 1. НЕМЕДЛЕННЫЙ скролл вверх
+        window.scrollTo(0, 0);
+        
+        // 2. Блокировка скролла до полной загрузки
+        document.body.style.overflow = 'hidden';
+        
+        // 3. Проверяем hash в URL
+        var initialHash = window.location.hash;
+        
+        if (initialHash) {
+            // НЕМЕДЛЕННАЯ очистка URL без скролла
+            try {
+                var cleanUrl = window.location.pathname + window.location.search;
+                history.replaceState(null, '', cleanUrl);
+                console.log('🚨 [EARLY BLOCK] URL очищен от hash:', initialHash);
+                
+                // Сохраняем информацию для отладки
+                window._AMG_HASH_BLOCKED = true;
+                window._AMG_ORIGINAL_HASH = initialHash;
+            } catch(e) {
+                console.error('🚨 [EARLY BLOCK] Ошибка:', e);
             }
-        })();
-    </script>
+        }
+        
+        // 4. Разблокировка скролла после загрузки
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                document.body.style.overflow = '';
+                console.log('🚨 [EARLY BLOCK] Скролл разблокирован после загрузки');
+            }, 100);
+        });
+    })();
+</script>
     
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
