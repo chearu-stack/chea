@@ -1,3 +1,45 @@
+// ===== КРИТИЧЕСКИЙ ФИКС: УСТРАНЕНИЕ ПРИНУДИТЕЛЬНОЙ ПРОКРУТКИ С ЯКОРЯ #start =====
+// Этот блок выполняется СРАЗУ ЖЕ, до DOMContentLoaded
+
+// 1. Проверяем, загрузилась ли страница с якорем #start
+if (window.location.hash === '#start') {
+    // Сохраняем чистый URL без якоря
+    const cleanUrl = window.location.pathname + window.location.search;
+    
+    // МГНОВЕННАЯ прокрутка на самый верх (до любой отрисовки)
+    window.scrollTo(0, 0);
+    
+    // Безопасно заменяем URL в истории браузера
+    // Делаем это в микротаске, чтобы точно сработало после парсинга URL
+    setTimeout(() => {
+        try {
+            window.history.replaceState(null, null, cleanUrl);
+        } catch (e) {
+            // Игнорируем ошибки для старых браузеров
+            console.warn('History API не доступен:', e);
+        }
+    }, 0);
+}
+
+// 2. Дополнительная защита: перехватываем hashchange СРАЗУ
+window.addEventListener('hashchange', function handler() {
+    if (window.location.hash === '#start' && window.scrollY > 100) {
+        // Если кто-то всё же добавил #start после загрузки
+        window.scrollTo(0, 0);
+        setTimeout(() => {
+            try {
+                window.history.replaceState(null, null, 
+                    window.location.pathname + window.location.search);
+            } catch (e) {
+                // Игнорируем ошибки
+            }
+        }, 10);
+        
+        // Удаляем обработчик после срабатывания (опционально)
+        window.removeEventListener('hashchange', handler);
+    }
+}, { once: true });
+
 /**
  * АДВОКАТ МЕДНОГО ГРОША — script.js
  * ВЕРСИЯ: FERRARI EDITION (С блокировкой и отпечатком)
