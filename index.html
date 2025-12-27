@@ -3,49 +3,42 @@
 <head>
     <!-- ПЕРВЫЙ ТЕГ ПОСЛЕ <head> -->
     <script>
-        // КРИТИЧЕСКИЙ ФИКС: БЛОКИРОВКА БРАУЗЕРНОГО СКРОЛЛА ПРИ ЗАГРУЗКЕ
-        (function() {
-            'use strict';
-            
-            // 1. Если есть hash - СРАЗУ блокируем поведение
-            if (window.location.hash) {
-                console.log('🚫 [CriticalFix] Блокировка браузерного скролла к:', window.location.hash);
-                
-                // 2. Сохраняем текущую позицию
-                const saveScroll = function() {
-                    // Запоминаем позицию ДО любых действий браузера
-                    window._AMG_initialScroll = 0;
-                    
-                    // Добавляем обработчик scroll ДО браузера
-                    window.addEventListener('scroll', function preventAutoScroll(e) {
-                        if (window._AMG_blockAutoScroll) {
-                            window.scrollTo(0, 0);
-                            window.removeEventListener('scroll', preventAutoScroll);
-                        }
-                    }, { passive: false, once: true });
-                    
-                    // Включаем блокировку
-                    window._AMG_blockAutoScroll = true;
-                };
-                
-                // 3. Запускаем ДО загрузки DOM
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', saveScroll);
-                } else {
-                    saveScroll();
-                }
-                
-                // 4. Мгновенная очистка URL БЕЗ истории
-                try {
-                    // Используем replaceState БЕЗ вызова popstate
-                    const cleanUrl = window.location.pathname + window.location.search;
-                    history.replaceState(null, '', cleanUrl);
-                    console.log('🧹 [CriticalFix] URL очищен немедленно');
-                } catch(e) {
-                    console.error('❌ [CriticalFix] Ошибка очистки URL:', e);
-                }
-            }
-        })();
+       // preview-widget.js - ОБНОВЛЁННЫЙ НАЧАЛО
+
+// Проверяем, была ли уже блокировка
+if (window._AMG_HASH_BLOCKED) {
+    console.log('✅ [PreviewWidget] Hash был заблокирован на раннем этапе');
+    console.log('✅ [PreviewWidget] Оригинальный hash:', window._AMG_ORIGINAL_HASH);
+}
+
+// ГЛОБАЛЬНЫЙ ОБЪЕКТ СОСТОЯНИЯ СИСТЕМЫ
+window.AMG_State = window.AMG_State || {
+    // ... остальной код без изменений ...
+};
+
+// ДОБАВИТЬ функцию для проверки ранней блокировки
+function checkEarlyBlock() {
+    if (window._AMG_HASH_BLOCKED) {
+        console.log('🛡️ [EarlyBlockCheck] Hash был заблокирован браузерным фиксом');
+        
+        // Дополнительная страховка
+        if (window.location.hash) {
+            console.warn('⚠️ [EarlyBlockCheck] Hash ВСЁ ЕЩЕ присутствует! Экстренная очистка');
+            try {
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+                window.scrollTo(0, 0);
+            } catch(e) {}
+        }
+        
+        return true;
+    }
+    return false;
+}
+
+// ВЫЗВАТЬ сразу
+checkEarlyBlock();
+
+// ... остальной код без изменений ...
     </script>
     
     <!-- Остальной <head> -->
