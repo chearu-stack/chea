@@ -20,7 +20,9 @@
             <div class="nav-links">
                 <a href="#features">Работа</a>
                 <a href="#pricing">Тарифы</a>
-                <a href="#start" class="nav-button" data-no-scroll>Старт</a>
+                <a href="javascript:void(0)" class="nav-button start-scroll-btn">
+                    <i class="fas fa-play-circle"></i> Старт
+                </a>
             </div>
         </div>
     </nav>
@@ -33,10 +35,10 @@
                     Пошаговый план действий, <strong>расчёт неустойки</strong> и готовые документы для досудебного урегулирования споров.
                 </p>
                 <div class="hero-buttons">
-                    <a href="#start" class="btn btn-primary" data-no-scroll>
+                    <a href="javascript:void(0)" class="btn btn-primary start-scroll-btn">
                         <i class="fas fa-play-circle"></i> Проанализировать ситуацию
                     </a>
-                    <a href="#features" class="btn btn-secondary" data-no-scroll>
+                    <a href="#features" class="btn btn-secondary">
                         <i class="fas fa-info-circle"></i> Как это работает
                     </a>
                 </div>
@@ -139,7 +141,7 @@
                 <p>Этот помощник — <strong>не замена юристу</strong>, а <strong>ваш цифровой союзник для досудебного урегулирования</strong>.</p>
                 <p>Его цель — дать вам <strong>максимальные шансы</strong> решить проблему с помощью грамотной претензии, точных расчётов и жалоб в контролирующие органы.</p>
                 <div class="highlight-box">
-                    <p><strong><i class="fas fa-chart-line"></i> Факт:</strong> По данных практики, <strong>для 80–95% типовых споров</strong> с магазинами, ЖКХ, банками или турфирмами <strong>этого достаточно</strong>, чтобы добиться результата без обращения в суд.</p>
+                    <p><strong><i class="fas fa-chart-line"></i> Факт:</strong> По данным практики, <strong>для 80–95% типовых споров</strong> с магазинами, ЖКХ, банками или турфирмами <strong>этого достаточно</strong>, чтобы добиться результата без обращения в суд.</p>
                 </div>
                 <p>Для сложных и нетиповых случаев мы всегда рекомендуем обратиться к профессиональному юристу.</p>
             </div>
@@ -164,7 +166,7 @@
                         <li><i class="fas fa-times"></i> <span class="disabled">Расчёт неустойки</span></li>
                         <li><i class="fas fa-times"></i> <span class="disabled">Жалоба в Роспотребнадзор</span></li>
                     </ul>
-                    <a href="payment.html?plan=basic&price=500" class="btn btn-outline" data-plan="basic" data-no-scroll>Оплатить</a>
+                    <a href="payment.html?plan=basic&price=500" class="btn btn-outline" data-plan="basic">Оплатить</a>
                 </div>
                 <div class="pricing-card popular">
                     <div class="popular-badge">Рекомендуем</div>
@@ -178,9 +180,9 @@
                         <li><i class="fas fa-check"></i> <strong>Расчёт неустойки/компенсации</strong></li>
                         <li><i class="fas fa-check"></i> 3 готовых документа (претензия, жалоба, заявление)</li>
                         <li><i class="fas fa-check"></i> До 20 вопросов боту для детализации</li>
-                        <li><i class="fas fa-times"></i> <span class="disabled">Борьба с формальными отписками</span></li>
+                        <li><i class="fas fa-times"></i> <span class="disabled">Борьба с формальными отпискаи</span></li>
                     </ul>
-                    <a href="payment.html?plan=extended&price=1200" class="btn btn-primary" data-plan="extended" data-no-scroll>Оплатить</a>
+                    <a href="payment.html?plan=extended&price=1200" class="btn btn-primary" data-plan="extended">Оплатить</a>
                 </div>
                 <div class="pricing-card">
                     <div class="pricing-header">
@@ -195,13 +197,13 @@
                         <li><i class="fas fa-check"></i> Расширенный расчёт неустойки с пенёй за задержку</li>
                         <li><i class="fas fa-check"></i> Приоритетная генерация + до 50 вопросов боту</li>
                     </ul>
-                    <a href="payment.html?plan=subscription&price=2500" class="btn btn-outline" data-plan="subscription" data-no-scroll>Оплатить</a>
+                    <a href="payment.html?plan=subscription&price=2500" class="btn btn-outline" data-plan="subscription">Оплатить</a>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="cta-section" id="start">
+    <section class="cta-section" id="start-section">
         <div class="container">
             <div class="cta-content">
                 <h2 class="section-title">Проанализируйте ситуацию за 2 минуты</h2>
@@ -236,10 +238,8 @@
         </div>
     </footer>
 
-    <!-- УКАЗЫВАЕМ ДЕФЕР ДЛЯ ОСНОВНОГО СКРИПТА -->
-    <script src="script.js" defer></script>
-    <!-- В preview-widget.js УЖЕ ЕСТЬ defer -->
-    <script src="preview-widget.js" defer></script>
+    <!-- Основные скрипты -->
+    <script src="script.js"></script>
+    <script src="preview-widget.js"></script>
 </body>
-</html>
 </html>
