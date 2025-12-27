@@ -15,37 +15,91 @@
         }
     </style>
     
-    <script>
-        // УДАЛЯЕМ HASH СРАЗУ, ЕЩЁ ДО ЗАГРУЗКИ СТРАНИЦЫ
-        (function() {
-            'use strict';
+
+      <!-- ДИАГНОСТИКА ПРИЧИНЫ АВТОСКРОЛЛА -->
+<script>
+    (function() {
+        'use strict';
+        
+        console.log('[Диагностика] Инициализация. Текущий scrollY:', window.pageYOffset);
+        console.log('[Диагностика] Хэш в URL:', window.location.hash);
+        
+        // 1. НЕМЕДЛЕННО фиксируем позицию ДО любых других действий
+        window.scrollTo(0, 0);
+        document.documentElement.style.scrollBehavior = 'auto'; // Отключаем smooth scroll
+        
+        // 2. Фиксация через style для надёжности
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+        
+        // 3. Логируем все попытки скролла
+        var scrollHandler = function() {
+            console.warn('[Диагностика] Обнаружен неавторизованный скролл! Y:', window.pageYOffset, 'Время:', Date.now());
+            window.scrollTo(0, 0);
+        };
+        window.addEventListener('scroll', scrollHandler);
+        
+        // 4. Проверяем элементы, которые могут вызывать автофокус/автоскролл
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('[Диагностика] DOM готов. Проверяю элементы:');
             
-            // 1. Блокируем body
-            document.documentElement.classList.add('preload');
-            
-            // 2. Убиваем hash МГНОВЕННО
-            if (window.location.hash) {
-                try {
-                    var cleanUrl = window.location.pathname + window.location.search;
-                    history.replaceState(null, '', cleanUrl);
-                    console.log('🗑️ Hash удалён:', window.location.hash);
-                } catch(e) {}
-            }
-            
-            // 3. Скроллим вверх на всякий случай
-            setTimeout(function() {
-                window.scrollTo(0, 0);
-            }, 0);
-            
-            // 4. Разблокируем после загрузки
-            window.addEventListener('load', function() {
-                setTimeout(function() {
-                    document.documentElement.classList.remove('preload');
-                }, 100);
+            // Проверяем все элементы, которые могут иметь автофокус
+            var autoFocusElements = document.querySelectorAll('[autofocus], input, textarea, button, select');
+            autoFocusElements.forEach(function(el, i) {
+                if (el.hasAttribute('autofocus')) {
+                    console.error('[Диагностика] Найден элемент с autofocus:', el);
+                    el.removeAttribute('autofocus');
+                }
             });
             
-        })();
-    </script>
+            // Проверяем все якорные ссылки
+            document.querySelectorAll('a[href^="#"]').forEach(function(link) {
+                var href = link.getAttribute('href');
+                if (href !== '#') {
+                    console.log('[Диагностика] Якорная ссылка:', href);
+                }
+            });
+        });
+        
+        // 5. Полная загрузка - снимаем блокировки
+        window.addEventListener('load', function() {
+            console.log('[Диагностика] Страница полностью загружена. Текущий scrollY:', window.pageYOffset);
+            
+            // Даём время на завершение всех асинхронных операций
+            setTimeout(function() {
+                // Убираем обработчик скролла
+                window.removeEventListener('scroll', scrollHandler);
+                
+                // Восстанавливаем стили
+                document.documentElement.style.overflow = '';
+                document.body.style.overflow = '';
+                document.documentElement.style.scrollBehavior = '';
+                
+                // Финальный скролл наверх
+                window.scrollTo(0, 0);
+                
+                console.log('[Диагностика] Диагностика завершена. Финальный scrollY:', window.pageYOffset);
+                
+                // Проверяем, не остался ли скрытый хэш
+                if (window.location.hash) {
+                    console.error('[Диагностика] ВНИМАНИЕ! Хэш всё ещё присутствует после load:', window.location.hash);
+                    history.replaceState(null, '', window.location.pathname + window.location.search);
+                }
+                
+            }, 300); // Увеличенная задержка для надёжности
+        });
+        
+        // 6. Экстренная защита: перехват всех событий hashchange
+        window.addEventListener('hashchange', function(e) {
+            console.error('[Диагностика] Обнаружено изменение хэша!', e.oldURL, '->', e.newURL);
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return false;
+        }, true);
+        
+    })();
+</script>
+
     
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
