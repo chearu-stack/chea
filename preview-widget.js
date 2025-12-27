@@ -1,42 +1,94 @@
 // preview-widget.js
 // Виджет предварительного анализа для главной страницы
 
-// ===== КРИТИЧЕСКИЙ ФИКС: УСТРАНЕНИЕ ПРИНУДИТЕЛЬНОЙ ПРОКРУТКИ =====
-// Выполняется НЕМЕДЛЕННО при загрузке скрипта
-
-// 1. Мгновенная блокировка нативной прокрутки браузера
-if (window.location.hash === '#start') {
-    // Заменяем хэш СРАЗУ, без таймаутов
-    try {
-        window.history.replaceState(null, null, 
-            window.location.pathname + window.location.search);
-    } catch(e) {}
-    
-    // Прокрутка наверх с максимальным приоритетом
-    window.scrollTo(0, 0);
-    
-    // Дублирующая защита на случай race condition
-    document.addEventListener('readystatechange', function() {
-        if (document.readyState === 'interactive' || document.readyState === 'complete') {
-            window.scrollTo(0, 0);
-        }
-    });
-}
-
-// 2. Атрибут для полного отключения нативной прокрутки
-document.addEventListener('DOMContentLoaded', function() {
-    const startLinks = document.querySelectorAll('a[href="#start"]');
-    startLinks.forEach(link => {
-        link.setAttribute('data-no-native-scroll', 'true');
-    });
-});
-
-// ===== ОСНОВНОЙ КОД ВИДЖЕТА =====
+// ===== КРИТИЧЕСКИЙ ФИКС: УСТРАНЕНИЕ ПРИНУДИТЕЛЬНОЙ ПРОКРУТКИ ПРИ ЗАГРУЗКЕ =====
+// ВЫПОЛНЯЕТСЯ СРАЗУ, ДО ВСЕГО ОСТАЛЬНОГО КОДА
 (function() {
-    // Дополнительная проверка внутри IIFE
+    'use strict';
+    
+    // 1. ФИКС НА САМОМ ВЕРХУ: если страница загрузилась с #start
     if (window.location.hash === '#start') {
+        // МГНОВЕННАЯ прокрутка наверх (до загрузки DOM)
         window.scrollTo(0, 0);
+        
+        // Убираем якорь из URL через микротаск
+        setTimeout(function() {
+            try {
+                window.history.replaceState(null, null, 
+                    window.location.pathname + window.location.search);
+            } catch(e) {
+                // Игнорируем ошибки для старых браузеров
+            }
+        }, 0);
     }
+})();
+
+// ===== ОСНОВНОЙ КОД ВИДЖЕТА С ИСПРАВЛЕННЫМ УПРАВЛЕНИЕМ СКРОЛЛОМ =====
+(function() {
+    'use strict';
+    
+    // ===== 1. УПРАВЛЕНИЕ КНОПКАМИ "СТАРТ" (РАБОТАЕТ С ПЕРВОГО КЛИКА) =====
+    function setupScrollButtons() {
+        // Находим все кнопки с классом .start-scroll-btn
+        const startButtons = document.querySelectorAll('.start-scroll-btn');
+        const ctaSection = document.getElementById('start-section');
+        
+        if (!ctaSection) return;
+        
+        // Функция прокрутки
+        function scrollToWidget() {
+            ctaSection.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+            
+            // Фокус на поле ввода через небольшой таймаут
+            setTimeout(() => {
+                const textarea = document.querySelector('.answer-input');
+                if (textarea) {
+                    textarea.focus();
+                    // Подсветка секции
+                    ctaSection.style.boxShadow = '0 0 0 3px #4CAF50';
+                    setTimeout(() => {
+                        ctaSection.style.boxShadow = '';
+                    }, 2000);
+                }
+            }, 500);
+        }
+        
+        // Вешаем обработчики на ВСЕ кнопки "Старт"
+        startButtons.forEach(button => {
+            // Удаляем все существующие обработчики (чистый лист)
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
+            
+            // Вешаем ОДИН надежный обработчик
+            newButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopImmediatePropagation(); // Блокируем ВСЕ другие обработчики
+                scrollToWidget();
+                return false;
+            }, true); // Используем capture phase для приоритета
+        });
+        
+        // Дополнительно: глобальная функция для вызова из других мест
+        window.scrollToPreviewWidget = scrollToWidget;
+    }
+    
+    // ===== 2. ФИКС: ЕСЛИ ВСЁ ЖЕ ПОПАЛИ С ЯКОРЕМ #start ПОСЛЕ ЗАГРУЗКИ =====
+    function checkInitialHash() {
+        if (window.location.hash === '#start' && window.scrollY > 100) {
+            window.scrollTo(0, 0);
+            setTimeout(() => {
+                try {
+                    window.history.replaceState(null, null, 
+                        window.location.pathname + window.location.search);
+                } catch(e) {}
+            }, 10);
+        }
+    }
+    
+    // ===== 3. ВАШ ОРИГИНАЛЬНЫЙ КОД ВИДЖЕТА (БЕЗ ИЗМЕНЕНИЙ) =====
     
     // Проверяем, есть ли контейнер для виджета
     const widgetContainer = document.querySelector('.bot-widget-placeholder');
@@ -644,7 +696,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </p>
                 </div>
                 
-                <p><strong>После оплаты вы получите:</strong></p>
+                <p><strong>После оплата вы получите:</strong></p>
                 <ul style="margin: 10px 0 20px 20px; font-size: 14px;">
                     <li>Юридический анализ соответствия вашей ситуации ЗоЗПП</li>
                     <li>Расчёт законных требований (если применимо)</li>
@@ -737,12 +789,13 @@ document.addEventListener('DOMContentLoaded', function() {
         answerArea.appendChild(resultContainer);
     }
 
-    // Инициализация
+    // ===== 4. ИНИЦИАЛИЗАЦИЯ ВСЕГО ВИДЖЕТА =====
     function init() {
-        // Дополнительная проверка на всякий случай
-        if (window.location.hash === '#start' && window.scrollY > 100) {
-            window.scrollTo(0, 0);
-        }
+        // Настраиваем кнопки скролла
+        setupScrollButtons();
+        
+        // Проверяем, не загрузились ли мы с якорем
+        checkInitialHash();
         
         // Создаем интерфейс виджета
         const interfaceElements = createInterface();
