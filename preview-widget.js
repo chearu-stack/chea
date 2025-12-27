@@ -1,46 +1,3 @@
-// ===== КРИТИЧЕСКАЯ ОТЛАДКА: ИЩЕМ ВСЕ СКРОЛЛИНГИ =====
-console.log("🔍 Отладка: поиск всех скроллингов...");
-
-// 1. Блокируем ВСЕ скроллинги до загрузки
-window.scrollTo = function() {
-    console.warn("❌ БЛОКИРОВКА window.scrollTo вызвана:", arguments, new Error().stack);
-    return;
-};
-
-// 2. Блокируем scrollIntoView
-Element.prototype.scrollIntoView = function() {
-    console.warn("❌ БЛОКИРОВКА scrollIntoView вызвана на элементе:", this, arguments, new Error().stack);
-    return;
-};
-
-// 3. Перехватываем ВСЕ addEventListener для скролла
-const originalAddEventListener = EventTarget.prototype.addEventListener;
-EventTarget.prototype.addEventListener = function(type, handler, options) {
-    if (type.includes('scroll') || type.includes('hash') || type.includes('click')) {
-        console.warn("⚠️ Регистрация обработчика:", type, "на элементе:", this);
-    }
-    return originalAddEventListener.call(this, type, handler, options);
-};
-
-// 4. Проверяем, не было ли уже вызвано что-то
-console.log("📍 Текущая позиция скролла:", window.scrollY);
-console.log("📍 Хэш в URL:", window.location.hash);
-
-// 5. Восстанавливаем функции через 3 секунды (чтобы виджет заработал)
-setTimeout(() => {
-    console.log("✅ Восстанавливаем нормальные функции скролла");
-    window.scrollTo = function(x, y) {
-        window.scrollX = x;
-        window.scrollY = y;
-        console.log("✅ Разрешённый скролл к:", x, y);
-    };
-    
-    Element.prototype.scrollIntoView = function(options) {
-        console.log("✅ Разрешённый scrollIntoView для:", this);
-        const rect = this.getBoundingClientRect();
-        window.scrollTo(rect.left, rect.top);
-    };
-}, 3000);
 // preview-widget.js
 // Виджет предварительного анализа для главной страницы
 
@@ -49,19 +6,14 @@ setTimeout(() => {
 (function() {
     'use strict';
     
-    // 1. ФИКС НА САМОМ ВЕРХУ: если страница загрузилась с #start
+    // Если страница загрузилась с #start - убираем якорь БЕЗ скролла
     if (window.location.hash === '#start') {
-        // МГНОВЕННАЯ прокрутка наверх (до загрузки DOM)
-        window.scrollTo(0, 0);
-        
-        // Убираем якорь из URL через микротаск
+        // Только чистим URL, НЕ скроллим
         setTimeout(function() {
             try {
                 window.history.replaceState(null, null, 
                     window.location.pathname + window.location.search);
-            } catch(e) {
-                // Игнорируем ошибки для старых браузеров
-            }
+            } catch(e) {}
         }, 0);
     }
 })();
@@ -72,7 +24,6 @@ setTimeout(() => {
     
     // ===== 1. УПРАВЛЕНИЕ КНОПКАМИ "СТАРТ" (РАБОТАЕТ С ПЕРВОГО КЛИКА) =====
     function setupScrollButtons() {
-        // Находим все кнопки с классом .start-scroll-btn
         const startButtons = document.querySelectorAll('.start-scroll-btn');
         const ctaSection = document.getElementById('start-section');
         
@@ -101,37 +52,21 @@ setTimeout(() => {
         
         // Вешаем обработчики на ВСЕ кнопки "Старт"
         startButtons.forEach(button => {
-            // Удаляем все существующие обработчики (чистый лист)
+            // Удаляем все существующие обработчики
             const newButton = button.cloneNode(true);
             button.parentNode.replaceChild(newButton, button);
             
             // Вешаем ОДИН надежный обработчик
             newButton.addEventListener('click', function(e) {
                 e.preventDefault();
-                e.stopImmediatePropagation(); // Блокируем ВСЕ другие обработчики
+                e.stopImmediatePropagation();
                 scrollToWidget();
                 return false;
-            }, true); // Используем capture phase для приоритета
+            }, true);
         });
-        
-        // Дополнительно: глобальная функция для вызова из других мест
-        window.scrollToPreviewWidget = scrollToWidget;
     }
     
-    // ===== 2. ФИКС: ЕСЛИ ВСЁ ЖЕ ПОПАЛИ С ЯКОРЕМ #start ПОСЛЕ ЗАГРУЗКИ =====
-    function checkInitialHash() {
-        if (window.location.hash === '#start' && window.scrollY > 100) {
-            window.scrollTo(0, 0);
-            setTimeout(() => {
-                try {
-                    window.history.replaceState(null, null, 
-                        window.location.pathname + window.location.search);
-                } catch(e) {}
-            }, 10);
-        }
-    }
-    
-    // ===== 3. ВАШ ОРИГИНАЛЬНЫЙ КОД ВИДЖЕТА (БЕЗ ИЗМЕНЕНИЙ) =====
+    // ===== 2. ВАШ ОРИГИНАЛЬНЫЙ КОД ВИДЖЕТА (БЕЗ ИЗМЕНЕНИЙ) =====
     
     // Проверяем, есть ли контейнер для виджета
     const widgetContainer = document.querySelector('.bot-widget-placeholder');
@@ -832,22 +767,22 @@ setTimeout(() => {
         answerArea.appendChild(resultContainer);
     }
 
-    // ===== 4. ИНИЦИАЛИЗАЦИЯ ВСЕГО ВИДЖЕТА =====
+    // ===== 3. ИНИЦИАЛИЗАЦИЯ ВСЕГО ВИДЖЕТА =====
     function init() {
-        // Настраиваем кнопки скролла
+        // 1. НАСТРАИВАЕМ КНОПКИ СКРОЛЛА (ТОЛЬКО ЭТО!)
         setupScrollButtons();
         
-        // Проверяем, не загрузились ли мы с якорем
-        checkInitialHash();
+        // 2. НИКАКИХ ПРОВЕРОК СКРОЛЛА!
+        // НЕ ВЫЗЫВАЕМ checkInitialHash() - ЭТОЙ ФУНКЦИИ БОЛЬШЕ НЕТ!
         
-        // Создаем интерфейс виджета
+        // 3. Создаем интерфейс виджета
         const interfaceElements = createInterface();
         widgetContainer.appendChild(interfaceElements.container);
         
-        // Сохраняем ссылки на элементы
+        // 4. Сохраняем ссылки на элементы
         window.previewWidget = interfaceElements;
         
-        // Начинаем с первого вопроса
+        // 5. Начинаем с первого вопроса
         updateDisplay();
     }
 
