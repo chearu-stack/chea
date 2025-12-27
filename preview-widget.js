@@ -92,12 +92,12 @@
                     <div style="height: 6px; background: #e9ecef; border-radius: 3px;">
                         <div style="height: 100%; background: #007bff; width: ${((currentStep + 1) / QUESTIONS.length) * 100}%;"></div>
                     </div>
-                    <div style="text-align: center; margin-top: 8px; color: #666;">
+                    <div style="text-align: center; margin-top: 8px; color: #666 !important;">
                         Вопрос ${currentStep + 1} из ${QUESTIONS.length}
                     </div>
                 </div>
                 
-                <div style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #212529;">
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #212529 !important;">
                     ${question.text}
                 </div>
                 
@@ -109,7 +109,7 @@
                     border-radius: 8px;
                     font-size: 16px;
                     margin-bottom: 10px;
-                    color: #212529;"
+                    color: #212529 !important;"
                     placeholder="Введите ответ..." 
                     maxlength="${question.maxLength}"></textarea>
                 
@@ -311,18 +311,18 @@
                 padding: 24px;
                 margin: 20px 0;
             ">
-                <h3 style="margin-top: 0; color: #212529;">
+                <h3 style="margin-top: 0; color: #212529 !important;">
                     ${isSolvable ? '✅ Анализ завершён' : '❌ Требуется больше данных'}
                 </h3>
                 
-                <p style="color: #212529;"><strong>Результат:</strong> ${reason}</p>
+                <p style="color: #212529 !important;"><strong>Результат:</strong> ${reason}</p>
                 
-                ${amount > 0 ? `<p style="color: #212529;"><strong>Сумма:</strong> ${amount.toLocaleString('ru-RU')} руб.</p>` : ''}
+                ${amount > 0 ? `<p style="color: #212529 !important;"><strong>Сумма:</strong> ${amount.toLocaleString('ru-RU')} руб.</p>` : ''}
                 
-                ${eventYear > 0 ? `<p style="color: #212529;"><strong>Год события:</strong> ${eventYear}</p>` : ''}
+                ${eventYear > 0 ? `<p style="color: #212529 !important;"><strong>Год события:</strong> ${eventYear}</p>` : ''}
                 
                 ${isSolvable ? `
-                <div style="background: white; padding: 16px; border-radius: 8px; margin: 16px 0; color: #212529;">
+                <div style="background: white; padding: 16px; border-radius: 8px; margin: 16px 0; color: #212529 !important;">
                     <strong>Рекомендуем:</strong><br>
                     ${planNames[planId]}
                 </div>
