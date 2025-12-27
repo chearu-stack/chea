@@ -1,11 +1,11 @@
 // ===================================================================
-// PREVIEW-WIDGET.JS - ТОЛЬКО ВИДЖЕТ
+// PREVIEW-WIDGET.JS - ИСПРАВЛЕННАЯ ВЕРСИЯ
 // ===================================================================
 
 (function() {
     'use strict';
     
-    console.log('🎯 Виджет: запуск');
+    console.log('🎯 Виджет: запуск исправленной версии');
     
     // Конфигурация
     const CONFIG = {
@@ -112,11 +112,28 @@
         document.getElementById('prev-btn')?.addEventListener('click', prevStep);
         document.getElementById('next-btn')?.addEventListener('click', nextStep);
         
-        // Фокус на поле ввода
+        // ФИКС 1: preventScroll при фокусе
         setTimeout(() => {
             const input = document.getElementById('widget-input');
-            if (input) input.focus();
-        }, 100);
+            if (input) {
+                // Сохраняем позицию скролла
+                const scrollY = window.scrollY;
+                
+                // Пробуем modern API
+                if (input.focus && typeof input.focus === 'function') {
+                    try {
+                        input.focus({ preventScroll: true });
+                    } catch (e) {
+                        // Fallback для старых браузеров
+                        input.focus();
+                        window.scrollTo(0, scrollY);
+                    }
+                } else {
+                    input.focus();
+                    window.scrollTo(0, scrollY);
+                }
+            }
+        }, 150); // Увеличил задержку для надёжности
     }
     
     function prevStep() {
@@ -129,7 +146,25 @@
     function nextStep() {
         const input = document.getElementById('widget-input');
         if (!input || !input.value.trim()) {
-            alert('Пожалуйста, введите ответ');
+            // ФИКС 4: Заменяем alert на визуальную индикацию
+            input.style.borderColor = '#dc3545';
+            input.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.25)';
+            
+            // ФИКС 1: preventScroll при повторном фокусе
+            const scrollY = window.scrollY;
+            try {
+                input.focus({ preventScroll: true });
+            } catch (e) {
+                input.focus();
+                window.scrollTo(0, scrollY);
+            }
+            
+            // Убираем подсветку через 2 секунды
+            setTimeout(() => {
+                input.style.borderColor = '#ddd';
+                input.style.boxShadow = 'none';
+            }, 2000);
+            
             return;
         }
         
@@ -148,30 +183,45 @@
         const problemText = (answers.problem || '').toLowerCase();
         const amount = parseInt((answers.amount || '').replace(/\D/g, '')) || 0;
         
-        const hasConsumerKeywords = CONFIG.CONSUMER_KEYWORDS.some(kw => problemText.includes(kw));
-        const isSolvable = hasConsumerKeywords && amount > 0;
+        // ФИКС 3: Улучшенная логика анализа
+        const hasConsumerKeywords = CONFIG.CONSUMER_KEYWORDS.some(kw => 
+            problemText.includes(kw)
+        );
+        
+        // Новая логика: ключевые слова ИЛИ указана сумма
+        const isSolvable = hasConsumerKeywords || amount > 0;
         
         let planId = 'extended';
-        if (amount < 20000) planId = 'basic';
+        if (amount > 0 && amount < 20000) planId = 'basic';
         if (amount > 100000) planId = 'subscription';
         
-        // Сохраняем для бота
+        // ФИКС 5: Читаем сохранённые данные при следующем анализе
         try {
+            const storedData = sessionStorage.getItem('preliminary_answers');
+            if (storedData) {
+                console.log('📊 Предыдущие ответы:', JSON.parse(storedData));
+            }
+            
             sessionStorage.setItem('preliminary_answers', JSON.stringify({
                 problem: answers.problem,
                 amount: amount,
                 date: answers.date,
                 isSolvable: isSolvable,
                 recommendedPlan: planId,
-                collectedAt: new Date().toISOString()
+                collectedAt: new Date().toISOString(),
+                hasConsumerKeywords: hasConsumerKeywords,
+                // Добавляем для будущего анализа
+                keywordsFound: CONFIG.CONSUMER_KEYWORDS.filter(kw => problemText.includes(kw))
             }));
-        } catch (e) {}
+        } catch (e) {
+            console.warn('Не удалось сохранить в sessionStorage:', e);
+        }
         
         // Показываем результат
-        showResult(isSolvable, planId);
+        showResult(isSolvable, planId, amount, hasConsumerKeywords);
     }
     
-    function showResult(isSolvable, planId) {
+    function showResult(isSolvable, planId, amount, hasKeywords) {
         const container = document.querySelector('.bot-widget-placeholder');
         if (!container) return;
         
@@ -180,6 +230,18 @@
             extended: 'Расширенный (1 200 ₽)',
             subscription: 'Профессиональный (2 500 ₽)'
         };
+        
+        // Улучшенное сообщение в зависимости от данных
+        let message = '';
+        if (amount > 0 && !hasKeywords) {
+            message = 'Указана сумма, но не обнаружено ключевых слов о покупке. Рекомендуем уточнить детали.';
+        } else if (hasKeywords && amount === 0) {
+            message = 'Обнаружены признаки потребительской проблемы, но сумма не указана.';
+        } else if (hasKeywords && amount > 0) {
+            message = 'Ситуация может подпадать под действие Закона о защите прав потребителей.';
+        } else {
+            message = 'На основе описания не выявлено признаков нарушения прав потребителя.';
+        }
         
         container.innerHTML = `
             <div class="widget-container" style="
@@ -191,15 +253,14 @@
                 color: ${isSolvable ? '#155724' : '#721c24'};
             ">
                 <h3 style="margin-top: 0;">
-                    ${isSolvable ? '✅ Возможное нарушение обнаружено' : '❌ Нарушение не обнаружено'}
+                    ${isSolvable ? '✅ Анализ завершён' : '❌ Требуется больше данных'}
                 </h3>
                 
-                <p>${isSolvable 
-                    ? 'Ситуация может подпадать под действие Закона о защите прав потребителей.' 
-                    : 'На основе описания не выявлено признаков нарушения прав потребителя.'}
-                </p>
+                <p>${message}</p>
                 
-                ${isSolvable ? `
+                ${amount > 0 ? `<p><strong>Сумма:</strong> ${amount.toLocaleString('ru-RU')} руб.</p>` : ''}
+                
+                ${isSolvable && amount > 0 ? `
                 <div style="background: white; padding: 16px; border-radius: 8px; margin: 16px 0;">
                     <strong>Рекомендуем:</strong><br>
                     ${planNames[planId]}
@@ -232,11 +293,16 @@
         const container = document.querySelector('.bot-widget-placeholder');
         if (container) {
             showQuestion();
-            console.log('✅ Виджет запущен');
+            console.log('✅ Виджет запущен (исправленная версия)');
         }
     }
     
-    // Запуск
-    document.addEventListener('DOMContentLoaded', init);
+    // ФИКС 6: Более безопасная инициализация
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        // DOM уже готов
+        setTimeout(init, 500); // Задержка для избежания конфликтов
+    }
     
 })();
