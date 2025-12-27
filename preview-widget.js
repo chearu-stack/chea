@@ -1,20 +1,15 @@
 // ===================================================================
-// PREVIEW-WIDGET.JS - ПОЛНАЯ ВЕРСИЯ С КОНТРОЛЛЕРОМ СОСТОЯНИЙ
+// PREVIEW-WIDGET.JS - СТАБИЛЬНАЯ ВЕРСИЯ (БЕЗ ЗАВИСАНИЙ)
 // ===================================================================
 
-// ГЛОБАЛЬНЫЙ ОБЪЕКТ СОСТОЯНИЯ СИСТЕМЫ (совместимость со script.js)
+// ГЛОБАЛЬНЫЙ ОБЪЕКТ СОСТОЯНИЯ СИСТЕМЫ
 window.AMG_State = window.AMG_State || {
-    // Флаги состояний
     systemReady: false,
     scrollAllowed: false,
     widgetActive: false,
-    
-    // Данные
     currentPlan: null,
     userFP: null,
-    initialHash: null,
     
-    // Методы управления
     blockSystem: function(reason) {
         console.log(`🔒 [AMG_State] Блокировка системы: ${reason}`);
         this.systemReady = false;
@@ -25,211 +20,6 @@ window.AMG_State = window.AMG_State || {
         console.log('✅ [AMG_State] Система разблокирована');
         this.systemReady = true;
         this.scrollAllowed = true;
-    },
-    
-    // Логирование состояния
-    logState: function() {
-        console.log(`📊 [AMG_State] Текущее состояние:`, {
-            systemReady: this.systemReady,
-            scrollAllowed: this.scrollAllowed,
-            widgetActive: this.widgetActive,
-            currentPlan: this.currentPlan,
-            hasInitialHash: !!this.initialHash
-        });
-    }
-};
-
-// ЦЕНТРАЛИЗОВАННЫЙ КОНТРОЛЛЕР СКРОЛЛОВ
-window.AMG_ScrollController = {
-    // Текущий выполняемый скролл
-    currentScroll: null,
-    
-    // Очередь запросов
-    queue: [],
-    
-    // Флаг активности
-    isActive: true,
-    
-    // === ОСНОВНЫЕ МЕТОДЫ ===
-    
-    /**
-     * Запрос скролла к элементу
-     * @param {string} elementId - ID элемента для скролла
-     * @param {object} options - Опции скролла
-     * @returns {boolean} - Успешность постановки в очередь
-     */
-    requestScroll: function(elementId, options = {}) {
-        // 1. ПРОВЕРКА АКТИВНОСТИ КОНТРОЛЛЕРА
-        if (!this.isActive) {
-            console.log('🚫 [ScrollController] Контроллер отключен');
-            return false;
-        }
-        
-        // 2. ПРОВЕРКА ГЛОБАЛЬНОГО РАЗРЕШЕНИЯ
-        if (!window.AMG_State || !window.AMG_State.scrollAllowed) {
-            console.log('⏸️ [ScrollController] Скролл заблокирован глобально');
-            
-            // Автоповтор через 100мс
-            setTimeout(() => {
-                this.requestScroll(elementId, options);
-            }, 100);
-            
-            return false;
-        }
-        
-        // 3. ПРОВЕРКА СУЩЕСТВОВАНИЯ ЭЛЕМЕНТА
-        const element = document.getElementById(elementId);
-        if (!element) {
-            console.error(`❌ [ScrollController] Элемент #${elementId} не найден`);
-            return false;
-        }
-        
-        // 4. ОТМЕНА ТЕКУЩЕГО СКРОЛЛА (если активен)
-        if (this.currentScroll && !this.currentScroll.completed) {
-            console.log('↪️ [ScrollController] Отмена текущего скролла');
-            this.currentScroll.cancelled = true;
-        }
-        
-        // 5. СОЗДАНИЕ ЗАПРОСА СКРОЛЛА
-        const scrollRequest = {
-            id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
-            elementId: elementId,
-            element: element,
-            options: {
-                behavior: 'smooth',
-                block: 'start',
-                ...options
-            },
-            timestamp: Date.now(),
-            cancelled: false,
-            completed: false
-        };
-        
-        // 6. ДОБАВЛЕНИЕ В ОЧЕРЕДЬ
-        this.queue.push(scrollRequest);
-        console.log(`📋 [ScrollController] Запрос #${scrollRequest.id} добавлен в очередь`);
-        
-        // 7. ЗАПУСК ОБРАБОТКИ ОЧЕРЕДИ
-        if (!this.currentScroll || this.currentScroll.completed) {
-            this._processNext();
-        }
-        
-        return true;
-    },
-    
-    /**
-     * Немедленный скролл (без очереди)
-     * @param {string} elementId - ID элемента
-     * @param {object} options - Опции скролла
-     */
-    immediateScroll: function(elementId, options = {}) {
-        // Очистка очереди
-        this.queue = [];
-        
-        // Отмена текущего
-        if (this.currentScroll) {
-            this.currentScroll.cancelled = true;
-        }
-        
-        // Выполнение немедленного скролла
-        this.requestScroll(elementId, options);
-    },
-    
-    /**
-     * Остановка всех скроллов
-     */
-    stopAll: function() {
-        console.log('⏹️ [ScrollController] Остановка всех скроллов');
-        this.queue = [];
-        this.isActive = false;
-        
-        if (this.currentScroll) {
-            this.currentScroll.cancelled = true;
-            this.currentScroll = null;
-        }
-        
-        setTimeout(() => {
-            this.isActive = true;
-        }, 1000);
-    },
-    
-    // === ПРИВАТНЫЕ МЕТОДЫ ===
-    
-    /**
-     * Обработка следующего запроса в очереди
-     * @private
-     */
-    _processNext: function() {
-        // Проверка очереди
-        if (this.queue.length === 0) {
-            this.currentScroll = null;
-            console.log('📭 [ScrollController] Очередь пуста');
-            return;
-        }
-        
-        // Получение следующего запроса
-        const request = this.queue.shift();
-        this.currentScroll = request;
-        
-        // Проверка отмены
-        if (request.cancelled) {
-            console.log(`🚮 [ScrollController] Запрос #${request.id} отменён`);
-            this._processNext();
-            return;
-        }
-        
-        // Проверка элемента
-        if (!request.element || !document.body.contains(request.element)) {
-            console.error(`❌ [ScrollController] Элемент для запроса #${request.id} недоступен`);
-            this._processNext();
-            return;
-        }
-        
-        // ВЫПОЛНЕНИЕ СКРОЛЛА
-        console.log(`▶️ [ScrollController] Выполнение скролла #${request.id} к #${request.elementId}`);
-        
-        try {
-            request.element.scrollIntoView(request.options);
-            request.completed = true;
-            
-            // Логирование успеха
-            console.log(`✅ [ScrollController] Скролл #${request.id} выполнен`);
-            
-            // Задержка перед следующим запросом (избегаем конфликтов)
-            setTimeout(() => {
-                this._processNext();
-            }, 300);
-            
-        } catch (error) {
-            console.error(`❌ [ScrollController] Ошибка скролла #${request.id}:`, error);
-            this._processNext();
-        }
-    },
-    
-    // === СЛУЖЕБНЫЕ МЕТОДЫ ===
-    
-    /**
-     * Статус контроллера
-     */
-    getStatus: function() {
-        return {
-            isActive: this.isActive,
-            currentScroll: this.currentScroll ? {
-                id: this.currentScroll.id,
-                elementId: this.currentScroll.elementId,
-                completed: this.currentScroll.completed
-            } : null,
-            queueLength: this.queue.length,
-            queueItems: this.queue.map(req => req.elementId)
-        };
-    },
-    
-    /**
-     * Очистка очереди
-     */
-    clearQueue: function() {
-        console.log('🧹 [ScrollController] Очистка очереди');
-        this.queue = [];
     }
 };
 
@@ -240,20 +30,17 @@ window.AMG_ScrollController = {
 (function() {
     'use strict';
     
-    console.log('🔄 [PreviewWidget] Начало выполнения');
+    console.log('🔄 [PreviewWidget] Загрузка модуля');
     
     // === КОНСТАНТЫ И КОНФИГУРАЦИЯ ===
     const CONFIG = {
-        // Таймауты
-        SYSTEM_WAIT_TIMEOUT: 10000,    // Макс. время ожидания системы
-        SCROLL_DEBOUNCE: 300,         // Задержка между скроллами
+        SYSTEM_WAIT_TIMEOUT: 10000,
+        SCROLL_DEBOUNCE: 300,
         
-        // Селекторы
         WIDGET_CONTAINER: '.bot-widget-placeholder',
         START_BUTTONS: '.start-scroll-btn',
         SCROLL_TO_BUTTONS: '[data-scroll-to]',
         
-        // Ключевые слова для анализа
         CONSUMER_KEYWORDS: [
             'купил', 'куплен', 'приобрел', 'приобретен', 'покупк', 'товар', 'услуг',
             'продавец', 'магазин', 'гаранти', 'брак', 'некачествен', 'не работ',
@@ -277,52 +64,103 @@ window.AMG_ScrollController = {
         currentStep: 0,
         answers: {},
         isProcessing: false,
-        interface: null,
-        questions: null
+        interface: null
     };
+    
+    // ВОПРОСЫ ВИДЖЕТА
+    const QUESTIONS = [
+        {
+            id: 'problem',
+            text: 'Опишите проблему коротко (что произошло, с каким товаром/услугой)?',
+            example: 'Пример: Купил телефон, он сломался через неделю. Магазин отказывается менять.',
+            maxLength: 200,
+            validator: (value) => {
+                if (!value || value.trim().length < 10) {
+                    return 'Опишите проблему подробнее (минимум 10 символов)';
+                }
+                
+                const lowerValue = value.toLowerCase();
+                const hasConsumerKeywords = CONFIG.CONSUMER_KEYWORDS.some(keyword => 
+                    lowerValue.includes(keyword)
+                );
+                
+                if (!hasConsumerKeywords) {
+                    return 'Опишите ситуацию с покупкой товара или услуги. Пример: "Купил холодильник, он не морозит"';
+                }
+                
+                return true;
+            }
+        },
+        {
+            id: 'amount',
+            text: 'Укажите сумму покупки, ущерба или стоимость услуги (в рублях)?',
+            example: 'Пример: 30000',
+            maxLength: 20,
+            validator: (value) => {
+                if (!value || value.trim().length === 0) {
+                    return 'Укажите сумму цифрами';
+                }
+                
+                const cleanValue = value.replace(/\s/g, '').replace('₽', '').replace('руб', '');
+                const numValue = Number(cleanValue);
+                
+                if (isNaN(numValue) || numValue <= 0) {
+                    return 'Введите корректную сумму цифрами (например: 25000)';
+                }
+                
+                if (numValue > 10000000) {
+                    return 'Сумма слишком велика для онлайн-анализа. Рекомендуем обратиться к юристу оффлайн.';
+                }
+                
+                return true;
+            }
+        },
+        {
+            id: 'date',
+            text: 'Когда это произошло или какой срок был нарушен (дата, число дней)?',
+            example: 'Пример: 15 марта 2024 года или задержка на 30 дней',
+            maxLength: 100,
+            validator: (value) => {
+                if (!value || value.trim().length < 2) {
+                    return 'Укажите дату или срок';
+                }
+                
+                if (value.length > 100) {
+                    return 'Слишком длинный ответ. Укажите кратко';
+                }
+                
+                return true;
+            }
+        }
+    ];
     
     // === СИСТЕМНЫЕ ФУНКЦИИ ===
     
     /**
-     * Безопасная очистка hash из URL без скролла
+     * Очистка hash без скролла
      */
     function safeHashCleanup() {
-        const currentHash = window.location.hash;
-        
-        if (currentHash) {
-            console.log(`🧹 [HashCleanup] Обнаружен hash: ${currentHash}`);
+        if (window.location.hash) {
+            console.log('🧹 [HashCleanup] Очистка hash:', window.location.hash);
             
-            // Сохраняем для возможного использования
-            window.AMG_State.initialHash = currentHash;
+            const scrollY = window.pageYOffset;
             
-            // Запоминаем позицию скролла ДО очистки
-            const scrollPosition = window.pageYOffset;
-            
-            // Очищаем URL БЕЗ вызова скролла
             try {
                 history.replaceState(
                     null,
-                    document.title,
+                    null,
                     window.location.pathname + window.location.search
                 );
-                console.log('✅ [HashCleanup] URL очищен');
-            } catch (error) {
-                console.error('❌ [HashCleanup] Ошибка очистки URL:', error);
-            }
+            } catch(error) {}
             
-            // Восстанавливаем позицию (если браузер сдвинулся)
-            if (window.pageYOffset !== scrollPosition) {
-                window.scrollTo(0, scrollPosition);
-                console.log('↩️ [HashCleanup] Позиция скролла восстановлена');
+            if (window.pageYOffset !== scrollY) {
+                window.scrollTo(0, scrollY);
             }
-        } else {
-            console.log('✅ [HashCleanup] Hash не обнаружен');
         }
     }
     
     /**
      * Ожидание готовности системы
-     * @param {Function} callback - Функция для вызова после готовности
      */
     function waitForSystemReady(callback) {
         const startTime = Date.now();
@@ -330,22 +168,23 @@ window.AMG_ScrollController = {
         function check() {
             const elapsed = Date.now() - startTime;
             
-            // Проверка таймаута
             if (elapsed > CONFIG.SYSTEM_WAIT_TIMEOUT) {
                 console.warn('⚠️ [SystemWait] Таймаут ожидания системы');
+                // Аварийная разблокировка
+                if (window.AMG_State) {
+                    window.AMG_State.systemReady = true;
+                    window.AMG_State.scrollAllowed = true;
+                }
                 if (callback) callback();
                 return;
             }
             
-            // Проверка готовности
             if (window.AMG_State && window.AMG_State.systemReady) {
                 console.log(`✅ [SystemWait] Система готова через ${elapsed}мс`);
                 if (callback) callback();
                 return;
             }
             
-            // Повторная проверка
-            console.log(`⏳ [SystemWait] Ожидание системы... (${elapsed}мс)`);
             setTimeout(check, 100);
         }
         
@@ -353,17 +192,41 @@ window.AMG_ScrollController = {
     }
     
     /**
-     * Настройка всех обработчиков скролла
+     * Настройка обработчиков скролла
      */
     function setupScrollHandlers() {
-        console.log('🎯 [ScrollHandlers] Настройка обработчиков скролла');
+        console.log('🎯 [ScrollHandlers] Настройка обработчиков');
         
-        // 1. КНОПКИ "СТАРТ"
+        // ЛОГОТИП - СКРОЛЛ К ВЕРХУ
+        const navLogo = document.getElementById('navLogo');
+        if (navLogo) {
+            console.log('🔘 [ScrollHandlers] Логотип найден');
+            
+            navLogo.style.cursor = 'pointer';
+            if (!navLogo.title) navLogo.title = 'Вернуться наверх';
+            
+            navLogo.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                
+                console.log('🖱️ [ScrollHandlers] Клик по логотипу');
+                
+                // Визуальная обратная связь
+                this.classList.add('clicked');
+                setTimeout(() => this.classList.remove('clicked'), 300);
+                
+                // Скролл к верху
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                
+                return false;
+            }, true);
+        }
+        
+        // КНОПКИ "СТАРТ"
         const startButtons = document.querySelectorAll(CONFIG.START_BUTTONS);
-        console.log(`🔘 [ScrollHandlers] Найдено кнопок "Старт": ${startButtons.length}`);
+        console.log(`🔘 [ScrollHandlers] Кнопок "Старт": ${startButtons.length}`);
         
         startButtons.forEach((button, index) => {
-            // Клонируем для чистых обработчиков
             const cleanButton = button.cloneNode(true);
             button.parentNode.replaceChild(cleanButton, button);
             
@@ -371,40 +234,26 @@ window.AMG_ScrollController = {
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 
-                console.log(`🖱️ [ScrollHandlers] Клик по кнопке "Старт" #${index + 1}`);
+                console.log(`🖱️ [ScrollHandlers] Клик по "Старт" #${index + 1}`);
                 
-                // Запрос скролла через контроллер
-                const success = window.AMG_ScrollController.requestScroll('start-section', {
-                    block: 'start'
-                });
-                
-                if (success) {
-                    // Дополнительные действия после скролла
+                // Скролл к виджету
+                const startSection = document.getElementById('start-section');
+                if (startSection) {
+                    startSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    
                     setTimeout(() => {
                         const textarea = document.querySelector('.answer-input');
-                        if (textarea) {
-                            textarea.focus();
-                            console.log('🎯 [ScrollHandlers] Фокус на поле ввода');
-                            
-                            // Визуальная подсветка
-                            const ctaSection = document.getElementById('start-section');
-                            if (ctaSection) {
-                                ctaSection.style.boxShadow = '0 0 0 3px #4CAF50';
-                                setTimeout(() => {
-                                    ctaSection.style.boxShadow = '';
-                                }, 2000);
-                            }
-                        }
-                    }, 600);
+                        if (textarea) textarea.focus();
+                    }, 500);
                 }
                 
                 return false;
             }, true);
         });
         
-        // 2. НАВИГАЦИОННЫЕ КНОПКИ (data-scroll-to)
+        // НАВИГАЦИЯ
         const scrollButtons = document.querySelectorAll(CONFIG.SCROLL_TO_BUTTONS);
-        console.log(`🔘 [ScrollHandlers] Найдено кнопок навигации: ${scrollButtons.length}`);
+        console.log(`🔘 [ScrollHandlers] Кнопок навигации: ${scrollButtons.length}`);
         
         scrollButtons.forEach((button, index) => {
             const cleanButton = button.cloneNode(true);
@@ -415,19 +264,19 @@ window.AMG_ScrollController = {
                 e.stopImmediatePropagation();
                 
                 const targetId = this.getAttribute('data-scroll-to');
-                console.log(`🖱️ [ScrollHandlers] Клик по навигации к #${targetId}`);
+                console.log(`🖱️ [ScrollHandlers] Клик к #${targetId}`);
                 
-                window.AMG_ScrollController.requestScroll(targetId, {
-                    block: 'start'
-                });
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
                 
                 return false;
             }, true);
         });
         
-        // 3. БЛОКИРОВКА НАТИВНЫХ ЯКОРЕЙ (временная)
+        // Блокировка нативных якорей
         let blockNativeAnchors = true;
-        
         window.addEventListener('click', function(e) {
             if (!blockNativeAnchors) return;
             
@@ -435,56 +284,13 @@ window.AMG_ScrollController = {
             if (anchor && anchor.hash) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
-                console.log(`🚫 [ScrollHandlers] Блокирован нативный якорь: ${anchor.hash}`);
             }
         }, true);
         
-        // Разблокировка через 1 секунду
         setTimeout(() => {
             blockNativeAnchors = false;
-            console.log('✅ [ScrollHandlers] Нативные якоря разблокированы');
         }, 1000);
     }
-    
-    /**
-     * Инициализация виджета
-     */
-    function initWidget() {
-        if (widgetState.isInitialized) {
-            console.warn('⚠️ [WidgetInit] Виджет уже инициализирован');
-            return;
-        }
-        
-        console.log('🚀 [WidgetInit] Инициализация виджета');
-        
-        // Получаем контейнер
-        const widgetContainer = document.querySelector(CONFIG.WIDGET_CONTAINER);
-        if (!widgetContainer) {
-            console.error('❌ [WidgetInit] Контейнер виджета не найден');
-            return;
-        }
-        
-        // Очищаем контейнер
-        widgetContainer.innerHTML = '';
-        widgetContainer.style.minHeight = '300px';
-        widgetContainer.classList.add('preview-container');
-        
-        // Обновляем глобальное состояние
-        window.AMG_State.widgetActive = true;
-        
-        // Настраиваем обработчики
-        setupScrollHandlers();
-        
-        // Создаём интерфейс
-        createWidgetInterface(widgetContainer);
-        
-        // Помечаем как инициализированный
-        widgetState.isInitialized = true;
-        
-        console.log('✅ [WidgetInit] Виджет успешно инициализирован');
-    }
-    
-    // === ФУНКЦИИ ИНТЕРФЕЙСА ВИДЖЕТА ===
     
     /**
      * Создание интерфейса виджета
@@ -492,79 +298,6 @@ window.AMG_ScrollController = {
     function createWidgetInterface(container) {
         console.log('🎨 [WidgetInterface] Создание интерфейса');
         
-        // Определяем вопросы
-        widgetState.questions = [
-            {
-                id: 'problem',
-                text: 'Опишите проблему коротко (что произошло, с каким товаром/услугой)?',
-                example: 'Пример: Купил телефон, он сломался через неделю. Магазин отказывается менять.',
-                maxLength: 200,
-                validator: (value) => {
-                    if (!value || value.trim().length < 10) {
-                        return 'Опишите проблему подробнее (минимум 10 символов)';
-                    }
-                    
-                    if (window.GuardConfig && window.GuardConfig.validate) {
-                        const guardResult = window.GuardConfig.validate(value);
-                        if (guardResult !== true) return guardResult;
-                    }
-                    
-                    const lowerValue = value.toLowerCase();
-                    const hasConsumerKeywords = CONFIG.CONSUMER_KEYWORDS.some(keyword => 
-                        lowerValue.includes(keyword)
-                    );
-                    
-                    if (!hasConsumerKeywords) {
-                        return 'Опишите ситуацию с покупкой товара или услуги. Пример: "Купил холодильник, он не морозит"';
-                    }
-                    
-                    return true;
-                }
-            },
-            {
-                id: 'amount',
-                text: 'Укажите сумму покупки, ущерба или стоимость услуги (в рублях)?',
-                example: 'Пример: 30000',
-                maxLength: 20,
-                validator: (value) => {
-                    if (!value || value.trim().length === 0) {
-                        return 'Укажите сумму цифрами';
-                    }
-                    
-                    const cleanValue = value.replace(/\s/g, '').replace('₽', '').replace('руб', '');
-                    const numValue = Number(cleanValue);
-                    
-                    if (isNaN(numValue) || numValue <= 0) {
-                        return 'Введите корректную сумму цифрами (например: 25000)';
-                    }
-                    
-                    if (numValue > 10000000) {
-                        return 'Сумма слишком велика для онлайн-анализа. Рекомендуем обратиться к юристу оффлайн.';
-                    }
-                    
-                    return true;
-                }
-            },
-            {
-                id: 'date',
-                text: 'Когда это произошло или какой срок был нарушен (дата, число дней)?',
-                example: 'Пример: 15 марта 2024 года или задержка на 30 дней',
-                maxLength: 100,
-                validator: (value) => {
-                    if (!value || value.trim().length < 2) {
-                        return 'Укажите дату или срок';
-                    }
-                    
-                    if (value.length > 100) {
-                        return 'Слишком длинный ответ. Укажите кратко';
-                    }
-                    
-                    return true;
-                }
-            }
-        ];
-        
-        // Создаём структуру
         const widgetElement = document.createElement('div');
         widgetElement.className = 'preview-widget';
         widgetElement.style.cssText = `
@@ -584,7 +317,7 @@ window.AMG_ScrollController = {
                 <div class="bot-progress-bar" style="height: 6px; background: #e9ecef; border-radius: 3px; overflow: hidden;">
                     <div class="bot-progress-fill" style="height: 100%; background: linear-gradient(90deg, #c53030, #dd6b20); transition: width 0.3s ease; width: 0%"></div>
                 </div>
-                <div class="step-counter" style="font-size: 14px; color: #6c757d; text-align: center; font-weight: 600;">Вопрос 1 из ${widgetState.questions.length}</div>
+                <div class="step-counter" style="font-size: 14px; color: #6c757d; text-align: center; font-weight: 600;">Вопрос 1 из ${QUESTIONS.length}</div>
             </div>
         `;
         
@@ -605,7 +338,7 @@ window.AMG_ScrollController = {
             gap: 12px;
         `;
         
-        // Сборка структуры
+        // Сборка
         widgetElement.appendChild(header);
         widgetElement.appendChild(questionArea);
         widgetElement.appendChild(answerArea);
@@ -620,37 +353,34 @@ window.AMG_ScrollController = {
             answerArea: answerArea,
             buttonsArea: buttonsArea
         };
-        
-        // Показываем первый вопрос
-        updateWidgetDisplay();
     }
     
     /**
      * Обновление отображения виджета
      */
     function updateWidgetDisplay() {
-        if (!widgetState.interface || !widgetState.questions) {
+        if (!widgetState.interface) {
             console.error('❌ [WidgetDisplay] Интерфейс не инициализирован');
             return;
         }
         
         const { header, questionArea, answerArea, buttonsArea } = widgetState.interface;
-        const question = widgetState.questions[widgetState.currentStep];
+        const question = QUESTIONS[widgetState.currentStep];
         
-        // Обновляем прогресс
+        // Прогресс
         const progressFill = header.querySelector('.bot-progress-fill');
         const stepCounter = header.querySelector('.step-counter');
         
         if (progressFill) {
-            const progress = ((widgetState.currentStep) / widgetState.questions.length) * 100;
+            const progress = ((widgetState.currentStep) / QUESTIONS.length) * 100;
             progressFill.style.width = `${progress}%`;
         }
         
         if (stepCounter) {
-            stepCounter.textContent = `Вопрос ${widgetState.currentStep + 1} из ${widgetState.questions.length}`;
+            stepCounter.textContent = `Вопрос ${widgetState.currentStep + 1} из ${QUESTIONS.length}`;
         }
         
-        // Очищаем области
+        // Очистка
         questionArea.innerHTML = '';
         answerArea.innerHTML = '';
         buttonsArea.innerHTML = '';
@@ -668,7 +398,7 @@ window.AMG_ScrollController = {
         questionText.textContent = question.text;
         questionArea.appendChild(questionText);
         
-        // Пример (если есть)
+        // Пример
         if (question.example) {
             const exampleText = document.createElement('div');
             exampleText.className = 'bot-example';
@@ -714,7 +444,7 @@ window.AMG_ScrollController = {
             margin-top: 6px;
         `;
         
-        // Сообщение об ошибке
+        // Ошибка
         const errorMessage = document.createElement('div');
         errorMessage.className = 'error-message';
         errorMessage.style.cssText = `
@@ -724,14 +454,14 @@ window.AMG_ScrollController = {
             display: none;
         `;
         
-        // Функция обновления счётчика
+        // Обновление счётчика
         function updateCharCounter() {
             const length = input.value.length;
             charCounter.textContent = `${length} / ${question.maxLength}`;
             charCounter.style.color = length >= question.maxLength * 0.9 ? '#dc3545' : '#888';
         }
         
-        // Сборка интерфейса ввода
+        // Сборка
         answerArea.appendChild(input);
         answerArea.appendChild(charCounter);
         answerArea.appendChild(errorMessage);
@@ -739,7 +469,7 @@ window.AMG_ScrollController = {
         updateCharCounter();
         input.addEventListener('input', updateCharCounter);
         
-        // Кнопка "Назад" (если не первый вопрос)
+        // Кнопка "Назад"
         if (widgetState.currentStep > 0) {
             const prevButton = document.createElement('button');
             prevButton.className = 'btn btn-secondary widget-button';
@@ -752,11 +482,11 @@ window.AMG_ScrollController = {
             buttonsArea.appendChild(prevButton);
         }
         
-        // Кнопка "Далее"/"Получить анализ"
+        // Кнопка "Далее"
         const nextButton = document.createElement('button');
-        nextButton.className = `btn ${widgetState.currentStep < widgetState.questions.length - 1 ? 'btn-primary' : 'btn-primary'} widget-button`;
+        nextButton.className = `btn ${widgetState.currentStep < QUESTIONS.length - 1 ? 'btn-primary' : 'btn-success'} widget-button`;
         nextButton.style.flex = '1';
-        nextButton.textContent = widgetState.currentStep < widgetState.questions.length - 1 ? 'Далее →' : 'Получить анализ';
+        nextButton.textContent = widgetState.currentStep < QUESTIONS.length - 1 ? 'Далее →' : 'Получить анализ';
         nextButton.disabled = widgetState.isProcessing;
         
         nextButton.addEventListener('click', () => {
@@ -774,7 +504,7 @@ window.AMG_ScrollController = {
             errorMessage.style.display = 'none';
             widgetState.answers[question.id] = value;
             
-            if (widgetState.currentStep < widgetState.questions.length - 1) {
+            if (widgetState.currentStep < QUESTIONS.length - 1) {
                 widgetState.currentStep++;
                 updateWidgetDisplay();
             } else {
@@ -792,111 +522,317 @@ window.AMG_ScrollController = {
             }
         });
         
-        // Автофокус
+        // Фокус
         setTimeout(() => input.focus(), 100);
         
         console.log(`📊 [WidgetDisplay] Показан вопрос ${widgetState.currentStep + 1}`);
     }
     
     /**
-     * Анализ ответов
+     * ПРОСТОЙ АНАЛИЗ ОТВЕТОВ (без зависаний)
      */
     function analyzeAnswers() {
         console.log('🔍 [WidgetAnalysis] Начало анализа ответов');
         widgetState.isProcessing = true;
         updateWidgetDisplay();
         
-        // Имитация анализа
+        // Имитация обработки
         setTimeout(() => {
-            const problemText = widgetState.answers.problem.toLowerCase();
-            const amount = Number(widgetState.answers.amount.replace(/\s/g, '').replace('₽', '').replace('руб', ''));
-            const dateText = widgetState.answers.date;
-            
-            // Проверка срока давности
-            const dateCheck = checkStatuteOfLimitations(dateText);
-            
-            // Определение сложности
-            const isComplexCase = CONFIG.COMPLEX_KEYWORDS.some(keyword => 
-                problemText.includes(keyword)
-            );
-            
-            // Выбор тарифа
-            let recommendedPlan = 'extended';
-            let planName = 'Расширенный';
-            let planPrice = '1 200 ₽';
-            
-            if (amount < 20000 && !isComplexCase && dateCheck.isValid) {
-                recommendedPlan = 'basic';
-                planName = 'Базовый';
-                planPrice = '500 ₽';
-            } else if (amount > 100000 || isComplexCase) {
-                recommendedPlan = 'subscription';
-                planName = 'Профессиональный';
-                planPrice = '2 500 ₽';
-            }
-            
-            // Сохранение в sessionStorage
-            const hasConsumerKeywords = CONFIG.CONSUMER_KEYWORDS.some(keyword => 
-                problemText.includes(keyword)
-            );
-            
-            const isSolvable = hasConsumerKeywords && !isNaN(amount) && amount > 0 && 
-                              dateText && dateText.trim().length >= 2 && dateCheck.isValid;
-            
-            if (isSolvable && dateCheck.isValid) {
+            try {
+                const problemText = widgetState.answers.problem.toLowerCase();
+                const amount = Number(widgetState.answers.amount.replace(/\s/g, '').replace('₽', '').replace('руб', ''));
+                const dateText = widgetState.answers.date;
+                
+                // Проверка ключевых слов
+                const hasConsumerKeywords = CONFIG.CONSUMER_KEYWORDS.some(keyword => 
+                    problemText.includes(keyword)
+                );
+                
+                const isComplexCase = CONFIG.COMPLEX_KEYWORDS.some(keyword => 
+                    problemText.includes(keyword)
+                );
+                
+                const isAmountValid = !isNaN(amount) && amount > 0;
+                const isDateValid = dateText && dateText.trim().length >= 2;
+                
+                const isSolvable = hasConsumerKeywords && isAmountValid && isDateValid;
+                
+                // Выбор тарифа
+                let recommendedPlan = 'extended';
+                let planName = 'Расширенный';
+                let planPrice = '1 200 ₽';
+                
+                if (amount < 20000 && !isComplexCase) {
+                    recommendedPlan = 'basic';
+                    planName = 'Базовый';
+                    planPrice = '500 ₽';
+                } else if (amount > 100000 || isComplexCase) {
+                    recommendedPlan = 'subscription';
+                    planName = 'Профессиональный';
+                    planPrice = '2 500 ₽';
+                }
+                
+                // Сохранение
                 try {
                     sessionStorage.setItem('preliminary_answers', JSON.stringify({
                         problem: widgetState.answers.problem,
                         amount: amount,
                         date: dateText,
-                        dateCheck: dateCheck,
+                        isSolvable: isSolvable,
+                        recommendedPlan: recommendedPlan,
                         collectedAt: new Date().toISOString()
                     }));
-                    console.log('💾 [WidgetAnalysis] Ответы сохранены в sessionStorage');
+                    console.log('💾 [WidgetAnalysis] Ответы сохранены');
                 } catch (e) {
-                    console.warn('⚠️ [WidgetAnalysis] Ошибка сохранения ответов:', e);
+                    console.warn('⚠️ [WidgetAnalysis] Ошибка сохранения:', e);
                 }
+                
+                // Показ результата
+                displayResult(isSolvable, recommendedPlan, planName, planPrice);
+                
+            } catch (error) {
+                console.error('❌ [WidgetAnalysis] Критическая ошибка:', error);
+                displayError();
+            } finally {
+                widgetState.isProcessing = false;
+                console.log('✅ [WidgetAnalysis] Анализ завершён');
             }
-            
-            // Показ результата
-            displayAnalysisResult(isSolvable, dateCheck, recommendedPlan, planName, planPrice);
-            widgetState.isProcessing = false;
-            
-            console.log('✅ [WidgetAnalysis] Анализ завершён');
         }, 800);
     }
     
     /**
-     * Проверка срока давности
+     * Отображение результата анализа (упрощённое)
      */
-    function checkStatuteOfLimitations(dateText) {
-        // ... (полный код функции checkStatuteOfLimitations из предыдущей версии)
-        // В целях экономии места оставляю сигнатуру, код идентичен
-        return { isValid: true, warning: null, reason: null };
+    function displayResult(isSolvable, planId, planName, planPrice) {
+        if (!widgetState.interface) return;
+        
+        const { questionArea, answerArea, buttonsArea } = widgetState.interface;
+        
+        questionArea.innerHTML = '';
+        answerArea.innerHTML = '';
+        buttonsArea.innerHTML = '';
+        
+        if (isSolvable) {
+            const resultContainer = document.createElement('div');
+            resultContainer.className = 'diagnosis-content';
+            resultContainer.style.cssText = `
+                padding: 20px;
+                border-radius: 8px;
+                margin: 20px 0;
+                animation: fadeIn 0.5s ease;
+                background: linear-gradient(135deg, #d4edda, #c3e6cb);
+                border: 2px solid #28a745;
+                color: #155724;
+            `;
+            
+            resultContainer.innerHTML = `
+                <h3 style="margin-top: 0; color: #155724;">
+                    <i class="fas fa-search"></i> Возможное нарушение прав потребителя обнаружено
+                </h3>
+                <p><strong>Ситуация может подпадать под действие Закона о защите прав потребителей.</strong></p>
+                
+                <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 15px; margin: 15px 0; border-radius: 4px;">
+                    <p style="margin: 0; color: #856404; font-size: 14px;">
+                        <i class="fas fa-exclamation-triangle"></i> <strong>Внимание:</strong> Это предварительная оценка.
+                    </p>
+                </div>
+                
+                <div class="recommended-plan" style="
+                    background: white;
+                    border-radius: 8px;
+                    padding: 15px;
+                    margin: 15px 0;
+                    border: 2px solid #ffc107;
+                    box-shadow: 0 3px 10px rgba(255, 193, 7, 0.2);
+                ">
+                    <div class="recommended-badge" style="
+                        display: inline-block;
+                        background: #ffc107;
+                        color: #212529;
+                        padding: 4px 10px;
+                        border-radius: 4px;
+                        font-size: 12px;
+                        font-weight: bold;
+                        margin-bottom: 10px;
+                    ">РЕКОМЕНДУЕМ</div>
+                    <h4 style="margin: 5px 0; color: #212529;">Тариф «${planName}» — ${planPrice}</h4>
+                </div>
+                
+                <p><strong>Для полного анализа:</strong></p>
+                <ul style="margin: 10px 0 20px 20px; font-size: 14px;">
+                    <li>Юридический анализ соответствия ЗоЗПП</li>
+                    <li>Расчёт законных требований</li>
+                    <li>Готовые документы для досудебного урегулирования</li>
+                </ul>
+            `;
+            
+            // Кнопка выбора тарифа
+            const goToPricing = document.createElement('button');
+            goToPricing.className = 'btn btn-primary';
+            goToPricing.style.cssText = 'width: 100%; margin-top: 15px;';
+            goToPricing.innerHTML = '<i class="fas fa-tags"></i> Выбрать тариф';
+            goToPricing.addEventListener('click', () => {
+                const pricingSection = document.getElementById('pricing');
+                if (pricingSection) {
+                    pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    
+                    setTimeout(() => {
+                        const planElement = document.querySelector(`[data-plan="${planId}"]`);
+                        if (planElement) {
+                            const card = planElement.closest('.pricing-card');
+                            if (card) {
+                                card.style.boxShadow = '0 0 0 3px #28a745';
+                                setTimeout(() => {
+                                    card.style.boxShadow = '';
+                                }, 2000);
+                            }
+                        }
+                    }, 500);
+                }
+            });
+            
+            // Кнопка повтора
+            const restartButton = document.createElement('button');
+            restartButton.className = 'btn btn-secondary';
+            restartButton.style.cssText = 'width: 100%; margin-top: 10px;';
+            restartButton.innerHTML = '<i class="fas fa-redo"></i> Новый анализ';
+            restartButton.addEventListener('click', () => {
+                widgetState.currentStep = 0;
+                widgetState.answers = {};
+                updateWidgetDisplay();
+            });
+            
+            answerArea.appendChild(resultContainer);
+            buttonsArea.appendChild(goToPricing);
+            buttonsArea.appendChild(restartButton);
+            
+        } else {
+            // Если не решаемо
+            const resultContainer = document.createElement('div');
+            resultContainer.className = 'diagnosis-content';
+            resultContainer.style.cssText = `
+                padding: 20px;
+                border-radius: 8px;
+                margin: 20px 0;
+                animation: fadeIn 0.5s ease;
+                background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+                border: 2px solid #dc3545;
+                color: #721c24;
+            `;
+            
+            resultContainer.innerHTML = `
+                <h3 style="margin-top: 0; color: #721c24;">
+                    <i class="fas fa-exclamation-triangle"></i> Не удалось обнаружить признаков нарушения
+                </h3>
+                <p><strong>На основе описания не обнаружено признаков нарушения прав потребителя.</strong></p>
+                <p>Если вы считаете, что произошла ошибка, опишите ситуацию более подробно.</p>
+            `;
+            
+            const restartButton = document.createElement('button');
+            restartButton.className = 'btn btn-secondary';
+            restartButton.style.cssText = 'width: 100%; margin-top: 15px;';
+            restartButton.innerHTML = '<i class="fas fa-redo"></i> Попробовать снова';
+            restartButton.addEventListener('click', () => {
+                widgetState.currentStep = 0;
+                widgetState.answers = {};
+                updateWidgetDisplay();
+            });
+            
+            answerArea.appendChild(resultContainer);
+            buttonsArea.appendChild(restartButton);
+        }
     }
     
     /**
-     * Отображение результата анализа
+     * Отображение ошибки
      */
-    function displayAnalysisResult(isSolvable, dateCheck, planId, planName, planPrice) {
-        // ... (полный код функции displayResult из предыдущей версии)
-        // Адаптирован для использования с новым состоянием
+    function displayError() {
+        if (!widgetState.interface) return;
+        
+        const { answerArea, buttonsArea } = widgetState.interface;
+        
+        answerArea.innerHTML = '';
+        buttonsArea.innerHTML = '';
+        
+        const errorContainer = document.createElement('div');
+        errorContainer.style.cssText = `
+            padding: 20px;
+            border-radius: 8px;
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+            text-align: center;
+        `;
+        
+        errorContainer.innerHTML = `
+            <h3><i class="fas fa-exclamation-circle"></i> Ошибка анализа</h3>
+            <p>Попробуйте ещё раз или обновите страницу.</p>
+        `;
+        
+        const restartButton = document.createElement('button');
+        restartButton.className = 'btn btn-secondary';
+        restartButton.style.cssText = 'width: 100%; margin-top: 15px;';
+        restartButton.innerHTML = '<i class="fas fa-redo"></i> Попробовать снова';
+        restartButton.addEventListener('click', () => {
+            widgetState.currentStep = 0;
+            widgetState.answers = {};
+            updateWidgetDisplay();
+        });
+        
+        answerArea.appendChild(errorContainer);
+        buttonsArea.appendChild(restartButton);
+    }
+    
+    /**
+     * Инициализация виджета
+     */
+    function initWidget() {
+        if (widgetState.isInitialized) {
+            console.warn('⚠️ [WidgetInit] Виджет уже инициализирован');
+            return;
+        }
+        
+        console.log('🚀 [WidgetInit] Инициализация виджета');
+        
+        const widgetContainer = document.querySelector(CONFIG.WIDGET_CONTAINER);
+        if (!widgetContainer) {
+            console.error('❌ [WidgetInit] Контейнер не найден');
+            return;
+        }
+        
+        // Очистка
+        widgetContainer.innerHTML = '';
+        widgetContainer.style.minHeight = '300px';
+        widgetContainer.classList.add('preview-container');
+        
+        // Настройка скроллов
+        safeHashCleanup();
+        setupScrollHandlers();
+        
+        // Создание интерфейса
+        createWidgetInterface(widgetContainer);
+        
+        // Обновление состояния
+        window.AMG_State.widgetActive = true;
+        widgetState.isInitialized = true;
+        
+        // Показ первого вопроса
+        updateWidgetDisplay();
+        
+        console.log('✅ [WidgetInit] Виджет успешно инициализирован');
     }
     
     // === ТОЧКА ВХОДА ===
     
-    console.log('🎬 [PreviewWidget] Запуск системы');
+    console.log('🎬 [PreviewWidget] Запуск');
     
-    // 1. СРАЗУ очищаем hash (самое важное!)
-    safeHashCleanup();
-    
-    // 2. Проверяем наличие контейнера виджета
+    // Проверка контейнера
     const widgetContainer = document.querySelector(CONFIG.WIDGET_CONTAINER);
     
     if (!widgetContainer) {
-        console.log('ℹ️ [PreviewWidget] Контейнер виджета не найден, только настройка скроллов');
+        console.log('ℹ️ [PreviewWidget] Контейнер не найден, только скроллы');
         
-        // Настраиваем базовые скроллы
+        safeHashCleanup();
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', setupScrollHandlers);
         } else {
@@ -906,51 +842,26 @@ window.AMG_ScrollController = {
         return;
     }
     
-    // 3. Если есть виджет - ждём готовности системы
-    console.log('🏗️ [PreviewWidget] Контейнер виджета найден, ожидание системы...');
+    // Если есть виджет - ждём систему
+    console.log('🏗️ [PreviewWidget] Контейнер найден, ожидание системы...');
     
     waitForSystemReady(function() {
         console.log('🚀 [PreviewWidget] Запуск виджета');
         initWidget();
     });
     
-    // 4. Логирование статуса через 1 секунду
+    // Логирование статуса
     setTimeout(() => {
-        console.log('📈 [PreviewWidget] Статус через 1 секунду:', {
-            AMG_State: window.AMG_State ? {
-                systemReady: window.AMG_State.systemReady,
-                scrollAllowed: window.AMG_State.scrollAllowed
-            } : 'Не инициализирован',
-            ScrollController: window.AMG_ScrollController ? 
-                window.AMG_ScrollController.getStatus() : 'Не инициализирован',
+        console.log('📈 [PreviewWidget] Статус:', {
+            systemReady: window.AMG_State ? window.AMG_State.systemReady : false,
             widgetInitialized: widgetState.isInitialized
         });
     }, 1000);
     
-    console.log('✅ [PreviewWidget] Система запущена');
+    console.log('✅ [PreviewWidget] Модуль загружен');
     
 })();
 
 // ===================================================================
-// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (глобальные)
+// КОНЕЦ ФАЙЛА
 // ===================================================================
-
-/**
- * Русские склонения для лет
- */
-function getRussianYears(number) {
-    if (!number) return 'лет';
-    if (number % 10 === 1 && number % 100 !== 11) return 'год';
-    if ([2, 3, 4].includes(number % 10) && ![12, 13, 14].includes(number % 100)) return 'года';
-    return 'лет';
-}
-
-/**
- * Русские склонения для дней
- */
-function getRussianDays(number) {
-    if (!number) return 'дней';
-    if (number % 10 === 1 && number % 100 !== 11) return 'день';
-    if ([2, 3, 4].includes(number % 10) && ![12, 13, 14].includes(number % 100)) return 'дня';
-    return 'дней';
-}
