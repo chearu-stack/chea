@@ -8,32 +8,61 @@ window.AMG_State = window.AMG_State || {
     // Данные
     currentPlan: null,
     userFP: null,
+    initializationStarted: false,
+    initializationComplete: false,
     
     // Методы управления
     blockSystem: function(reason) {
-        console.log(`🔒 Блокировка системы: ${reason}`);
+        console.log(`🔒 [AMG_State] Блокировка системы: ${reason}`);
         this.systemReady = false;
         this.scrollAllowed = false;
+        this.initializationStarted = true;
     },
     
     unblockSystem: function() {
-        console.log('✅ Система разблокирована');
+        console.log('✅ [AMG_State] Система разблокирована');
         this.systemReady = true;
         this.scrollAllowed = true;
+        this.initializationComplete = true;
+        
+        // Глобальное событие для других скриптов
+        window.dispatchEvent(new CustomEvent('amg-system-ready'));
+    },
+    
+    // Аварийная разблокировка
+    emergencyUnblock: function() {
+        console.warn('🆘 [AMG_State] АВАРИЙНАЯ разблокировка системы');
+        this.systemReady = true;
+        this.scrollAllowed = true;
+        this.initializationComplete = true;
+        window.dispatchEvent(new CustomEvent('amg-system-emergency-ready'));
     }
 };
 
 /**
  * АДВОКАТ МЕДНОГО ГРОША — script.js
- * ВЕРСИЯ: FERRARI EDITION (С блокировкой и отпечатком)
+ * ВЕРСИЯ: FERRARI EDITION v2.1 (стабильная с исправлениями)
  */
 
-// БЛОКИРОВКА СИСТЕМЫ ПРИ ЗАГРУЗКЕ
-window.AMG_State.blockSystem('Загрузка script.js');
+// ===== КРИТИЧЕСКИЙ ФИКС: ЗАЩИТА ОТ ДВОЙНОЙ ИНИЦИАЛИЗАЦИИ =====
+if (window.AMG_State.initializationStarted) {
+    console.warn('⚠️ [ScriptJS] Система уже инициализируется, пропускаем дублирование');
+} else {
+    // БЛОКИРОВКА СИСТЕМЫ ПРИ ЗАГРУЗКЕ
+    window.AMG_State.blockSystem('Загрузка script.js');
+}
 
-document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 Система АМГ: Ferrari Mode активирована.");
-
+// ===== ГАРАНТИРОВАННАЯ ИНИЦИАЛИЗАЦИЯ =====
+function initializeAMGSystem() {
+    console.log("🚀 [ScriptJS] Система АМГ: Ferrari Mode активирована.");
+    
+    // Защита от повторного выполнения
+    if (window._AMG_INITIALIZED) {
+        console.warn('⚠️ [ScriptJS] Система уже инициализирована');
+        return;
+    }
+    window._AMG_INITIALIZED = true;
+    
     // --- 0. СТИЛИ ДЛЯ МЕРЦАНИЯ И КНОПОК ---
     const style = document.createElement('style');
     style.innerHTML = `
@@ -75,9 +104,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderWaitingCard(planKey) {
         // ПРОВЕРКА: если система заблокирована - ждём
         if (!window.AMG_State.systemReady) {
+            console.log('⏳ [RenderCard] Ожидание разблокировки системы...');
             setTimeout(() => renderWaitingCard(planKey), 100);
             return;
         }
+        
+        console.log('🎨 [RenderCard] Отрисовка карточки для плана:', planKey);
         
         const plan = planDetails[planKey] || planDetails['extended'];
         const header = document.querySelector('.card-header');
@@ -117,95 +149,189 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                 }
             }
-        } catch (e) { console.log("Проверка..."); }
+        } catch (e) { console.log("[CheckActivation] Проверка..."); }
     }
 
     // --- 3. ИСПРАВЛЕННАЯ ОБРАБОТКА ТАРИФОВ ---
-    const tariffButtons = document.querySelectorAll('.pricing-card .btn[data-plan]');
-    tariffButtons.forEach(button => {
-        // Удаляем старый обработчик (если есть)
-        const newButton = button.cloneNode(true);
-        button.parentNode.replaceChild(newButton, button);
+    function setupTariffButtons() {
+        const tariffButtons = document.querySelectorAll('.pricing-card .btn[data-plan]');
+        console.log(`🔘 [TariffButtons] Найдено кнопок тарифов: ${tariffButtons.length}`);
         
-        // Вешаем новый с preventDefault
-        newButton.addEventListener('click', async function(e) {
-            e.preventDefault(); // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ!
-            e.stopPropagation();
+        tariffButtons.forEach(button => {
+            // Удаляем старый обработчик (если есть)
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
             
-            const card = this.closest('.pricing-card');
-            const planKey = this.getAttribute('data-plan');
-            const priceText = card.querySelector('.price').textContent.replace(/\s/g, '');
-            const priceInt = parseInt(priceText);
-            
-            // 1. Генерируем данные локально
-            const newID = generateOrderIdentifier(planKey);
-            localStorage.setItem('lastOrderID', newID);
-            localStorage.setItem('selectedPlan', planKey);
-            localStorage.setItem('lockTime', Date.now());
-
-            // 2. СРАЗУ отправляем "отпечаток" и заказ на сервер
-            try {
-                const capsLimits = { 'basic': 30000, 'extended': 60000, 'subscription': 90000 };
+            // Вешаем новый с preventDefault
+            newButton.addEventListener('click', async function(e) {
+                e.preventDefault(); // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ!
+                e.stopPropagation();
                 
-                fetch('https://chea.onrender.com/generate-code', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        code: newID,
-                        package: planKey,
-                        caps_limit: capsLimits[planKey] || 30000,
-                        fingerprint: userFP
-                    })
-                });
+                console.log('🖱️ [TariffButtons] Клик по тарифу:', this.getAttribute('data-plan'));
                 
-                console.log("✅ Заказ предварительно зарегистрирован в БД");
-            } catch (err) {
-                console.error("❌ Ошибка связи с сервером:", err);
-            }
+                const card = this.closest('.pricing-card');
+                const planKey = this.getAttribute('data-plan');
+                const priceText = card.querySelector('.price').textContent.replace(/\s/g, '');
+                const priceInt = parseInt(priceText);
+                
+                // 1. Генерируем данные локально
+                const newID = generateOrderIdentifier(planKey);
+                localStorage.setItem('lastOrderID', newID);
+                localStorage.setItem('selectedPlan', planKey);
+                localStorage.setItem('lockTime', Date.now());
 
-            // 3. ТОЛЬКО ПОСЛЕ обработки — переход на payment.html
-            setTimeout(() => {
-                window.location.href = this.getAttribute('href');
-            }, 100);
+                // 2. СРАЗУ отправляем "отпечаток" и заказ на сервер
+                try {
+                    const capsLimits = { 'basic': 30000, 'extended': 60000, 'subscription': 90000 };
+                    
+                    fetch('https://chea.onrender.com/generate-code', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            code: newID,
+                            package: planKey,
+                            caps_limit: capsLimits[planKey] || 30000,
+                            fingerprint: userFP
+                        })
+                    });
+                    
+                    console.log("✅ [TariffButtons] Заказ предварительно зарегистрирован в БД");
+                } catch (err) {
+                    console.error("❌ [TariffButtons] Ошибка связи с сервером:", err);
+                }
+
+                // 3. ТОЛЬКО ПОСЛЕ обработки — переход на payment.html
+                setTimeout(() => {
+                    window.location.href = this.getAttribute('href');
+                }, 100);
+            });
         });
-    });
+    }
     
     // --- 4. ПРОВЕРКА СОСТОЯНИЯ ПРИ ЗАГРУЗКЕ ---
-    const savedPlan = localStorage.getItem('selectedPlan');
-    const lockTime = localStorage.getItem('lockTime');
+    function checkSavedState() {
+        const savedPlan = localStorage.getItem('selectedPlan');
+        const lockTime = localStorage.getItem('lockTime');
 
-    if (savedPlan && lockTime && (Date.now() - lockTime < 24 * 60 * 60 * 1000)) {
-        window.AMG_State.currentPlan = savedPlan;
-        renderWaitingCard(savedPlan);
-        setInterval(checkActivation, 10000);
+        if (savedPlan && lockTime && (Date.now() - lockTime < 24 * 60 * 60 * 1000)) {
+            window.AMG_State.currentPlan = savedPlan;
+            renderWaitingCard(savedPlan);
+            setInterval(checkActivation, 10000);
+            console.log('💾 [SavedState] Восстановлено сохранённое состояние:', savedPlan);
+        } else {
+            console.log('💾 [SavedState] Сохранённое состояние не найдено');
+        }
     }
 
     // --- 5. ЛОГИКА СТРАНИЦЫ ОПЛАТЫ ---
-    if (window.location.pathname.includes('payment.html')) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const planKey = urlParams.get('plan') || 'extended';
-        const price = urlParams.get('price') || '1200';
-        const orderID = localStorage.getItem('lastOrderID');
+    function setupPaymentPage() {
+        if (window.location.pathname.includes('payment.html')) {
+            console.log('💰 [PaymentPage] Инициализация страницы оплаты');
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const planKey = urlParams.get('plan') || 'extended';
+            const price = urlParams.get('price') || '1200';
+            const orderID = localStorage.getItem('lastOrderID');
 
-        if (document.getElementById('selectedPlanName')) {
-            document.getElementById('selectedPlanName').textContent = planDetails[planKey].name;
-        }
-        
-        const priceEl = document.getElementById('selectedPlanPrice');
-        if (priceEl) {
-            priceEl.innerHTML = `${price} ₽ <br><span style="color:red; font-size:1rem;">ID: ${orderID}</span>`;
-        }
-        
-        const qrImg = document.getElementById('qrCodeImage');
-        if (qrImg) {
-            const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
-            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(baseQR + '&sum=' + price + '&label=' + orderID)}`;
+            if (document.getElementById('selectedPlanName')) {
+                document.getElementById('selectedPlanName').textContent = planDetails[planKey].name;
+            }
+            
+            const priceEl = document.getElementById('selectedPlanPrice');
+            if (priceEl) {
+                priceEl.innerHTML = `${price} ₽ <br><span style="color:red; font-size:1rem;">ID: ${orderID}</span>`;
+            }
+            
+            const qrImg = document.getElementById('qrCodeImage');
+            if (qrImg) {
+                const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(baseQR + '&sum=' + price + '&label=' + orderID)}`;
+            }
         }
     }
     
-    // --- 6. РАЗБЛОКИРОВКА СИСТЕМЫ ---
-    setTimeout(() => {
-        window.AMG_State.unblockSystem();
-        console.log('🚀 Система АМГ: Ferrari Mode ГОТОВ К РАБОТЕ');
-    }, 300);
-});
+    // --- 6. ВЫПОЛНЕНИЕ ВСЕХ ИНИЦИАЛИЗАЦИЙ ---
+    try {
+        console.log('⚙️ [ScriptJS] Начало инициализации компонентов...');
+        
+        // Настройка кнопок тарифов
+        setupTariffButtons();
+        
+        // Проверка сохранённого состояния
+        checkSavedState();
+        
+        // Настройка страницы оплаты (если мы на ней)
+        setupPaymentPage();
+        
+        console.log('✅ [ScriptJS] Все компоненты инициализированы');
+        
+    } catch (error) {
+        console.error('❌ [ScriptJS] Ошибка инициализации:', error);
+    }
+    
+    // --- 7. ГАРАНТИРОВАННАЯ РАЗБЛОКИРОВКА СИСТЕМЫ ---
+    function guaranteedUnblock() {
+        console.log('🔓 [GuaranteedUnblock] Запуск гарантированной разблокировки');
+        
+        // ВАЖНО: Убеждаемся, что unblockSystem вызывается
+        if (!window.AMG_State.systemReady) {
+            window.AMG_State.unblockSystem();
+            console.log('🚀 [ScriptJS] Система АМГ: Ferrari Mode ГОТОВ К РАБОТЕ');
+        } else {
+            console.log('ℹ️ [ScriptJS] Система уже разблокирована');
+        }
+        
+        // Дополнительная проверка через 1 секунду
+        setTimeout(() => {
+            if (!window.AMG_State.systemReady) {
+                console.warn('⚠️ [ScriptJS] Система всё ещё заблокирована! Аварийная разблокировка');
+                window.AMG_State.emergencyUnblock();
+            }
+        }, 1000);
+    }
+    
+    // Разблокировка через 300мс
+    setTimeout(guaranteedUnblock, 300);
+}
+
+// ===== ОСНОВНАЯ ИНИЦИАЛИЗАЦИЯ =====
+
+// Вариант 1: Если DOM уже загружен
+if (document.readyState === 'loading') {
+    // Вариант 2: Ждём загрузки DOM
+    document.addEventListener('DOMContentLoaded', function amgDOMLoaded() {
+        console.log('📄 [ScriptJS] DOM загружен, инициализация системы');
+        document.removeEventListener('DOMContentLoaded', amgDOMLoaded);
+        initializeAMGSystem();
+    });
+} else {
+    // DOM уже загружен
+    console.log('📄 [ScriptJS] DOM уже загружен, немедленная инициализация');
+    setTimeout(initializeAMGSystem, 0);
+}
+
+// ===== АВАРИЙНЫЕ МЕХАНИЗМЫ =====
+
+// Защита от зависания: если через 10 секунд система не разблокирована
+setTimeout(function() {
+    if (!window.AMG_State.systemReady && !window.AMG_State.initializationComplete) {
+        console.error('🆘 [ScriptJS] КРИТИЧЕСКАЯ ОШИБКА: Система не разблокирована за 10 секунд!');
+        window.AMG_State.emergencyUnblock();
+    }
+}, 10000);
+
+// Экспорт для отладки
+window._AMG_Debug = {
+    getState: function() {
+        return {
+            AMG_State: window.AMG_State,
+            initialized: window._AMG_INITIALIZED,
+            readyState: document.readyState
+        };
+    },
+    forceUnblock: function() {
+        window.AMG_State.emergencyUnblock();
+    }
+};
+
+console.log('✅ [ScriptJS] Модуль загружен и готов к инициализации');
