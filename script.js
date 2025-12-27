@@ -1,87 +1,69 @@
-// ГЛОБАЛЬНЫЙ ОБЪЕКТ СОСТОЯНИЯ СИСТЕМЫ
+// ===================================================================
+// АДВОКАТ МЕДНОГО ГРОША — script.js
+// ВЕРСИЯ: STABLE FERRARI EDITION (исправленная, без конфликтов)
+// ===================================================================
+
+// ГЛОБАЛЬНЫЙ ОБЪЕКТ СОСТОЯНИЯ (минимальный)
 window.AMG_State = window.AMG_State || {
-    // Флаги состояний
     systemReady: false,
     scrollAllowed: false,
-    widgetActive: false,
-    
-    // Данные
     currentPlan: null,
-    userFP: null,
-    initializationStarted: false,
-    initializationComplete: false,
-    
-    // Методы управления
-    blockSystem: function(reason) {
-        console.log(`🔒 [AMG_State] Блокировка системы: ${reason}`);
-        this.systemReady = false;
-        this.scrollAllowed = false;
-        this.initializationStarted = true;
-    },
-    
-    unblockSystem: function() {
-        console.log('✅ [AMG_State] Система разблокирована');
-        this.systemReady = true;
-        this.scrollAllowed = true;
-        this.initializationComplete = true;
-        
-        // Глобальное событие для других скриптов
-        window.dispatchEvent(new CustomEvent('amg-system-ready'));
-    },
-    
-    // Аварийная разблокировка
-    emergencyUnblock: function() {
-        console.warn('🆘 [AMG_State] АВАРИЙНАЯ разблокировка системы');
-        this.systemReady = true;
-        this.scrollAllowed = true;
-        this.initializationComplete = true;
-        window.dispatchEvent(new CustomEvent('amg-system-emergency-ready'));
-    }
+    userFP: null
 };
 
 /**
- * АДВОКАТ МЕДНОГО ГРОША — script.js
- * ВЕРСИЯ: FERRARI EDITION v2.1 (стабильная с исправлениями)
+ * Основная инициализация системы
  */
-
-// ===== КРИТИЧЕСКИЙ ФИКС: ЗАЩИТА ОТ ДВОЙНОЙ ИНИЦИАЛИЗАЦИИ =====
-if (window.AMG_State.initializationStarted) {
-    console.warn('⚠️ [ScriptJS] Система уже инициализируется, пропускаем дублирование');
-} else {
-    // БЛОКИРОВКА СИСТЕМЫ ПРИ ЗАГРУЗКЕ
-    window.AMG_State.blockSystem('Загрузка script.js');
-}
-
-// ===== ГАРАНТИРОВАННАЯ ИНИЦИАЛИЗАЦИЯ =====
 function initializeAMGSystem() {
-    console.log("🚀 [ScriptJS] Система АМГ: Ferrari Mode активирована.");
+    console.log("🚀 Система АМГ: Ferrari Mode активирована.");
     
-    // Защита от повторного выполнения
-    if (window._AMG_INITIALIZED) {
-        console.warn('⚠️ [ScriptJS] Система уже инициализирована');
-        return;
-    }
-    window._AMG_INITIALIZED = true;
-    
-    // --- 0. СТИЛИ ДЛЯ МЕРЦАНИЯ И КНОПОК ---
+    // --- 1. СТИЛИ ДЛЯ МЕРЦАНИЯ И КНОПОК ---
     const style = document.createElement('style');
     style.innerHTML = `
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-        .blink-status { animation: blink 2s infinite ease-in-out; color: #e67e22; font-weight: bold; display: block; margin: 10px 0; font-family: 'Open Sans', sans-serif; }
-        .btn-cabinet { background: #27ae60; color: white; padding: 15px; border-radius: 5px; text-decoration: none; display: block; text-align: center; font-weight: bold; margin-top: 15px; transition: 0.3s; }
+        .blink-status { 
+            animation: blink 2s infinite ease-in-out; 
+            color: #e67e22; 
+            font-weight: bold; 
+            display: block; 
+            margin: 10px 0; 
+            font-family: 'Open Sans', sans-serif; 
+        }
+        .btn-cabinet { 
+            background: #27ae60; 
+            color: white; 
+            padding: 15px; 
+            border-radius: 5px; 
+            text-decoration: none; 
+            display: block; 
+            text-align: center; 
+            font-weight: bold; 
+            margin-top: 15px; 
+            transition: 0.3s; 
+        }
         .btn-cabinet:hover { background: #2ecc71; }
-        .btn-tg-lock { background: #0088cc; color: white; padding: 12px; border-radius: 5px; text-decoration: none; display: block; text-align: center; font-weight: bold; margin-top: 10px; }
+        .btn-tg-lock { 
+            background: #0088cc; 
+            color: white; 
+            padding: 12px; 
+            border-radius: 5px; 
+            text-decoration: none; 
+            display: block; 
+            text-align: center; 
+            font-weight: bold; 
+            margin-top: 10px; 
+        }
     `;
     document.head.appendChild(style);
 
-    // --- 1. ГЕНЕРАЦИЯ ID И ОТПЕЧАТКА ---
+    // --- 2. ГЕНЕРАЦИЯ ID И ОТПЕЧАТКА ---
     const getFP = () => {
         const s = window.screen;
         const b = navigator.userAgent;
         return btoa(`${s.width}${s.height}${b}${s.colorDepth}`).substring(0, 12);
     };
     const userFP = getFP();
-    window.AMG_State.userFP = userFP; // Сохраняем в глобальное состояние
+    window.AMG_State.userFP = userFP;
 
     function generateOrderIdentifier(planKey) {
         const now = new Date();
@@ -100,17 +82,8 @@ function initializeAMGSystem() {
         'subscription': { name: 'Профессиональный', price: '2 500 ₽', desc: 'Борьба с отписками, стратегия и сложные расчёты. 50 вопросов.' }
     };
 
-    // --- 2. ЛОГИКА ПОДМЕНЫ КАРТОЧКИ (ГЛАВНАЯ) ---
+    // --- 3. ЛОГИКА ПОДМЕНЫ КАРТОЧКИ (ГЛАВНАЯ) ---
     function renderWaitingCard(planKey) {
-        // ПРОВЕРКА: если система заблокирована - ждём
-        if (!window.AMG_State.systemReady) {
-            console.log('⏳ [RenderCard] Ожидание разблокировки системы...');
-            setTimeout(() => renderWaitingCard(planKey), 100);
-            return;
-        }
-        
-        console.log('🎨 [RenderCard] Отрисовка карточки для плана:', planKey);
-        
         const plan = planDetails[planKey] || planDetails['extended'];
         const header = document.querySelector('.card-header');
         const body = document.querySelector('.card-body');
@@ -149,30 +122,33 @@ function initializeAMGSystem() {
                     `;
                 }
             }
-        } catch (e) { console.log("[CheckActivation] Проверка..."); }
+        } catch (e) { 
+            console.log("[CheckActivation] Проверка статуса..."); 
+        }
     }
 
-    // --- 3. ИСПРАВЛЕННАЯ ОБРАБОТКА ТАРИФОВ ---
+    // --- 4. ОБРАБОТКА КНОПОК ТАРИФОВ (ГЛАВНОЕ!) ---
     function setupTariffButtons() {
         const tariffButtons = document.querySelectorAll('.pricing-card .btn[data-plan]');
-        console.log(`🔘 [TariffButtons] Найдено кнопок тарифов: ${tariffButtons.length}`);
+        console.log(`Найдено кнопок тарифов: ${tariffButtons.length}`);
         
         tariffButtons.forEach(button => {
-            // Удаляем старый обработчик (если есть)
+            // Создаем новую кнопку с теми же атрибутами
             const newButton = button.cloneNode(true);
-            button.parentNode.replaceChild(newButton, button);
             
-            // Вешаем новый с preventDefault
-            newButton.addEventListener('click', async function(e) {
-                e.preventDefault(); // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ!
+            // Заменяем старую кнопку на новую (для чистых обработчиков)
+            if (button.parentNode) {
+                button.parentNode.replaceChild(newButton, button);
+            }
+            
+            // Вешаем ОДИН обработчик
+            newButton.addEventListener('click', function(e) {
+                e.preventDefault();
                 e.stopPropagation();
                 
-                console.log('🖱️ [TariffButtons] Клик по тарифу:', this.getAttribute('data-plan'));
+                console.log('Клик по тарифу:', this.getAttribute('data-plan'));
                 
-                const card = this.closest('.pricing-card');
                 const planKey = this.getAttribute('data-plan');
-                const priceText = card.querySelector('.price').textContent.replace(/\s/g, '');
-                const priceInt = parseInt(priceText);
                 
                 // 1. Генерируем данные локально
                 const newID = generateOrderIdentifier(planKey);
@@ -180,7 +156,7 @@ function initializeAMGSystem() {
                 localStorage.setItem('selectedPlan', planKey);
                 localStorage.setItem('lockTime', Date.now());
 
-                // 2. СРАЗУ отправляем "отпечаток" и заказ на сервер
+                // 2. Отправляем на сервер (асинхронно, не ждём)
                 try {
                     const capsLimits = { 'basic': 30000, 'extended': 60000, 'subscription': 90000 };
                     
@@ -193,22 +169,28 @@ function initializeAMGSystem() {
                             caps_limit: capsLimits[planKey] || 30000,
                             fingerprint: userFP
                         })
+                    }).then(() => {
+                        console.log("Заказ зарегистрирован в БД");
+                    }).catch(err => {
+                        console.error("Ошибка связи с сервером:", err);
                     });
                     
-                    console.log("✅ [TariffButtons] Заказ предварительно зарегистрирован в БД");
                 } catch (err) {
-                    console.error("❌ [TariffButtons] Ошибка связи с сервером:", err);
+                    console.error("Ошибка:", err);
                 }
 
-                // 3. ТОЛЬКО ПОСЛЕ обработки — переход на payment.html
-                setTimeout(() => {
-                    window.location.href = this.getAttribute('href');
-                }, 100);
+                // 3. Переход на payment.html БЕЗ ЗАДЕРЖЕК
+                const href = this.getAttribute('href');
+                if (href) {
+                    window.location.href = href;
+                }
+                
+                return false;
             });
         });
     }
     
-    // --- 4. ПРОВЕРКА СОСТОЯНИЯ ПРИ ЗАГРУЗКЕ ---
+    // --- 5. ВОССТАНОВЛЕНИЕ СОСТОЯНИЯ ---
     function checkSavedState() {
         const savedPlan = localStorage.getItem('selectedPlan');
         const lockTime = localStorage.getItem('lockTime');
@@ -216,17 +198,17 @@ function initializeAMGSystem() {
         if (savedPlan && lockTime && (Date.now() - lockTime < 24 * 60 * 60 * 1000)) {
             window.AMG_State.currentPlan = savedPlan;
             renderWaitingCard(savedPlan);
+            
+            // Проверка активации каждые 10 секунд
             setInterval(checkActivation, 10000);
-            console.log('💾 [SavedState] Восстановлено сохранённое состояние:', savedPlan);
-        } else {
-            console.log('💾 [SavedState] Сохранённое состояние не найдено');
+            console.log('Восстановлено сохранённое состояние:', savedPlan);
         }
     }
 
-    // --- 5. ЛОГИКА СТРАНИЦЫ ОПЛАТЫ ---
+    // --- 6. СТРАНИЦА ОПЛАТЫ ---
     function setupPaymentPage() {
         if (window.location.pathname.includes('payment.html')) {
-            console.log('💰 [PaymentPage] Инициализация страницы оплаты');
+            console.log('Инициализация страницы оплаты');
             
             const urlParams = new URLSearchParams(window.location.search);
             const planKey = urlParams.get('plan') || 'extended';
@@ -250,88 +232,81 @@ function initializeAMGSystem() {
         }
     }
     
-    // --- 6. ВЫПОЛНЕНИЕ ВСЕХ ИНИЦИАЛИЗАЦИЙ ---
+    // --- 7. НАСТРОЙКА ЛОГОТИПА (скролл наверх) ---
+    function setupLogoClick() {
+        const navLogo = document.getElementById('navLogo');
+        if (navLogo) {
+            navLogo.style.cursor = 'pointer';
+            
+            navLogo.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Клик по логотипу - скролл наверх');
+                
+                // Плавный скролл к верху
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+                
+                return false;
+            });
+        }
+    }
+    
+    // --- 8. ВЫПОЛНЕНИЕ ВСЕХ ИНИЦИАЛИЗАЦИЙ ---
     try {
-        console.log('⚙️ [ScriptJS] Начало инициализации компонентов...');
+        console.log('Начало инициализации компонентов...');
         
-        // Настройка кнопок тарифов
+        // Настройка кнопок тарифов (ВАЖНО!)
         setupTariffButtons();
         
-        // Проверка сохранённого состояния
+        // Восстановление состояния
         checkSavedState();
         
-        // Настройка страницы оплаты (если мы на ней)
+        // Настройка страницы оплаты
         setupPaymentPage();
         
-        console.log('✅ [ScriptJS] Все компоненты инициализированы');
+        // Настройка логотипа
+        setupLogoClick();
+        
+        console.log('Все компоненты инициализированы');
         
     } catch (error) {
-        console.error('❌ [ScriptJS] Ошибка инициализации:', error);
+        console.error('Ошибка инициализации:', error);
     }
     
-    // --- 7. ГАРАНТИРОВАННАЯ РАЗБЛОКИРОВКА СИСТЕМЫ ---
-    function guaranteedUnblock() {
-        console.log('🔓 [GuaranteedUnblock] Запуск гарантированной разблокировки');
-        
-        // ВАЖНО: Убеждаемся, что unblockSystem вызывается
-        if (!window.AMG_State.systemReady) {
-            window.AMG_State.unblockSystem();
-            console.log('🚀 [ScriptJS] Система АМГ: Ferrari Mode ГОТОВ К РАБОТЕ');
-        } else {
-            console.log('ℹ️ [ScriptJS] Система уже разблокирована');
-        }
-        
-        // Дополнительная проверка через 1 секунду
-        setTimeout(() => {
-            if (!window.AMG_State.systemReady) {
-                console.warn('⚠️ [ScriptJS] Система всё ещё заблокирована! Аварийная разблокировка');
-                window.AMG_State.emergencyUnblock();
-            }
-        }, 1000);
-    }
-    
-    // Разблокировка через 300мс
-    setTimeout(guaranteedUnblock, 300);
+    // --- 9. РАЗБЛОКИРОВКА СИСТЕМЫ ---
+    setTimeout(() => {
+        window.AMG_State.systemReady = true;
+        window.AMG_State.scrollAllowed = true;
+        console.log('✅ Система АМГ готова к работе');
+    }, 300);
 }
 
-// ===== ОСНОВНАЯ ИНИЦИАЛИЗАЦИЯ =====
+// ===== ТОЧКА ВХОДА =====
 
-// Вариант 1: Если DOM уже загружен
+// Блокируем систему при загрузке
+window.AMG_State.systemReady = false;
+window.AMG_State.scrollAllowed = false;
+
+// Ждём загрузки DOM
 if (document.readyState === 'loading') {
-    // Вариант 2: Ждём загрузки DOM
-    document.addEventListener('DOMContentLoaded', function amgDOMLoaded() {
-        console.log('📄 [ScriptJS] DOM загружен, инициализация системы');
-        document.removeEventListener('DOMContentLoaded', amgDOMLoaded);
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM загружен, инициализация системы');
         initializeAMGSystem();
     });
 } else {
-    // DOM уже загружен
-    console.log('📄 [ScriptJS] DOM уже загружен, немедленная инициализация');
+    console.log('DOM уже загружен, немедленная инициализация');
     setTimeout(initializeAMGSystem, 0);
 }
 
-// ===== АВАРИЙНЫЕ МЕХАНИЗМЫ =====
-
-// Защита от зависания: если через 10 секунд система не разблокирована
-setTimeout(function() {
-    if (!window.AMG_State.systemReady && !window.AMG_State.initializationComplete) {
-        console.error('🆘 [ScriptJS] КРИТИЧЕСКАЯ ОШИБКА: Система не разблокирована за 10 секунд!');
-        window.AMG_State.emergencyUnblock();
+// Аварийная разблокировка через 5 секунд (на всякий случай)
+setTimeout(() => {
+    if (!window.AMG_State.systemReady) {
+        console.warn('Аварийная разблокировка системы');
+        window.AMG_State.systemReady = true;
+        window.AMG_State.scrollAllowed = true;
     }
-}, 10000);
+}, 5000);
 
-// Экспорт для отладки
-window._AMG_Debug = {
-    getState: function() {
-        return {
-            AMG_State: window.AMG_State,
-            initialized: window._AMG_INITIALIZED,
-            readyState: document.readyState
-        };
-    },
-    forceUnblock: function() {
-        window.AMG_State.emergencyUnblock();
-    }
-};
-
-console.log('✅ [ScriptJS] Модуль загружен и готов к инициализации');
+console.log('✅ script.js загружен');
