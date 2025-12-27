@@ -34,17 +34,17 @@
                 <div class="step">
                     <div class="step-icon">1</div>
                     <h4>Наведите камеру</h4>
-                    <p>Отсканируйте QR-код. Он откроет страницу перевода в вашем банке или ЮMoney.</p>
+                    <p>Отсканируйте QR-код. Он откроется в вашем банке или ЮMoney.</p>
                 </div>
                 <div class="step">
                     <div class="step-icon">2</div>
                     <h4>Совершите перевод</h4>
-                    <p>Введите сумму <strong id="manualPrice">500</strong> ₽. В назначении платежа выберите: <strong>«Личный перевод»</strong>.</p>
+                    <p>Введите сумму <strong id="manualPrice">0</strong> ₽. В назначении выберите: <strong>«Личный перевод»</strong>.</p>
                 </div>
                 <div class="step">
                     <div class="step-icon">3</div>
                     <h4>Отправьте чек</h4>
-                    <p>После оплаты <strong>сделайте скриншот чека</strong> и отправьте его в <a href="https://t.me/chearu252" target="_blank">Telegram</a>.</p>
+                    <p>Сделайте скриншот чека и отправьте в <a href="https://t.me/chearu252" target="_blank">Telegram</a>.</p>
                 </div>
             </div>
         </div>
@@ -52,21 +52,22 @@
         <div class="qr-main-section">
             <div class="qr-info">
                 <h3><i class="fas fa-qrcode"></i> Перевод по QR-коду</h3>
-                <p class="qr-description">Самый быстрый способ. После сканирования откроется страница перевода в вашем банковском приложении.</p>
+                <p class="qr-description">После сканирования откроется страница перевода в вашем банковском приложении.</p>
                 
                 <div class="qr-amount-info">
                     <div class="selected-plan">
                         <h4>Вы оплачиваете:</h4>
                         <div class="plan-details">
-                            <div class="plan-name" id="selectedPlanName">Расширенный пакет помощи</div>
-                            <div class="plan-price" id="selectedPlanPrice">1 200 ₽</div>
+                            <div class="plan-name" id="selectedPlanName">Загрузка...</div>
+                            <div class="plan-price" id="selectedPlanPrice">0 ₽</div>
+                            <div class="plan-id" id="selectedPlanId"></div>
                             <div class="plan-desc" id="selectedPlanDesc">Расчёт неустойки + 3 шаблона документов</div>
                         </div>
                     </div>
                     
                     <div class="amount-instruction">
                         <p><i class="fas fa-info-circle"></i> <strong>Внимание:</strong> Сумма в QR-коде не проставляется автоматически.</p>
-                        <p><i class="fas fa-pen"></i> Введите сумму <strong id="stepAmount">1200</strong> ₽ вручную.</p>
+                        <p><i class="fas fa-pen"></i> Введите сумму <strong id="stepAmount">0</strong> ₽ вручную.</p>
                         <p><i class="fas fa-comment"></i> В назначении платежа укажите: <strong>«Личный перевод»</strong>.</p>
                     </div>
                 </div>
@@ -86,9 +87,6 @@
         </div>
 
         <div class="payment-actions">
-            <a href="index.html" class="btn btn-primary">
-                <i class="fas fa-arrow-left"></i> Назад к тарифам
-            </a>
             <a href="https://t.me/chearu252" target="_blank" class="btn btn-outline telegram-btn">
                 <i class="fab fa-telegram"></i> Написать в Telegram
             </a>
