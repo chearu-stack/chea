@@ -1,11 +1,11 @@
 // ===================================================================
-// PREVIEW-WIDGET.JS - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// PREVIEW-WIDGET.JS - ПОЛНАЯ ИСПРАВЛЕННАЯ ВЕРСИЯ
 // ===================================================================
 
 (function() {
     'use strict';
     
-    console.log('🎯 Виджет: запуск исправленной версии');
+    console.log('🎯 Виджет: запуск полной версии');
     
     // Конфигурация
     const CONFIG = {
@@ -16,31 +16,62 @@
         ],
         COMPLEX_KEYWORDS: [
             'суд', 'прокуратур', 'адвокат', 'юрист', 'моральн', 'здоровье', 'травм'
-        ]
+        ],
+        // Новое: даты для проверки давности
+        MAX_YEARS_AGO: 3, // Максимальная давность в годах
+        CURRENT_YEAR: new Date().getFullYear()
     };
     
     // Вопросы
     const QUESTIONS = [
         {
             id: 'problem',
-            text: 'Опишите проблему коротко (Пример: Купил телефон, быстро разряжается, магазин отказывается разбираться)?',
+            text: 'Опишите проблему коротко (что произошло, с каким товаром/услугой)?',
             maxLength: 200
         },
         {
             id: 'amount',
-            text: 'Укажите сумму покупки, ущерба или стоимость услуги (Пример: 500 рублей)?',
-            maxLength: 20
+            text: 'Укажите сумму покупки, ущерба или стоимость услуги (в рублях)?',
+            maxLength: 20,
+            validator: (value) => {
+                const num = parseInt(value.replace(/\D/g, '')) || 0;
+                return num > 0 && num < 100000000; // До 100 млн
+            }
         },
         {
             id: 'date',
-            text: 'Когда это произошло или какой срок был нарушен? (Пример: 12 марта 2024 года)',
-            maxLength: 100
+            text: 'Когда это произошло (укажите дату или срок в днях/месяцах)?',
+            maxLength: 100,
+            validator: (value) => {
+                return extractYearFromText(value) > 0;
+            }
         }
     ];
     
     // Состояние
     let currentStep = 0;
     let answers = {};
+    
+    // Вспомогательные функции
+    function extractYearFromText(text) {
+        // Ищем год в тексте (2017, 2020, 2023 и т.д.)
+        const yearMatch = text.match(/\b(19|20)\d{2}\b/);
+        if (yearMatch) return parseInt(yearMatch[0]);
+        
+        // Ищем "год назад", "месяц назад" и т.д.
+        if (text.includes('год') || text.includes('лет')) {
+            const numMatch = text.match(/\d+/);
+            const yearsAgo = numMatch ? parseInt(numMatch[0]) : 1;
+            return CONFIG.CURRENT_YEAR - yearsAgo;
+        }
+        
+        return 0;
+    }
+    
+    function isDateTooOld(year) {
+        if (!year || year < 2000) return false; // Не определили
+        return (CONFIG.CURRENT_YEAR - year) > CONFIG.MAX_YEARS_AGO;
+    }
     
     // Функции виджета
     function showQuestion() {
@@ -66,7 +97,7 @@
                     </div>
                 </div>
                 
-                <div style="font-size: 18px; font-weight: 600; margin-bottom: 20px;">
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #212529;">
                     ${question.text}
                 </div>
                 
@@ -77,8 +108,10 @@
                     border: 1px solid #ddd;
                     border-radius: 8px;
                     font-size: 16px;
-                    margin-bottom: 10px;"
-                    placeholder="Введите ответ..."></textarea>
+                    margin-bottom: 10px;
+                    color: #212529;"
+                    placeholder="Введите ответ..." 
+                    maxlength="${question.maxLength}"></textarea>
                 
                 <div style="display: flex; gap: 10px;">
                     ${currentStep > 0 ? `
@@ -116,24 +149,15 @@
         setTimeout(() => {
             const input = document.getElementById('widget-input');
             if (input) {
-                // Сохраняем позицию скролла
                 const scrollY = window.scrollY;
-                
-                // Пробуем modern API
-                if (input.focus && typeof input.focus === 'function') {
-                    try {
-                        input.focus({ preventScroll: true });
-                    } catch (e) {
-                        // Fallback для старых браузеров
-                        input.focus();
-                        window.scrollTo(0, scrollY);
-                    }
-                } else {
+                try {
+                    input.focus({ preventScroll: true });
+                } catch (e) {
                     input.focus();
                     window.scrollTo(0, scrollY);
                 }
             }
-        }, 150); // Увеличил задержку для надёжности
+        }, 150);
     }
     
     function prevStep() {
@@ -145,12 +169,13 @@
     
     function nextStep() {
         const input = document.getElementById('widget-input');
+        const question = QUESTIONS[currentStep];
+        
         if (!input || !input.value.trim()) {
-            // ФИКС 4: Заменяем alert на визуальную индикацию
+            // Визуальная индикация вместо alert
             input.style.borderColor = '#dc3545';
             input.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.25)';
             
-            // ФИКС 1: preventScroll при повторном фокусе
             const scrollY = window.scrollY;
             try {
                 input.focus({ preventScroll: true });
@@ -159,7 +184,6 @@
                 window.scrollTo(0, scrollY);
             }
             
-            // Убираем подсветку через 2 секунды
             setTimeout(() => {
                 input.style.borderColor = '#ddd';
                 input.style.boxShadow = 'none';
@@ -168,7 +192,27 @@
             return;
         }
         
-        const question = QUESTIONS[currentStep];
+        // Валидация если есть
+        if (question.validator && !question.validator(input.value.trim())) {
+            input.style.borderColor = '#ffc107';
+            input.style.boxShadow = '0 0 0 0.2rem rgba(255, 193, 7, 0.25)';
+            
+            const scrollY = window.scrollY;
+            try {
+                input.focus({ preventScroll: true });
+            } catch (e) {
+                input.focus();
+                window.scrollTo(0, scrollY);
+            }
+            
+            setTimeout(() => {
+                input.style.borderColor = '#ddd';
+                input.style.boxShadow = 'none';
+            }, 2000);
+            
+            return;
+        }
+        
         answers[question.id] = input.value.trim();
         
         if (currentStep < QUESTIONS.length - 1) {
@@ -182,126 +226,160 @@
     function analyzeAnswers() {
         const problemText = (answers.problem || '').toLowerCase();
         const amount = parseInt((answers.amount || '').replace(/\D/g, '')) || 0;
+        const eventYear = extractYearFromText(answers.date || '');
         
-        // ФИКС 3: Улучшенная логика анализа
+        // Улучшенная логика анализа
         const hasConsumerKeywords = CONFIG.CONSUMER_KEYWORDS.some(kw => 
             problemText.includes(kw)
         );
         
-        // Новая логика: ключевые слова ИЛИ указана сумма
-        const isSolvable = hasConsumerKeywords || amount > 0;
+        const hasComplexCase = CONFIG.COMPLEX_KEYWORDS.some(kw =>
+            problemText.includes(kw)
+        );
         
+        const isDateValid = !isDateTooOld(eventYear);
+        const hasAmount = amount > 0;
+        const hasProblemDescription = problemText.length > 10;
+        
+        // ОСНОВНАЯ ЛОГИКА ПРИНЯТИЯ РЕШЕНИЯ
+        let isSolvable = false;
+        let reason = '';
+        
+        if (hasComplexCase) {
+            reason = 'Обнаружены признаки сложного случая (суд, адвокат и т.д.)';
+        } else if (!hasConsumerKeywords && !hasAmount) {
+            reason = 'Не обнаружено признаков потребительской проблемы и не указана сумма';
+        } else if (!isDateValid && eventYear > 0) {
+            reason = `Событие произошло слишком давно (${eventYear} год)`;
+            isSolvable = false;
+        } else if (hasConsumerKeywords && hasAmount) {
+            reason = 'Обнаружены признаки нарушения прав потребителя с указанием суммы';
+            isSolvable = true;
+        } else if (hasConsumerKeywords && !hasAmount) {
+            reason = 'Обнаружены признаки нарушения, но не указана сумма';
+            isSolvable = true; // но с ограничением
+        } else if (!hasConsumerKeywords && hasAmount) {
+            reason = 'Указана сумма, но не обнаружено ключевых слов о покупке';
+            isSolvable = false; // требует уточнения
+        }
+        
+        // Определение тарифа
         let planId = 'extended';
-        if (amount > 0 && amount < 20000) planId = 'basic';
-        if (amount > 100000) planId = 'subscription';
+        if (amount > 0) {
+            if (amount < 20000) planId = 'basic';
+            if (amount > 100000) planId = 'subscription';
+        }
         
-        // ФИКС 5: Читаем сохранённые данные при следующем анализе
+        // Сохранение данных
         try {
-            const storedData = sessionStorage.getItem('preliminary_answers');
-            if (storedData) {
-                console.log('📊 Предыдущие ответы:', JSON.parse(storedData));
-            }
-            
             sessionStorage.setItem('preliminary_answers', JSON.stringify({
                 problem: answers.problem,
                 amount: amount,
                 date: answers.date,
+                eventYear: eventYear,
                 isSolvable: isSolvable,
+                reason: reason,
                 recommendedPlan: planId,
-                collectedAt: new Date().toISOString(),
                 hasConsumerKeywords: hasConsumerKeywords,
-                // Добавляем для будущего анализа
-                keywordsFound: CONFIG.CONSUMER_KEYWORDS.filter(kw => problemText.includes(kw))
+                hasComplexCase: hasComplexCase,
+                isDateValid: isDateValid,
+                collectedAt: new Date().toISOString()
             }));
         } catch (e) {
             console.warn('Не удалось сохранить в sessionStorage:', e);
         }
         
         // Показываем результат
-           showResult(isSolvable, planId, amount, hasConsumerKeywords);
-}
-
-function showResult(isSolvable, planId, amount, hasKeywords) {
-    const container = document.querySelector('.bot-widget-placeholder');
-    if (!container) return;
-    
-    const planNames = {
-        basic: 'Базовый (500 ₽)',
-        extended: 'Расширенный (1 200 ₽)',
-        subscription: 'Профессиональный (2 500 ₽)'
-    };
-    
-    // Улучшенное сообщение в зависимости от данных
-    let message = '';
-    if (amount > 0 && !hasKeywords) {
-        message = 'Указана сумма, но не обнаружено ключевых слов о покупке. Рекомендуем уточнить детали.';
-    } else if (hasKeywords && amount === 0) {
-        message = 'Обнаружены признаки потребительской проблемы, но сумма не указана.';
-    } else if (hasKeywords && amount > 0) {
-        message = 'Ситуация может подпадать под действие Закона о защите прав потребителей.';
-    } else {
-        message = 'На основе описания не выявлено признаков нарушения прав потребителя.';
+        showResult(isSolvable, planId, amount, reason, eventYear);
     }
     
-    container.innerHTML = `
-        <div class="widget-container" style="
-            background: ${isSolvable ? '#d4edda' : '#f8d7da'};
-            border: 2px solid ${isSolvable ? '#28a745' : '#dc3545'};
-            border-radius: 12px;
-            padding: 24px;
-            margin: 20px 0;
-        ">
-            <h3 style="margin-top: 0; color: #212529;">
-                ${isSolvable ? '✅ Анализ завершён' : '❌ Требуется больше данных'}
-            </h3>
-            
-            <p style="color: #212529;">${message}</p>
-            
-            ${amount > 0 ? `<p style="color: #212529;"><strong>Сумма:</strong> ${amount.toLocaleString('ru-RU')} руб.</p>` : ''}
-            
-            ${isSolvable && amount > 0 ? `
-            <div style="background: white; padding: 16px; border-radius: 8px; margin: 16px 0; color: #212529;">
-                <strong>Рекомендуем:</strong><br>
-                ${planNames[planId]}
+    function showResult(isSolvable, planId, amount, reason, eventYear) {
+        const container = document.querySelector('.bot-widget-placeholder');
+        if (!container) return;
+        
+        const planNames = {
+            basic: 'Базовый (500 ₽)',
+            extended: 'Расширенный (1 200 ₽)',
+            subscription: 'Профессиональный (2 500 ₽)'
+        };
+        
+        container.innerHTML = `
+            <div class="widget-container" style="
+                background: ${isSolvable ? '#d4edda' : '#f8d7da'};
+                border: 2px solid ${isSolvable ? '#28a745' : '#dc3545'};
+                border-radius: 12px;
+                padding: 24px;
+                margin: 20px 0;
+            ">
+                <h3 style="margin-top: 0; color: #212529;">
+                    ${isSolvable ? '✅ Анализ завершён' : '❌ Требуется больше данных'}
+                </h3>
+                
+                <p style="color: #212529;"><strong>Результат:</strong> ${reason}</p>
+                
+                ${amount > 0 ? `<p style="color: #212529;"><strong>Сумма:</strong> ${amount.toLocaleString('ru-RU')} руб.</p>` : ''}
+                
+                ${eventYear > 0 ? `<p style="color: #212529;"><strong>Год события:</strong> ${eventYear}</p>` : ''}
+                
+                ${isSolvable ? `
+                <div style="background: white; padding: 16px; border-radius: 8px; margin: 16px 0; color: #212529;">
+                    <strong>Рекомендуем:</strong><br>
+                    ${planNames[planId]}
+                </div>
+                
+                <button id="payment-btn" style="
+                    width: 100%;
+                    padding: 12px;
+                    background: #28a745;
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    margin-top: 10px;
+                    cursor: pointer;">
+                    Перейти к оплате
+                </button>
+                ` : ''}
+                
+                <button id="restart-btn" style="
+                    width: 100%;
+                    padding: 12px;
+                    background: #6c757d;
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    margin-top: 10px;
+                    cursor: pointer;">
+                    ${isSolvable ? 'Новый анализ' : 'Попробовать снова'}
+                </button>
             </div>
-            ` : ''}
-            
-            <button id="restart-btn" style="
-                width: 100%;
-                padding: 12px;
-                background: #6c757d;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                margin-top: 10px;
-                cursor: pointer;">
-                ${isSolvable ? 'Новый анализ' : 'Попробовать снова'}
-            </button>
-        </div>
-    `;
-    
-    document.getElementById('restart-btn').addEventListener('click', function() {
-        currentStep = 0;
-        answers = {};
-        showQuestion();
-    });
-}
+        `;
+        
+        document.getElementById('restart-btn').addEventListener('click', function() {
+            currentStep = 0;
+            answers = {};
+            showQuestion();
+        });
+        
+        document.getElementById('payment-btn')?.addEventListener('click', function() {
+            const prices = { basic: 500, extended: 1200, subscription: 2500 };
+            window.location.href = `payment.html?plan=${planId}&price=${prices[planId] || 1200}`;
+        });
+    }
     
     // Инициализация
     function init() {
         const container = document.querySelector('.bot-widget-placeholder');
         if (container) {
             showQuestion();
-            console.log('✅ Виджет запущен (исправленная версия)');
+            console.log('✅ Виджет запущен (полная версия с логикой)');
         }
     }
     
-    // ФИКС 6: Более безопасная инициализация
+    // Запуск
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
-        // DOM уже готов
-        setTimeout(init, 500); // Задержка для избежания конфликтов
+        setTimeout(init, 500);
     }
     
 })();
