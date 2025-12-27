@@ -9,94 +9,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Стили для управления загрузкой -->
-    <style>
-        /* Блокировка скролла при загрузке */
-        body.amg-loading {
-            overflow: hidden !important;
-            height: 100vh !important;
-        }
-        
-        /* Скрытие виджета пока не готов */
-        .bot-widget-placeholder.amg-loading {
-            opacity: 0 !important;
-            height: 1px !important;
-            overflow: hidden !important;
-        }
-        
-        /* Стили логотипа */
-        .nav-logo {
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-            color: inherit;
-            user-select: none;
-        }
-        
-        .nav-logo:hover {
-            transform: scale(1.05);
-            color: #2c3e50;
-        }
-        
-        .nav-logo:hover i {
-            color: #e74c3c;
-            transform: rotate(-5deg);
-        }
-    </style>
-    
-    <!-- Минимальный скрипт для управления загрузкой -->
-    <script>
-        (function() {
-            'use strict';
-            
-            // 1. Удаляем hash если есть (чтобы не скроллило)
-            if (window.location.hash) {
-                try {
-                    history.replaceState(null, '', window.location.pathname + window.location.search);
-                } catch(e) {}
-            }
-            
-            // 2. Добавляем класс блокировки
-            document.documentElement.classList.add('amg-loading');
-            
-            // 3. Скроллим вверх
-            setTimeout(function() {
-                window.scrollTo(0, 0);
-            }, 0);
-            
-            // 4. Разблокировка после загрузки
-            window.addEventListener('load', function() {
-                setTimeout(function() {
-                    document.documentElement.classList.remove('amg-loading');
-                }, 100);
-            });
-            
-        })();
-    </script>
 </head>
 <body>
-    <!-- НАВИГАЦИЯ -->
     <nav class="main-nav">
         <div class="nav-container">
-            <div class="nav-logo" id="navLogo" title="Вернуться наверх">
+            <div class="nav-logo" id="navLogo">
                 <i class="fas fa-balance-scale"></i>
                 <span>Адвокат Медного Гроша</span>
             </div>
             <div class="nav-links">
-                <a href="javascript:void(0)" data-scroll-to="features">Работа</a>
-                <a href="javascript:void(0)" data-scroll-to="pricing">Тарифы</a>
-                <a href="javascript:void(0)" class="nav-button start-scroll-btn">
+                <a href="#features">Работа</a>
+                <a href="#pricing">Тарифы</a>
+                <a href="#start" class="nav-button">
                     <i class="fas fa-play-circle"></i> Старт
                 </a>
             </div>
         </div>
     </nav>
 
-    <!-- ГЕРОЙ -->
     <header class="hero-section">
         <div class="container">
             <div class="hero-content">
@@ -105,10 +35,10 @@
                     Пошаговый план действий, <strong>расчёт неустойки</strong> и готовые документы для досудебного урегулирования споров.
                 </p>
                 <div class="hero-buttons">
-                    <a href="javascript:void(0)" class="btn btn-primary start-scroll-btn">
+                    <a href="#start" class="btn btn-primary">
                         <i class="fas fa-play-circle"></i> Проанализировать ситуацию
                     </a>
-                    <a href="javascript:void(0)" class="btn btn-secondary" data-scroll-to="features">
+                    <a href="#features" class="btn btn-secondary">
                         <i class="fas fa-info-circle"></i> Как это работает
                     </a>
                 </div>
@@ -131,7 +61,6 @@
         </div>
     </header>
 
-    <!-- ФУНКЦИОНАЛ -->
     <section class="features-section" id="features">
         <div class="container">
             <h2 class="section-title">Что вы получаете с «Адвокатом Медного Гроша»</h2>
@@ -168,7 +97,6 @@
         </div>
     </section>
 
-    <!-- КАК РАБОТАЕТ -->
     <section class="how-section">
         <div class="container">
             <h2 class="section-title">Как это работает — 4 простых шага</h2>
@@ -206,7 +134,6 @@
         </div>
     </section>
 
-    <!-- ПРАВДА -->
     <section class="truth-section">
         <div class="container">
             <div class="truth-card">
@@ -221,7 +148,6 @@
         </div>
     </section>
 
-    <!-- ТАРИФЫ -->
     <section class="pricing-section" id="pricing">
         <div class="container">
             <h2 class="section-title">Выберите пакет помощи</h2>
@@ -265,7 +191,7 @@
                         <p>сложный или многоэтапный спор</p>
                     </div>
                     <ul class="pricing-features">
-                        <li><i class="fas fa-check"></i> Всё из пакета «Расширанный»</li>
+                        <li><i class="fas fa-check"></i> Всё из пакета «Расширенный»</li>
                         <li><i class="fas fa-check"></i> <strong>Ответ на формальную отписку</strong> (готовый документ)</li>
                         <li><i class="fas fa-check"></i> Стратегия «ломаем отписки» — как вести переписку</li>
                         <li><i class="fas fa-check"></i> Расширенный расчёт неустойки с пенёй за задержку</li>
@@ -277,19 +203,16 @@
         </div>
     </section>
 
-    <!-- ВИДЖЕТ -->
-    <section class="cta-section" id="start-section">
+    <section class="cta-section" id="start">
         <div class="container">
             <div class="cta-content">
                 <h2 class="section-title">Проанализируйте ситуацию за 2 минуты</h2>
                 <p>Задайте 3 вопроса → получите диагноз нарушения → выберите вариант оплаты.</p>
-                <form class="cta-form" id="problemForm">
-                    <div class="bot-widget-placeholder amg-loading">
-                        <div class="loading-spinner">
-                            <i class="fas fa-spinner fa-spin"></i> Загрузка анализатора...
-                        </div>
+                <div class="bot-widget-placeholder">
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i> Загрузка анализатора...
                     </div>
-                </form>
+                </div>
                 <p class="form-note">
                     <i class="fas fa-lock"></i> Нажимая кнопку, вы даете согласие на обработку предоставленной информации. <br>
                     Ваши данные конфиденциальны: сервис не сохраняет и не накапливает введённые сведения.
@@ -298,7 +221,6 @@
         </div>
     </section>
 
-    <!-- ФУТЕР -->
     <footer class="main-footer">
         <div class="container">
             <div class="footer-content">
@@ -314,42 +236,40 @@
         </div>
     </footer>
 
-    <!-- СКРИПТЫ -->
     <script src="script.js"></script>
     <script src="preview-widget.js"></script>
     
-    <!-- Простой скрипт для навигации (в HTML чтобы не конфликтовать) -->
+    <!-- ПРОСТАЯ НАВИГАЦИЯ -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Плавные якоря
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    if (targetId) {
+                        const target = document.getElementById(targetId);
+                        if (target) {
+                            window.scrollTo({
+                                top: target.offsetTop - 80,
+                                behavior: 'smooth'
+                            });
+                        }
+                    }
+                });
+            });
+            
             // Логотип - наверх
-            document.getElementById('navLogo')?.addEventListener('click', function(e) {
+            document.getElementById('navLogo').addEventListener('click', function(e) {
                 e.preventDefault();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
-            
-            // Простые якоря (без конфликтов)
-            document.querySelectorAll('[data-scroll-to]').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const targetId = this.getAttribute('data-scroll-to');
-                    const target = document.getElementById(targetId);
-                    if (target) {
-                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                });
-            });
-            
-            // Кнопки "Старт"
-            document.querySelectorAll('.start-scroll-btn').forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const target = document.getElementById('start-section');
-                    if (target) {
-                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                });
-            });
         });
+        
+        // Удаляем hash из URL при загрузке
+        if (window.location.hash) {
+            history.replaceState(null, '', ' ');
+        }
     </script>
 </body>
 </html>
