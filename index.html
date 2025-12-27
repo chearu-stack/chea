@@ -17,6 +17,7 @@
     
 
       <!-- ДИАГНОСТИКА ПРИЧИНЫ АВТОСКРОЛЛА -->
+<!-- ДИАГНОСТИКА С ИСПРАВЛЕНИЕМ ОШИБКИ -->
 <script>
     (function() {
         'use strict';
@@ -26,44 +27,78 @@
         
         // 1. НЕМЕДЛЕННО фиксируем позицию ДО любых других действий
         window.scrollTo(0, 0);
-        document.documentElement.style.scrollBehavior = 'auto'; // Отключаем smooth scroll
+        if (document.documentElement) {
+            document.documentElement.style.scrollBehavior = 'auto'; // Отключаем smooth scroll
+        }
         
-        // 2. Фиксация через style для надёжности
-        document.documentElement.style.overflow = 'hidden';
-        document.body.style.overflow = 'hidden';
+        // 2. Фиксация через style для надёжности (с проверкой существования элементов)
+        if (document.documentElement) {
+            document.documentElement.style.overflow = 'hidden';
+        }
+        if (document.body) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            // Если body ещё нет, ждём его появления
+            document.addEventListener('DOMContentLoaded', function() {
+                if (document.body) {
+                    document.body.style.overflow = 'hidden';
+                }
+            });
+        }
         
-        // 3. Логируем все попытки скролла
+        // 3. Логируем все попытки скролла (только после загрузки body)
         var scrollHandler = function() {
-            console.warn('[Диагностика] Обнаружен неавторизованный скролл! Y:', window.pageYOffset, 'Время:', Date.now());
-            window.scrollTo(0, 0);
+            if (window.pageYOffset !== 0) {
+                console.warn('[Диагностика] Обнаружен неавторизованный скролл! Y:', window.pageYOffset, 'Время:', performance.now().toFixed(2) + 'ms');
+                window.scrollTo(0, 0);
+            }
         };
-        window.addEventListener('scroll', scrollHandler);
         
         // 4. Проверяем элементы, которые могут вызывать автофокус/автоскролл
-        window.addEventListener('DOMContentLoaded', function() {
-            console.log('[Диагностика] DOM готов. Проверяю элементы:');
+        var checkAutoFocus = function() {
+            console.log('[Диагностика] Проверка элементов DOM...');
             
             // Проверяем все элементы, которые могут иметь автофокус
             var autoFocusElements = document.querySelectorAll('[autofocus], input, textarea, button, select');
+            var foundAutofocus = false;
             autoFocusElements.forEach(function(el, i) {
                 if (el.hasAttribute('autofocus')) {
-                    console.error('[Диагностика] Найден элемент с autofocus:', el);
+                    console.error('[Диагностика] Найден элемент с autofocus:', el.tagName, el.id || el.className);
                     el.removeAttribute('autofocus');
+                    foundAutofocus = true;
                 }
             });
+            if (!foundAutofocus) {
+                console.log('[Диагностика] Элементов с autofocus не найдено');
+            }
             
             // Проверяем все якорные ссылки
-            document.querySelectorAll('a[href^="#"]').forEach(function(link) {
-                var href = link.getAttribute('href');
-                if (href !== '#') {
-                    console.log('[Диагностика] Якорная ссылка:', href);
-                }
-            });
-        });
+            var anchorLinks = document.querySelectorAll('a[href^="#"]');
+            console.log('[Диагностика] Найдено якорных ссылок:', anchorLinks.length);
+            
+            // Проверяем, нет ли скрытого хэша в CSS или JS
+            var computedStyles = window.getComputedStyle(document.documentElement);
+            console.log('[Диагностика] Проверка CSS: overflow на html:', computedStyles.overflow);
+        };
         
-        // 5. Полная загрузка - снимаем блокировки
+        // 5. Запускаем проверку после загрузки DOM
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                checkAutoFocus();
+                // Теперь можно добавить обработчик скролла
+                window.addEventListener('scroll', scrollHandler);
+            });
+        } else {
+            checkAutoFocus();
+            window.addEventListener('scroll', scrollHandler);
+        }
+        
+        // 6. Полная загрузка - снимаем блокировки
         window.addEventListener('load', function() {
             console.log('[Диагностика] Страница полностью загружена. Текущий scrollY:', window.pageYOffset);
+            
+            // Проверяем, какие скрипты могли вызвать скролл
+            console.log('[Диагностика] Загруженные скрипты: script.js, preview-widget.js');
             
             // Даём время на завершение всех асинхронных операций
             setTimeout(function() {
@@ -71,31 +106,39 @@
                 window.removeEventListener('scroll', scrollHandler);
                 
                 // Восстанавливаем стили
-                document.documentElement.style.overflow = '';
-                document.body.style.overflow = '';
-                document.documentElement.style.scrollBehavior = '';
+                if (document.documentElement) {
+                    document.documentElement.style.overflow = '';
+                    document.documentElement.style.scrollBehavior = '';
+                }
+                if (document.body) {
+                    document.body.style.overflow = '';
+                }
                 
                 // Финальный скролл наверх
-                window.scrollTo(0, 0);
+                if (window.pageYOffset !== 0) {
+                    console.error('[Диагностика] КРИТИЧЕСКОЕ СОСТОЯНИЕ: скролл не на нуле после load! Y:', window.pageYOffset);
+                    window.scrollTo(0, 0);
+                }
                 
                 console.log('[Диагностика] Диагностика завершена. Финальный scrollY:', window.pageYOffset);
                 
-                // Проверяем, не остался ли скрытый хэш
-                if (window.location.hash) {
-                    console.error('[Диагностика] ВНИМАНИЕ! Хэш всё ещё присутствует после load:', window.location.hash);
-                    history.replaceState(null, '', window.location.pathname + window.location.search);
-                }
-                
-            }, 300); // Увеличенная задержка для надёжности
+            }, 500); // Увеличенная задержка для надёжности
         });
         
-        // 6. Экстренная защита: перехват всех событий hashchange
-        window.addEventListener('hashchange', function(e) {
-            console.error('[Диагностика] Обнаружено изменение хэша!', e.oldURL, '->', e.newURL);
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            return false;
-        }, true);
+        // 7. Дополнительная защита: перехват попыток скролла через requestAnimationFrame
+        var lastScrollCheck = performance.now();
+        var animationFrameCheck = function() {
+            var now = performance.now();
+            if (now - lastScrollCheck > 100) { // Проверяем каждые 100мс
+                if (window.pageYOffset !== 0) {
+                    console.error('[Диагностика] RAF: Обнаружен скролл во время анимации! Y:', window.pageYOffset);
+                    window.scrollTo(0, 0);
+                }
+                lastScrollCheck = now;
+            }
+            requestAnimationFrame(animationFrameCheck);
+        };
+        requestAnimationFrame(animationFrameCheck);
         
     })();
 </script>
