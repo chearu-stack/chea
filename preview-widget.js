@@ -1,62 +1,42 @@
 // preview-widget.js
 // Виджет предварительного анализа для главной страницы
 
-(function() {
-    // ===== ТОЧЕЧНЫЙ ФИКС ТОЛЬКО ДЛЯ #start =====
-    // 1. Если страница загружается с якорем #start - игнорируем его
-    if (window.location.hash === '#start') {
-        // Сохраняем исходный URL без якоря
-        const cleanUrl = window.location.pathname + window.location.search;
-        
-        // Мгновенная прокрутка наверх
-        window.scrollTo(0, 0);
-        
-        // Безопасно убираем якорь из истории
-        setTimeout(() => {
-            try {
-                history.replaceState(null, null, cleanUrl);
-            } catch (e) {
-                // Игнорируем ошибки истории
-            }
-        }, 10);
-    }
+// ===== КРИТИЧЕСКИЙ ФИКС: УСТРАНЕНИЕ ПРИНУДИТЕЛЬНОЙ ПРОКРУТКИ =====
+// Выполняется НЕМЕДЛЕННО при загрузке скрипта
+
+// 1. Мгновенная блокировка нативной прокрутки браузера
+if (window.location.hash === '#start') {
+    // Заменяем хэш СРАЗУ, без таймаутов
+    try {
+        window.history.replaceState(null, null, 
+            window.location.pathname + window.location.search);
+    } catch(e) {}
     
-    // 2. Отключаем ТОЛЬКО ссылки на #start, остальные работают как обычно
-    document.addEventListener('DOMContentLoaded', function() {
-        const startLinks = document.querySelectorAll('a[href="#start"]');
-        
-        startLinks.forEach(link => {
-            // Сохраняем оригинальный обработчик если он есть
-            const originalClick = link.onclick;
-            
-            link.addEventListener('click', function(e) {
-                // Разрешаем все другие клики (Ctrl+click, Shift+click и т.д.)
-                if (e.ctrlKey || e.shiftKey || e.metaKey || e.altKey) {
-                    return; // Позволяем открыть в новой вкладке и т.п.
-                }
-                
-                e.preventDefault();
-                
-                // Плавный скролл к секции #start
-                const target = document.getElementById('start');
-                if (target) {
-                    window.scrollTo({
-                        top: target.offsetTop - 20,
-                        behavior: 'smooth'
-                    });
-                }
-                
-                // Вызываем оригинальный обработчик если он был
-                if (originalClick) {
-                    originalClick.call(this, e);
-                }
-                
-                return false;
-            }, { passive: false }); // passive: false чтобы preventDefault работал
-        });
+    // Прокрутка наверх с максимальным приоритетом
+    window.scrollTo(0, 0);
+    
+    // Дублирующая защита на случай race condition
+    document.addEventListener('readystatechange', function() {
+        if (document.readyState === 'interactive' || document.readyState === 'complete') {
+            window.scrollTo(0, 0);
+        }
     });
-    
-    // ===== ОСНОВНОЙ КОД ВИДЖЕТА (без изменений) =====
+}
+
+// 2. Атрибут для полного отключения нативной прокрутки
+document.addEventListener('DOMContentLoaded', function() {
+    const startLinks = document.querySelectorAll('a[href="#start"]');
+    startLinks.forEach(link => {
+        link.setAttribute('data-no-native-scroll', 'true');
+    });
+});
+
+// ===== ОСНОВНОЙ КОД ВИДЖЕТА =====
+(function() {
+    // Дополнительная проверка внутри IIFE
+    if (window.location.hash === '#start') {
+        window.scrollTo(0, 0);
+    }
     
     // Проверяем, есть ли контейнер для виджета
     const widgetContainer = document.querySelector('.bot-widget-placeholder');
