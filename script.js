@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- 4. СТРАНИЦА ОПЛАТЫ ---
+    // --- 4. СТРАНИЦА ОПЛАТЫ (ИСПРАВЛЕННАЯ ВЕРСИЯ) ---
     function setupPaymentPage() {
         if (window.location.pathname.includes('payment.html')) {
             console.log('💰 Инициализация страницы оплаты');
@@ -105,21 +105,37 @@ document.addEventListener('DOMContentLoaded', function() {
             const planKey = urlParams.get('plan') || 'extended';
             const price = urlParams.get('price') || '1200';
             const orderID = localStorage.getItem('lastOrderID');
+            const plan = planDetails[planKey] || planDetails.extended;
 
-            if (document.getElementById('selectedPlanName')) {
-                document.getElementById('selectedPlanName').textContent = planDetails[planKey].name;
-            }
-            
-            const priceEl = document.getElementById('selectedPlanPrice');
-            if (priceEl) {
-                priceEl.innerHTML = `${price} ₽ <br><span style="color:red; font-size:1rem;">ID: ${orderID}</span>`;
-            }
-            
+            // Обновление ВСЕХ полей
+            const elements = {
+                'selectedPlanName': plan.name,
+                'selectedPlanPrice': `${price} ₽`,
+                'selectedPlanId': `ID: ${orderID}`,
+                'selectedPlanDesc': plan.desc,
+                'manualPrice': price,
+                'stepAmount': price
+            };
+
+            Object.keys(elements).forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    if (id === 'selectedPlanPrice') {
+                        element.innerHTML = `${price} ₽`;
+                    } else {
+                        element.textContent = elements[id];
+                    }
+                }
+            });
+
+            // QR-код
             const qrImg = document.getElementById('qrCodeImage');
             if (qrImg) {
                 const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
                 qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(baseQR + '&sum=' + price + '&label=' + orderID)}`;
             }
+            
+            console.log('💰 Данные обновлены:', { planKey, price, orderID });
         }
     }
     
