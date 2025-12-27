@@ -1,6 +1,6 @@
 // ===================================================================
 // АДВОКАТ МЕДНОГО ГРОША — script.js
-// ВЕРСИЯ: LIGHTWEIGHT EDITION (только тарифы и оплата, без конфликтов)
+// ВЕРСИЯ: LIGHTWEIGHT EDITION v2 (с разблокировкой системы)
 // ===================================================================
 
 /**
@@ -40,15 +40,14 @@ function initializeAMGSystem() {
         console.log(`💰 Найдено кнопок тарифов: ${tariffButtons.length}`);
         
         tariffButtons.forEach(button => {
-            // Создаем новую кнопку с теми же атрибутами
+            // Клонируем кнопку для чистых обработчиков
             const newButton = button.cloneNode(true);
             
-            // Заменяем старую кнопку на новую (для чистых обработчиков)
             if (button.parentNode) {
                 button.parentNode.replaceChild(newButton, button);
             }
             
-            // Вешаем ОДИН обработчик
+            // ОДИН обработчик на каждую кнопку
             newButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -57,13 +56,13 @@ function initializeAMGSystem() {
                 
                 const planKey = this.getAttribute('data-plan');
                 
-                // 1. Генерируем данные локально
+                // 1. Локальное сохранение
                 const newID = generateOrderIdentifier(planKey);
                 localStorage.setItem('lastOrderID', newID);
                 localStorage.setItem('selectedPlan', planKey);
                 localStorage.setItem('lockTime', Date.now());
 
-                // 2. Отправляем на сервер (асинхронно, не ждём)
+                // 2. Отправка на сервер (асинхронно)
                 try {
                     const capsLimits = { 'basic': 30000, 'extended': 60000, 'subscription': 90000 };
                     
@@ -77,23 +76,23 @@ function initializeAMGSystem() {
                             fingerprint: userFP
                         })
                     }).then(() => {
-                        console.log("Заказ зарегистрирован в БД");
+                        console.log("💰 Заказ зарегистрирован в БД");
                     }).catch(err => {
-                        console.error("Ошибка связи с сервером:", err);
+                        console.error("💰 Ошибка связи с сервером:", err);
                     });
                     
                 } catch (err) {
-                    console.error("Ошибка:", err);
+                    console.error("💰 Ошибка:", err);
                 }
 
-                // 3. Переход на payment.html БЕЗ ЗАДЕРЖЕК
+                // 3. Переход на payment.html
                 const href = this.getAttribute('href');
                 if (href) {
                     window.location.href = href;
                 }
                 
                 return false;
-            }, true); // Используем capture для приоритета
+            }, true); // capture для приоритета
         });
     }
     
@@ -103,9 +102,8 @@ function initializeAMGSystem() {
         const lockTime = localStorage.getItem('lockTime');
 
         if (savedPlan && lockTime && (Date.now() - lockTime < 24 * 60 * 60 * 1000)) {
-            // Восстанавливаем только данные, но НЕ рендерим карточку
-            // (это делает preview-widget.js при необходимости)
             console.log('💰 Восстановлен сохранённый план:', savedPlan);
+            // Только логируем, не рендерим
         }
     }
 
@@ -156,10 +154,29 @@ function initializeAMGSystem() {
     } catch (error) {
         console.error('❌ Ошибка инициализации модуля тарифов:', error);
     }
+    
+    // --- КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: РАЗБЛОКИРОВКА СИСТЕМЫ ---
+    // preview-widget.js ждёт этот флаг для инициализации
+    setTimeout(() => {
+        if (window.AMG_State) {
+            window.AMG_State.systemReady = true;
+            window.AMG_State.scrollAllowed = true;
+            console.log('🔓 Система разблокирована для виджета');
+        } else {
+            console.warn('⚠️ AMG_State не найден, создаём...');
+            window.AMG_State = {
+                systemReady: true,
+                scrollAllowed: true,
+                widgetActive: false,
+                currentPlan: null,
+                userFP: null
+            };
+        }
+    }, 100); // Короткая задержка для стабильности
 }
 
 // ===== ТОЧКА ВХОДА =====
-// script.js НЕ управляет глобальным состоянием системы
+// script.js НЕ управляет глобальным состоянием системы, только разблокирует её
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
@@ -168,7 +185,7 @@ if (document.readyState === 'loading') {
     });
 } else {
     console.log('💰 DOM уже загружен, немедленная инициализация тарифов');
-    setTimeout(initializeAMGSystem, 100); // Задержка для приоритета preview-widget.js
+    setTimeout(initializeAMGSystem, 50); // Короткая задержка
 }
 
-console.log('✅ script.js загружен (облегчённая версия)');
+console.log('✅ script.js загружен (облегчённая версия с разблокировкой)');
