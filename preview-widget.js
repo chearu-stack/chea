@@ -218,75 +218,74 @@
         }
         
         // Показываем результат
-        showResult(isSolvable, planId, amount, hasConsumerKeywords);
+           showResult(isSolvable, planId, amount, hasConsumerKeywords);
+}
+
+function showResult(isSolvable, planId, amount, hasKeywords) {
+    const container = document.querySelector('.bot-widget-placeholder');
+    if (!container) return;
+    
+    const planNames = {
+        basic: 'Базовый (500 ₽)',
+        extended: 'Расширенный (1 200 ₽)',
+        subscription: 'Профессиональный (2 500 ₽)'
+    };
+    
+    // Улучшенное сообщение в зависимости от данных
+    let message = '';
+    if (amount > 0 && !hasKeywords) {
+        message = 'Указана сумма, но не обнаружено ключевых слов о покупке. Рекомендуем уточнить детали.';
+    } else if (hasKeywords && amount === 0) {
+        message = 'Обнаружены признаки потребительской проблемы, но сумма не указана.';
+    } else if (hasKeywords && amount > 0) {
+        message = 'Ситуация может подпадать под действие Закона о защите прав потребителей.';
+    } else {
+        message = 'На основе описания не выявлено признаков нарушения прав потребителя.';
     }
     
-    function showResult(isSolvable, planId, amount, hasKeywords) {
-        const container = document.querySelector('.bot-widget-placeholder');
-        if (!container) return;
-        
-        const planNames = {
-            basic: 'Базовый (500 ₽)',
-            extended: 'Расширенный (1 200 ₽)',
-            subscription: 'Профессиональный (2 500 ₽)'
-        };
-        
-        // Улучшенное сообщение в зависимости от данных
-        let message = '';
-        if (amount > 0 && !hasKeywords) {
-            message = 'Указана сумма, но не обнаружено ключевых слов о покупке. Рекомендуем уточнить детали.';
-        } else if (hasKeywords && amount === 0) {
-            message = 'Обнаружены признаки потребительской проблемы, но сумма не указана.';
-        } else if (hasKeywords && amount > 0) {
-            message = 'Ситуация может подпадать под действие Закона о защите прав потребителей.';
-        } else {
-            message = 'На основе описания не выявлено признаков нарушения прав потребителя.';
-        }
-        
-        container.innerHTML = `
-            <div class="widget-container" style="
-                background: ${isSolvable ? '#d4edda' : '#f8d7da'};
-                border: 2px solid ${isSolvable ? '#28a745' : '#dc3545'};
-                border-radius: 12px;
-                padding: 24px;
-                margin: 20px 0;
-                color: ${isSolvable ? '#155724' : '#721c24'};
-            ">
-                <h3 style="margin-top: 0;">
-                    ${isSolvable ? '✅ Анализ завершён' : '❌ Требуется больше данных'}
-                </h3>
-                
-                <p>${message}</p>
-                
-                ${amount > 0 ? `<p><strong>Сумма:</strong> ${amount.toLocaleString('ru-RU')} руб.</p>` : ''}
-                
-                ${isSolvable && amount > 0 ? `
-                <div style="background: white; padding: 16px; border-radius: 8px; margin: 16px 0;">
-                    <strong>Рекомендуем:</strong><br>
-                    ${planNames[planId]}
-                </div>
-                ` : ''}
-                
-                <button id="restart-btn" style="
-                    width: 100%;
-                    padding: 12px;
-                    background: #6c757d;
-                    color: white;
-                    border: none;
-                    border-radius: 6px;
-                    margin-top: 10px;
-                    cursor: pointer;">
-                    ${isSolvable ? 'Новый анализ' : 'Попробовать снова'}
-                </button>
+    container.innerHTML = `
+        <div class="widget-container" style="
+            background: ${isSolvable ? '#d4edda' : '#f8d7da'};
+            border: 2px solid ${isSolvable ? '#28a745' : '#dc3545'};
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+        ">
+            <h3 style="margin-top: 0; color: #212529;">
+                ${isSolvable ? '✅ Анализ завершён' : '❌ Требуется больше данных'}
+            </h3>
+            
+            <p style="color: #212529;">${message}</p>
+            
+            ${amount > 0 ? `<p style="color: #212529;"><strong>Сумма:</strong> ${amount.toLocaleString('ru-RU')} руб.</p>` : ''}
+            
+            ${isSolvable && amount > 0 ? `
+            <div style="background: white; padding: 16px; border-radius: 8px; margin: 16px 0; color: #212529;">
+                <strong>Рекомендуем:</strong><br>
+                ${planNames[planId]}
             </div>
-        `;
-        
-        document.getElementById('restart-btn').addEventListener('click', function() {
-            currentStep = 0;
-            answers = {};
-            showQuestion();
-        });
-    }
+            ` : ''}
+            
+            <button id="restart-btn" style="
+                width: 100%;
+                padding: 12px;
+                background: #6c757d;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                margin-top: 10px;
+                cursor: pointer;">
+                ${isSolvable ? 'Новый анализ' : 'Попробовать снова'}
+            </button>
+        </div>
+    `;
+    
+    document.getElementById('restart-btn').addEventListener('click', function() {
+        currentStep = 0;
+        answers = {};
+        showQuestion();
+    });
+}
     
     // Инициализация
     function init() {
