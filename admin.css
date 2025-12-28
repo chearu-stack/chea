@@ -344,3 +344,44 @@
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(56, 161, 105, 0.3);
 }
+
+.btn-activate {
+    background: linear-gradient(90deg, #38a169, #2f855a);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.3s;
+    margin-right: 5px;
+}
+
+.btn-activate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(56, 161, 105, 0.3);
+}
+
+.btn-delete {
+    background: #e53e3e;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.btn-delete:hover {
+    background: #c53030;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(229, 62, 62, 0.3);
+}
+
+/* Гарантируем что кнопки в одной строке */
+.admin-orders-table td:last-child {
+    white-space: nowrap;
+}
