@@ -40,7 +40,9 @@ exports.handler = async (event) => {
 
         let query = supabase
             .from('access_codes')
-            .select('is_active, caps_used, caps_limit, package, code, fingerprint');
+            .select('is_active, caps_used, caps_limit, package, code, fingerprint, created_at')
+            .order('created_at', { ascending: false }) // Берем последнюю запись
+            .limit(1);
 
         if (code) {
             query = query.eq('code', code);
@@ -48,11 +50,14 @@ exports.handler = async (event) => {
             query = query.eq('fingerprint', fp);
         }
 
-        const { data, error } = await query.maybeSingle();
+        const { data, error } = await query;
 
         if (error) throw error;
 
-        if (!data) {
+        // data теперь массив, берем первый элемент
+        const record = data && data.length > 0 ? data[0] : null;
+
+        if (!record) {
             return {
                 statusCode: 200,
                 headers,
@@ -67,18 +72,19 @@ exports.handler = async (event) => {
             };
         }
 
-        const isFullyUsed = data.is_active && (data.caps_used >= data.caps_limit);
+        const isFullyUsed = record.is_active && (record.caps_used >= record.caps_limit);
 
         return {
             statusCode: 200,
             headers,
             body: JSON.stringify({ 
-                active: data.is_active || false,
-                caps_used: data.caps_used || 0,
-                caps_limit: data.caps_limit || 0,
-                package: data.package || null,
-                code: data.code || null,
-                is_fully_used: isFullyUsed
+                active: record.is_active || false,
+                caps_used: record.caps_used || 0,
+                caps_limit: record.caps_limit || 0,
+                package: record.package || null,
+                code: record.code || null,
+                is_fully_used: isFullyUsed,
+                created_at: record.created_at
             })
         };
 
