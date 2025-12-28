@@ -1,6 +1,6 @@
 // ===================================================================
 // АДВОКАТ МЕДНОГО ГРОША — script.js
-// ВЕРСИЯ: ТАРИФЫ И ОПЛАТА (без скроллов)
+// ВЕРСИЯ: ТАРИФЫ И ОПЛАТА (без скроллов) + СТАТУС ОЖИДАНИЯ/АКТИВАЦИИ
 // ===================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -139,7 +139,83 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // --- 5. ВЫПОЛНЕНИЕ ---
+    // --- 5. ОТОБРАЖЕНИЕ СТАТУСА "ОЖИДАНИЕ" НА ГЛАВНОЙ ---
+    function showWaitingStatus() {
+        const savedPlan = localStorage.getItem('selectedPlan');
+        const lockTime = localStorage.getItem('lockTime');
+        const orderID = localStorage.getItem('lastOrderID');
+        
+        if (savedPlan && lockTime && (Date.now() - lockTime < 24 * 60 * 60 * 1000)) {
+            // Находим карточку "Пример расчета" в hero-section
+            const cardHeader = document.querySelector('.card-header');
+            const cardBody = document.querySelector('.card-body');
+            
+            if (cardHeader && cardBody) {
+                const plan = planDetails[savedPlan] || planDetails.extended;
+                
+                // Меняем содержимое карточки
+                cardHeader.innerHTML = `<i class="fas fa-clock"></i> Ваш выбор: ${plan.name}`;
+                cardBody.innerHTML = `
+                    <div style="text-align: left;">
+                        <p style="font-weight: bold; color: #e67e22; margin-bottom: 10px;">
+                            <i class="fas fa-hourglass-half"></i> Статус: ОЖИДАНИЕ
+                        </p>
+                        <p style="margin-bottom: 15px;">${plan.desc}</p>
+                        <p style="font-size: 0.9rem; margin-bottom: 10px;">
+                            <strong>Бот забронирован.</strong> Отправьте в Telegram:
+                        </p>
+                        <ol style="text-align: left; margin-left: 20px; margin-bottom: 15px;">
+                            <li>ID платежа: <code>${orderID || 'не указан'}</code></li>
+                            <li>Скриншот чека об оплате</li>
+                        </ol>
+                        <a href="https://t.me/chearu252?text=${encodeURIComponent('ID: ' + orderID)}" 
+                           target="_blank" 
+                           style="display: block; background: #0088cc; color: white; padding: 12px; border-radius: 6px; text-decoration: none; text-align: center; font-weight: 600;">
+                           <i class="fab fa-telegram"></i> Отправить в Telegram
+                        </a>
+                        <p style="font-size: 0.8rem; color: #718096; margin-top: 10px;">
+                            После проверки чека доступ будет активирован в течение 15 минут
+                        </p>
+                    </div>
+                `;
+            }
+        }
+    }
+    
+    // --- 6. ПРОВЕРКА АКТИВАЦИИ ---
+    async function checkUserActivation() {
+        try {
+            const response = await fetch(`https://chea.onrender.com/check-status?fp=${userFP}`);
+            const data = await response.json();
+            
+            if (data.active) {
+                // Пользователь активирован - показываем кабинет
+                const cardHeader = document.querySelector('.card-header');
+                const cardBody = document.querySelector('.card-body');
+                
+                if (cardHeader && cardBody) {
+                    cardHeader.innerHTML = `<i class="fas fa-check-circle"></i> Доступ активен`;
+                    cardBody.innerHTML = `
+                        <div style="text-align: center;">
+                            <p style="margin-bottom: 20px; font-weight: 600;">✅ Ваш пакет активирован</p>
+                            <a href="https://t.me/chearu252" 
+                               target="_blank"
+                               style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                               <i class="fab fa-telegram"></i> Перейти в Telegram-бота
+                            </a>
+                            <p style="font-size: 0.9rem; color: #718096; margin-top: 15px;">
+                                Используйте бота для создания документов
+                            </p>
+                        </div>
+                    `;
+                }
+            }
+        } catch (error) {
+            console.log('Пользователь не активирован');
+        }
+    }
+    
+    // --- 7. ВЫПОЛНЕНИЕ ---
     try {
         console.log('💰 Начало инициализации модуля тарифов...');
         
@@ -151,6 +227,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // СТРАНИЦА ОПЛАТЫ
         setupPaymentPage();
+        
+        // СТАТУС ОЖИДАНИЯ/АКТИВАЦИИ
+        showWaitingStatus();
+        checkUserActivation();
         
         console.log('✅ Модуль тарифов инициализирован');
         
