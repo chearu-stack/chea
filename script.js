@@ -1,10 +1,10 @@
 // ===================================================================
 // АДВОКАТ МЕДНОГО ГРОША — script.js
-// ИСПРАВЛЕННАЯ ВЕРСИЯ: безопасная активация только после подтверждения админом
+// ВЕРСИЯ С БЛОКИРОВКОЙ ТАРИФОВ
 // ===================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('💰 Тарифы: безопасная инициализация');
+    console.log('💰 Тарифы: безопасная инициализация с блокировкой');
     
     // --- 1. ГЕНЕРАЦИЯ ID И ОТПЕЧАТКА ---
     const getFP = () => {
@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', function() {
         return btoa(`${s.width}${s.height}${b}${s.colorDepth}`).substring(0, 12);
     };
     const userFP = getFP();
+
+    // Константы для блокировки
+    const BLOCK_DURATION = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
 
     function generateOrderIdentifier(planKey) {
         const now = new Date();
@@ -31,13 +34,108 @@ document.addEventListener('DOMContentLoaded', function() {
         'subscription': { name: 'Профессиональный', price: '2 500 ₽', desc: 'Борьба с отписками, стратегия и сложные расчёты. 50 вопросов.' }
     };
 
-    // --- 2. ОБРАБОТКА КНОПОК ТАРИФОВ ---
+    // --- 2. ФУНКЦИИ БЛОКИРОВКИ/РАЗБЛОКИРОВКИ ТАРИФОВ ---
+    async function checkAndBlockTariffs() {
+        try {
+            const savedOrderID = localStorage.getItem('lastOrderID');
+            const savedPlan = localStorage.getItem('selectedPlan');
+            const lockTime = localStorage.getItem('lockTime');
+            
+            if (!savedOrderID || !savedPlan || !lockTime) {
+                unlockTariffButtons();
+                return;
+            }
+            
+            // Проверяем не истёк ли срок блокировки (24 часа)
+            const timePassed = Date.now() - parseInt(lockTime);
+            if (timePassed > BLOCK_DURATION) {
+                localStorage.removeItem('selectedPlan');
+                localStorage.removeItem('lockTime');
+                unlockTariffButtons();
+                return;
+            }
+            
+            // Проверяем статус на сервере
+            const response = await fetch(`https://chea.onrender.com/check-status?code=${savedOrderID}`);
+            if (!response.ok) {
+                console.error('Ошибка запроса статуса');
+                return;
+            }
+            
+            const status = await response.json();
+            console.log('Статус тарифа для блокировки:', status);
+            
+            if (status.active && status.is_fully_used) {
+                // Тариф использован полностью → разблокируем
+                unlockTariffButtons();
+                return;
+            }
+            
+            if (status.active) {
+                // Тариф активен, но не использован → блокируем
+                const hoursLeft = Math.ceil((BLOCK_DURATION - timePassed) / (60 * 60 * 1000));
+                const tokensLeft = status.caps_limit - status.caps_used;
+                blockTariffButtons(`Тариф "${status.package}" активен. Доступно ${tokensLeft} токенов. Смена через ${hoursLeft}ч`);
+                return;
+            }
+            
+            // Тариф не активен (ожидание) → блокируем
+            const hoursLeft = Math.ceil((BLOCK_DURATION - timePassed) / (60 * 60 * 1000));
+            blockTariffButtons(`Ожидание подтверждения тарифа. Смена через ${hoursLeft}ч`);
+            
+        } catch (error) {
+            console.error('Ошибка проверки блокировки:', error);
+            unlockTariffButtons();
+        }
+    }
+
+    function blockTariffButtons(message) {
+        const buttons = document.querySelectorAll('.pricing-card .btn[data-plan]');
+        buttons.forEach(btn => {
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+            btn.title = message;
+            
+            // Блокируем клик
+            const originalClick = btn.onclick;
+            btn.dataset.originalClick = originalClick ? originalClick.toString() : '';
+            
+            btn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                alert(message);
+                return false;
+            };
+        });
+    }
+
+    function unlockTariffButtons() {
+        const buttons = document.querySelectorAll('.pricing-card .btn[data-plan]');
+        buttons.forEach(btn => {
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            btn.title = '';
+            
+            // Восстанавливаем обработчик если был
+            if (btn.dataset.originalClick) {
+                try {
+                    if (btn.dataset.originalClick.includes('function')) {
+                        btn.onclick = eval(`(${btn.dataset.originalClick})`);
+                    }
+                } catch (e) {
+                    console.log('Не удалось восстановить обработчик');
+                }
+                delete btn.dataset.originalClick;
+            }
+        });
+    }
+
+    // --- 3. ОБРАБОТКА КНОПОК ТАРИФОВ ---
     function setupTariffButtons() {
         const tariffButtons = document.querySelectorAll('.pricing-card .btn[data-plan]');
         console.log(`💰 Найдено кнопок тарифов: ${tariffButtons.length}`);
         
         tariffButtons.forEach(button => {
-            // Клонируем кнопку для чистоты обработчиков
             const newButton = button.cloneNode(true);
             button.parentNode.replaceChild(newButton, button);
             
@@ -55,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem('selectedPlan', planKey);
                 localStorage.setItem('lockTime', Date.now());
 
-                // 2. Отправка в БД (без обработки ошибок, как в рабочем коде)
+                // 2. Отправка в БД
                 try {
                     const capsLimits = { 'basic': 30000, 'extended': 60000, 'subscription': 90000 };
                     
@@ -76,7 +174,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error("❌ Ошибка:", err);
                 }
 
-                // 3. Переход на payment.html
+                // 3. Блокируем кнопки сразу после выбора
+                checkAndBlockTariffs();
+
+                // 4. Переход на payment.html
                 const href = this.getAttribute('href');
                 if (href) {
                     setTimeout(() => {
@@ -89,13 +190,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // --- 3. СТАТУС "ОЖИДАНИЕ" ---
+    // --- 4. СТАТУС "ОЖИДАНИЕ" ---
     function showWaitingStatus() {
         const savedPlan = localStorage.getItem('selectedPlan');
         const lockTime = localStorage.getItem('lockTime');
         const orderID = localStorage.getItem('lastOrderID');
         
-        if (savedPlan && lockTime && (Date.now() - lockTime < 24 * 60 * 60 * 1000)) {
+        if (savedPlan && lockTime && (Date.now() - lockTime < BLOCK_DURATION)) {
             const cardHeader = document.querySelector('.card-header');
             const cardBody = document.querySelector('.card-body');
             
@@ -123,22 +224,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
                 
-                // Запускаем проверку активации каждые 10 секунд
                 startActivationCheck();
             }
         }
     }
     
-    // --- 4. ПРОВЕРКА АКТИВАЦИИ (БЕЗОПАСНАЯ) ---
+    // --- 5. ПРОВЕРКА АКТИВАЦИИ ---
     let activationCheckInterval = null;
     
     function startActivationCheck() {
-        // Останавливаем предыдущий интервал
         if (activationCheckInterval) {
             clearInterval(activationCheckInterval);
         }
         
-        // Запускаем проверку каждые 10 секунд
         activationCheckInterval = setInterval(async () => {
             try {
                 const response = await fetch(`https://chea.onrender.com/check-status?fp=${userFP}`);
@@ -147,20 +245,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Проверка активации:', data);
                 
                 if (data.active === true) {
-                    // ТОЛЬКО ЕСЛИ СЕРВЕР ВОЗВРАЩАЕТ active: true
                     showActivatedStatus();
                     clearInterval(activationCheckInterval);
+                    // После активации проверяем блокировку
+                    checkAndBlockTariffs();
                 }
-                // Если active: false или нет поля — ничего не делаем, продолжаем "ОЖИДАНИЕ"
                 
             } catch (error) {
                 console.log('Ошибка проверки активации:', error);
-                // При ошибке оставляем статус "ОЖИДАНИЕ"
             }
-        }, 10000); // Каждые 10 секунд
+        }, 10000);
     }
     
-    // --- 5. СТАТУС "АКТИВИРОВАН" (после подтверждения админом) ---
+    // --- 6. СТАТУС "АКТИВИРОВАН" ---
     function showActivatedStatus() {
         const savedOrderID = localStorage.getItem('lastOrderID');
         const cardHeader = document.querySelector('.card-header');
@@ -189,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // --- 6. СТРАНИЦА ОПЛАТЫ ---
+    // --- 7. СТРАНИЦА ОПЛАТЫ ---
     function setupPaymentPage() {
         if (window.location.pathname.includes('payment.html')) {
             console.log('💰 Инициализация страницы оплаты');
@@ -200,7 +297,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const orderID = localStorage.getItem('lastOrderID');
             const plan = planDetails[planKey] || planDetails.extended;
 
-            // Обновление полей
             if (document.getElementById('selectedPlanName')) {
                 document.getElementById('selectedPlanName').textContent = plan.name;
             }
@@ -210,7 +306,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 priceEl.innerHTML = `${price} ₽ <br><span style="color:red; font-size:1rem;">ID: ${orderID}</span>`;
             }
             
-            // QR-код
             const qrImg = document.getElementById('qrCodeImage');
             if (qrImg) {
                 const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
@@ -221,12 +316,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- 7. ИНИЦИАЛИЗАЦИЯ ---
+    // --- 8. ИНИЦИАЛИЗАЦИЯ ---
     try {
         console.log('💰 Начало инициализации...');
         
         // Настройка тарифов
         setupTariffButtons();
+        
+        // Проверяем и блокируем тарифы если нужно
+        checkAndBlockTariffs();
         
         // Показываем статус "ОЖИДАНИЕ" если есть сохранённый план
         showWaitingStatus();
@@ -241,4 +339,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-console.log('✅ script.js загружен (безопасная версия)');
+console.log('✅ script.js загружен (с блокировкой тарифов)');
