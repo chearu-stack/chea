@@ -37,7 +37,6 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`💰 Найдено кнопок тарифов: ${tariffButtons.length}`);
         
         tariffButtons.forEach(button => {
-            // Простой обработчик без клонирования (чтобы не конфликтовать)
             button.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
@@ -82,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 return false;
-            }, true); // Используем capture для приоритета
+            }, true);
         });
     }
     
@@ -146,7 +145,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const orderID = localStorage.getItem('lastOrderID');
         
         if (savedPlan && lockTime && (Date.now() - lockTime < 24 * 60 * 60 * 1000)) {
-            // Находим карточку "Пример расчета" в hero-section
             const cardHeader = document.querySelector('.card-header');
             const cardBody = document.querySelector('.card-body');
             
@@ -168,10 +166,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             <li>ID платежа: <code>${orderID || 'не указан'}</code></li>
                             <li>Скриншот чека об оплате</li>
                         </ol>
-                        <a href="https://t.me/chearu252?text=${encodeURIComponent('ID: ' + orderID)}" 
+                        <a href="https://bothub-bridge.onrender.com/?access_code=${orderID}" 
                            target="_blank" 
                            style="display: block; background: #0088cc; color: white; padding: 12px; border-radius: 6px; text-decoration: none; text-align: center; font-weight: 600;">
-                           <i class="fab fa-telegram"></i> Отправить в Telegram
+                           <i class="fab fa-telegram"></i> Перейти в бота с доступом
                         </a>
                         <p style="font-size: 0.8rem; color: #718096; margin-top: 10px;">
                             После проверки чека доступ будет активирован в течение 15 минут
@@ -189,7 +187,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             
             if (data.active) {
-                // Пользователь активирован - показываем кабинет
                 const cardHeader = document.querySelector('.card-header');
                 const cardBody = document.querySelector('.card-body');
                 
@@ -198,10 +195,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     cardBody.innerHTML = `
                         <div style="text-align: center;">
                             <p style="margin-bottom: 20px; font-weight: 600;">✅ Ваш пакет активирован</p>
-                            <a href="https://t.me/chearu252" 
+                            <a href="https://bothub-bridge.onrender.com/?access_code=${userFP}" 
                                target="_blank"
                                style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-                               <i class="fab fa-telegram"></i> Перейти в Telegram-бота
+                               <i class="fab fa-telegram"></i> Перейти в бота с доступом
                             </a>
                             <p style="font-size: 0.9rem; color: #718096; margin-top: 15px;">
                                 Используйте бота для создания документов
@@ -219,16 +216,9 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
         console.log('💰 Начало инициализации модуля тарифов...');
         
-        // НАСТРОЙКА ТАРИФОВ
         setupTariffButtons();
-        
-        // ВОССТАНОВЛЕНИЕ СОСТОЯНИЯ
         checkSavedState();
-        
-        // СТРАНИЦА ОПЛАТЫ
         setupPaymentPage();
-        
-        // СТАТУС ОЖИДАНИЯ/АКТИВАЦИИ
         showWaitingStatus();
         checkUserActivation();
         
