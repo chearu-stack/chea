@@ -1,6 +1,8 @@
 const API_BASE = 'https://chea.onrender.com';
 const ADMIN_PASS = "amg2025"; // Пароль в нижнем регистре
 
+// ========== АВТОРИЗАЦИЯ ==========
+
 // Авторизация при загрузке
 window.addEventListener('DOMContentLoaded', function() {
     if (sessionStorage.getItem('adminAuth') === 'true') {
@@ -75,6 +77,54 @@ function logout() {
     location.reload();
 }
 
+// ========== НОРМАЛИЗАЦИЯ ТАРИФОВ ==========
+
+function normalizeTariff(tariff) {
+    if (!tariff) return 'BASIC';
+    
+    const upperTariff = tariff.toUpperCase().trim();
+    
+    // Маппинг на три основных тарифа
+    const mapping = {
+        // BASIC
+        'BASIC': 'BASIC',
+        'EMT': 'BASIC',
+        'ED': 'BASIC',
+        'EB': 'BASIC',
+        'EMZ': 'BASIC',
+        'XA': 'BASIC',
+        
+        // EXTENDED
+        'EXTENDED': 'EXTENDED',
+        'SMT': 'EXTENDED',
+        'XC': 'EXTENDED',
+        'PRO': 'EXTENDED',
+        
+        // SUBSCRIPTION
+        'SUBSCRIPTION': 'SUBSCRIPTION',
+        'VMT': 'SUBSCRIPTION',
+        'XF': 'SUBSCRIPTION',
+        'PREMIUM': 'SUBSCRIPTION'
+    };
+    
+    // Сначала проверяем точное совпадение
+    if (mapping[upperTariff]) {
+        return mapping[upperTariff];
+    }
+    
+    // Проверяем частичные совпадения
+    for (const [key, value] of Object.entries(mapping)) {
+        if (upperTariff.includes(key)) {
+            return value;
+        }
+    }
+    
+    // По умолчанию BASIC
+    return 'BASIC';
+}
+
+// ========== РАБОТА С ДАТАМИ ==========
+
 // Функция извлечения даты из кода
 function extractDateFromCode(code) {
     try {
@@ -131,6 +181,8 @@ function formatOrderDate(code) {
     });
 }
 
+// ========== ЗАГРУЗКА ЗАЯВОК ==========
+
 // Загрузка заявок
 async function loadOrders() {
     const tbody = document.getElementById('ordersBody');
@@ -162,10 +214,13 @@ async function loadOrders() {
 
         orders.forEach(order => {
             const row = document.createElement('tr');
-            const tariff = (order.tariff || order.package || 'BASIC').toUpperCase();
+            
+            // Нормализуем тариф
+            const rawTariff = order.tariff || order.package || 'BASIC';
+            const tariff = normalizeTariff(rawTariff);
             const date = formatOrderDate(order.code);
             
-            // Определяем CSS класс для тарифа
+            // CSS класс для тарифа
             const tariffClass = `tariff-${tariff.toLowerCase()}`;
             
             row.innerHTML = `
@@ -175,6 +230,9 @@ async function loadOrders() {
                 <td>
                     <button onclick="activateCode('${order.code}', '${tariff}')" class="btn-activate">
                         ✅ АКТИВИРОВАТЬ
+                    </button>
+                    <button onclick="deleteCode('${order.code}')" class="btn-delete">
+                        🗑️ УДАЛИТЬ
                     </button>
                 </td>
             `;
@@ -194,16 +252,16 @@ async function loadOrders() {
     }
 }
 
+// ========== АКТИВАЦИЯ КОДА ==========
+
 // Активация кода
 async function activateCode(code, tariff) {
     console.log(`🔄 Активация: ${code}, тариф: ${tariff}`);
     
     const caps = { 
         'BASIC': 30000, 
-        'EXTENDED': 30000,
-        'SUBSCRIPTION': 90000,
-        'PRO': 60000, 
-        'PREMIUM': 90000 
+        'EXTENDED': 60000,
+        'SUBSCRIPTION': 90000
     };
     
     const limit = caps[tariff] || 30000;
@@ -245,6 +303,42 @@ async function activateCode(code, tariff) {
     }
 }
 
+// ========== УДАЛЕНИЕ КОДА ==========
+
+// Функция удаления кода
+async function deleteCode(code) {
+    if (!confirm(`Удалить код ${code}?\n\nЭто действие нельзя отменить!`)) {
+        return;
+    }
+    
+    try {
+        const params = new URLSearchParams({ code: code });
+        
+        console.log(`🗑️ Отправка запроса на удаление: ${API_BASE}/delete-code?${params}`);
+        
+        const response = await fetch(`${API_BASE}/delete-code?${params.toString()}`, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+        });
+        
+        const data = await response.json();
+        console.log('📥 Ответ сервера:', data);
+        
+        if (data.success || (response.ok && !data.error)) {
+            alert(`✅ Код ${code} удален!`);
+            loadOrders(); // Обновляем список
+        } else {
+            const errorMsg = data.error || data.message || 'Неизвестная ошибка';
+            alert(`❌ Ошибка удаления:\n${errorMsg}`);
+        }
+    } catch (error) {
+        console.error('❌ Ошибка сети:', error);
+        alert('❌ Ошибка связи с сервером');
+    }
+}
+
+// ========== АВТООБНОВЛЕНИЕ ==========
+
 // Автообновление каждые 30 секунд
 setInterval(() => {
     if (sessionStorage.getItem('adminAuth') === 'true') {
@@ -253,8 +347,10 @@ setInterval(() => {
     }
 }, 30000);
 
-// Экспорт функций в глобальную область видимости
+// ========== ЭКСПОРТ ФУНКЦИЙ ==========
+
 window.checkAuth = checkAuth;
 window.logout = logout;
 window.loadOrders = loadOrders;
 window.activateCode = activateCode;
+window.deleteCode = deleteCode;
