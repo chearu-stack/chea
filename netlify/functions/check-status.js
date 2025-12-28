@@ -40,8 +40,8 @@ exports.handler = async (event) => {
 
         let query = supabase
             .from('access_codes')
-            .select('is_active, caps_used, caps_limit, package, code, fingerprint, created_at')
-            .order('created_at', { ascending: false }) // Берем последнюю запись
+            .select('is_active, caps_used, caps_limit, package, code, fingerprint, id, activated_at')
+            .order('id', { ascending: false }) // Сортируем по ID (больший ID = новее запись)
             .limit(1);
 
         if (code) {
@@ -83,8 +83,7 @@ exports.handler = async (event) => {
                 caps_limit: record.caps_limit || 0,
                 package: record.package || null,
                 code: record.code || null,
-                is_fully_used: isFullyUsed,
-                created_at: record.created_at
+                is_fully_used: isFullyUsed
             })
         };
 
