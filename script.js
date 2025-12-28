@@ -1,6 +1,6 @@
 // ===================================================================
 // АДВОКАТ МЕДНОГО ГРОША — script.js
-// ВЕРСИЯ: ТАРИФЫ И ОПЛАТА (без скроллов) + СТАТУС ОЖИДАНИЯ/АКТИВАЦИИ
+// ВЕРСИЯ: ТАРИФЫ И ОПЛАТА (без скроллов)
 // ===================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`💰 Найдено кнопок тарифов: ${tariffButtons.length}`);
         
         tariffButtons.forEach(button => {
+            // Простой обработчик без клонирования (чтобы не конфликтовать)
             button.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
@@ -81,7 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 return false;
-            }, true);
+            }, true); // Используем capture для приоритета
         });
     }
     
@@ -138,41 +139,38 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // --- 5. ОТОБРАЖЕНИЕ СТАТУСА "ОЖИДАНИЕ" НА ГЛАВНОЙ ---
+    // --- 5. ОТОБРАЖЕНИЕ СТАТУСА "ОЖИДАНИЕ" НА ГЛАВНОЙ (ДОПОЛНЕНИЕ) ---
     function showWaitingStatus() {
         const savedPlan = localStorage.getItem('selectedPlan');
         const lockTime = localStorage.getItem('lockTime');
         const orderID = localStorage.getItem('lastOrderID');
         
         if (savedPlan && lockTime && (Date.now() - lockTime < 24 * 60 * 60 * 1000)) {
+            // Находим карточку "Пример расчета" в hero-section
             const cardHeader = document.querySelector('.card-header');
             const cardBody = document.querySelector('.card-body');
             
             if (cardHeader && cardBody) {
                 const plan = planDetails[savedPlan] || planDetails.extended;
                 
-                // Меняем содержимое карточки
+                // Меняем содержимое карточки (как в старой рабочей версии)
                 cardHeader.innerHTML = `<i class="fas fa-clock"></i> Ваш выбор: ${plan.name}`;
                 cardBody.innerHTML = `
                     <div style="text-align: left;">
                         <p style="font-weight: bold; color: #e67e22; margin-bottom: 10px;">
-                            <i class="fas fa-hourglass-half"></i> Статус: ОЖИДАНИЕ
+                            <i class="fas fa-hourglass-half"></i> Статус: ОЖИДАНИЕ ПОДТВЕРЖДЕНИЯ
                         </p>
                         <p style="margin-bottom: 15px;">${plan.desc}</p>
                         <p style="font-size: 0.9rem; margin-bottom: 10px;">
-                            <strong>Бот забронирован.</strong> Отправьте в Telegram:
+                            <strong>Бот забронирован.</strong> Отправьте ID и чек в Telegram:
                         </p>
-                        <ol style="text-align: left; margin-left: 20px; margin-bottom: 15px;">
-                            <li>ID платежа: <code>${orderID || 'не указан'}</code></li>
-                            <li>Скриншот чека об оплате</li>
-                        </ol>
-                        <a href="https://bothub-bridge.onrender.com/?access_code=${orderID}" 
+                        <a href="https://t.me/chearu252?text=${encodeURIComponent('Мой ID: ' + orderID + '. Прикрепите чек к сообщению!')}" 
                            target="_blank" 
                            style="display: block; background: #0088cc; color: white; padding: 12px; border-radius: 6px; text-decoration: none; text-align: center; font-weight: 600;">
-                           <i class="fab fa-telegram"></i> Перейти в бота с доступом
+                           <i class="fab fa-telegram"></i> ПОДТВЕРДИТЬ В TELEGRAM
                         </a>
                         <p style="font-size: 0.8rem; color: #718096; margin-top: 10px;">
-                            После проверки чека доступ будет активирован в течение 15 минут
+                            ID для справки: ${orderID}
                         </p>
                     </div>
                 `;
@@ -180,29 +178,29 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // --- 6. ПРОВЕРКА АКТИВАЦИИ ---
+    // --- 6. ПРОВЕРКА АКТИВАЦИИ (ДОПОЛНЕНИЕ) ---
     async function checkUserActivation() {
         try {
             const response = await fetch(`https://chea.onrender.com/check-status?fp=${userFP}`);
             const data = await response.json();
             
             if (data.active) {
+                // Пользователь активирован - показываем кабинет (как в старой рабочей версии)
                 const cardHeader = document.querySelector('.card-header');
                 const cardBody = document.querySelector('.card-body');
                 
                 if (cardHeader && cardBody) {
-                    cardHeader.innerHTML = `<i class="fas fa-check-circle"></i> Доступ активен`;
+                    cardHeader.innerHTML = `<i class="fas fa-check-circle"></i> Статус: АКТИВИРОВАН`;
                     cardBody.innerHTML = `
                         <div style="text-align: center;">
-                            <p style="margin-bottom: 20px; font-weight: 600;">✅ Ваш пакет активирован</p>
+                            <p style="margin-bottom: 20px; font-weight: 600;">
+                                <strong>Ваш пакет полностью готов.</strong> Все инструменты цифрового адвоката разблокированы.
+                            </p>
                             <a href="https://bothub-bridge.onrender.com/?access_code=${userFP}" 
                                target="_blank"
                                style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-                               <i class="fab fa-telegram"></i> Перейти в бота с доступом
+                               ВХОД В ЛИЧНЫЙ КАБИНЕТ
                             </a>
-                            <p style="font-size: 0.9rem; color: #718096; margin-top: 15px;">
-                                Используйте бота для создания документов
-                            </p>
                         </div>
                     `;
                 }
@@ -216,9 +214,16 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
         console.log('💰 Начало инициализации модуля тарифов...');
         
+        // НАСТРОЙКА ТАРИФОВ
         setupTariffButtons();
+        
+        // ВОССТАНОВЛЕНИЕ СОСТОЯНИЯ
         checkSavedState();
+        
+        // СТРАНИЦА ОПЛАТЫ
         setupPaymentPage();
+        
+        // СТАТУС ОЖИДАНИЯ/АКТИВАЦИИ (ДОПОЛНЕНИЕ)
         showWaitingStatus();
         checkUserActivation();
         
