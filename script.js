@@ -178,29 +178,36 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // --- 6. ПРОВЕРКА АКТИВАЦИИ (ДОПОЛНЕНИЕ) ---
+    // --- 6. ПРОВЕРКА АКТИВАЦИИ (ИСПРАВЛЕННАЯ ВЕРСИЯ) ---
     async function checkUserActivation() {
         try {
             const response = await fetch(`https://chea.onrender.com/check-status?fp=${userFP}`);
             const data = await response.json();
             
             if (data.active) {
-                // Пользователь активирован - показываем кабинет (как в старой рабочей версии)
+                // Пользователь активирован — показываем кабинет
                 const cardHeader = document.querySelector('.card-header');
                 const cardBody = document.querySelector('.card-body');
                 
                 if (cardHeader && cardBody) {
+                    // ИСПОЛЬЗУЕМ ТОТ ЖЕ КОД, КОТОРЫЙ БЫЛ СГЕНЕРИРОВАН И АКТИВИРОВАН
+                    const savedOrderID = localStorage.getItem('lastOrderID');
+                    
                     cardHeader.innerHTML = `<i class="fas fa-check-circle"></i> Статус: АКТИВИРОВАН`;
                     cardBody.innerHTML = `
                         <div style="text-align: center;">
                             <p style="margin-bottom: 20px; font-weight: 600;">
                                 <strong>Ваш пакет полностью готов.</strong> Все инструменты цифрового адвоката разблокированы.
                             </p>
-                            <a href="https://bothub-bridge.onrender.com/?access_code=${userFP}" 
+                            <!-- Ссылка с активированным кодом, а не с отпечатком -->
+                            <a href="https://bothub-bridge.onrender.com/?access_code=${savedOrderID}" 
                                target="_blank"
                                style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600;">
                                ВХОД В ЛИЧНЫЙ КАБИНЕТ
                             </a>
+                            <p style="font-size: 0.9rem; color: #718096; margin-top: 15px;">
+                                Код доступа: <code>${savedOrderID}</code>
+                            </p>
                         </div>
                     `;
                 }
