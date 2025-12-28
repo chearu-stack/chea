@@ -22,7 +22,8 @@ const activateCode = require('./activate-code');
 const verifyCode = require('./verify-code');
 const testBothub = require('./test-bothub');
 const proxy = require('./proxy');
-const deleteCode = require('./delete-code'); // ← ДОБАВИЛИ
+const deleteCode = require('./delete-code');
+const checkStatus = require('./check-status'); // ← ДОБАВИЛИ
 
 // Вспомогательная функция
 const createNetlifyEvent = (req) => ({
@@ -48,31 +49,14 @@ const handleRequest = (handler) => async (req, res) => {
 };
 
 // МАРШРУТЫ
-app.get('/check-status', async (req, res) => {
-    const { fp } = req.query;
-    if (!fp) return res.json({ active: false });
-    try {
-        const { data, error } = await supabase
-            .from('access_codes')
-            .select('is_active')
-            .eq('fingerprint', fp)
-            .eq('is_active', true)
-            .maybeSingle();
-        if (error) throw error;
-        res.json({ active: !!data });
-    } catch (err) {
-        console.error("Ошибка Бодрячка:", err.message);
-        res.json({ active: false });
-    }
-});
-
 app.post('/generate-code', handleRequest(generateCode));
 app.get('/get-pending', handleRequest(getPending));
 app.all('/activate-code', handleRequest(activateCode));
 app.post('/verify-code', handleRequest(verifyCode));
 app.post('/test-bothub', handleRequest(testBothub));
 app.post('/proxy', handleRequest(proxy));
-app.all('/delete-code', handleRequest(deleteCode)); // ← ДОБАВИЛИ
+app.all('/delete-code', handleRequest(deleteCode));
+app.get('/check-status', handleRequest(checkStatus)); // ← ДОБАВИЛИ
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
