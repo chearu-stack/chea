@@ -292,35 +292,49 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // --- 8. СТРАНИЦА ОПЛАТЫ ---
-    function setupPaymentPage() {
-        if (window.location.pathname.includes('payment.html')) {
-            console.log('💰 Инициализация страницы оплаты');
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            const planKey = urlParams.get('plan') || 'extended';
-            const price = urlParams.get('price') || '1200';
-            const orderID = localStorage.getItem('lastOrderID');
-            const plan = planDetails[planKey] || planDetails.extended;
-
-            if (document.getElementById('selectedPlanName')) {
-                document.getElementById('selectedPlanName').textContent = plan.name;
-            }
-            
-            const priceEl = document.getElementById('selectedPlanPrice');
-            if (priceEl) {
-                priceEl.innerHTML = `${price} ₽ <br><span style="color:red; font-size:1rem;">ID: ${orderID}</span>`;
-            }
-            
-            const qrImg = document.getElementById('qrCodeImage');
-            if (qrImg) {
-                const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
-                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(baseQR + '&sum=' + price + '&label=' + orderID)}`;
-            }
-            
-            console.log('💰 Данные обновлены:', { planKey, price, orderID });
+   // --- 8. СТРАНИЦА ОПЛАТЫ (ИСПРАВЛЕННАЯ) ---
+function setupPaymentPage() {
+    if (window.location.pathname.includes('payment.html')) {
+        console.log('💰 Инициализация страницы оплаты');
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const planKey = urlParams.get('plan') || 'extended';
+        const orderID = localStorage.getItem('lastOrderID');
+        const plan = planDetails[planKey] || planDetails.extended;
+        
+        // ПРАВИЛЬНАЯ ЦЕНА из planDetails, а не из URL
+        const price = plan.price.replace(' ₽', '').replace(/\s/g, ''); // "500 ₽" → "500"
+        
+        if (document.getElementById('selectedPlanName')) {
+            document.getElementById('selectedPlanName').textContent = plan.name;
         }
+        
+        const priceEl = document.getElementById('selectedPlanPrice');
+        if (priceEl) {
+            priceEl.innerHTML = `${price} ₽ <br><span style="color:red; font-size:1rem;">ID: ${orderID}</span>`;
+        }
+        
+        // ОБНОВЛЯЕМ поле manualPrice
+        const manualPriceInput = document.getElementById('manualPrice');
+        if (manualPriceInput) {
+            manualPriceInput.value = price;
+        }
+        
+        // ОБНОВЛЯЕМ поле stepAmount если есть
+        const stepAmountInput = document.getElementById('stepAmount');
+        if (stepAmountInput) {
+            stepAmountInput.value = price;
+        }
+        
+        const qrImg = document.getElementById('qrCodeImage');
+        if (qrImg) {
+            const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(baseQR + '&sum=' + price + '&label=' + orderID)}`;
+        }
+        
+        console.log('💰 Данные обновлены:', { planKey, price, orderID });
     }
+}
 
     // --- 9. ИНИЦИАЛИЗАЦИЯ ---
     try {
