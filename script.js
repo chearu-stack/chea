@@ -37,6 +37,9 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.removeItem('lockTime');
         localStorage.removeItem('lastOrderID');
         console.log('localStorage очищен');
+        
+        // ДОПОЛНЕНИЕ: При очистке показываем блок анализа
+        showQuestionnaireBlock(); // НОВАЯ ФУНКЦИЯ
     }
 
     function blockTariffButtons(message) {
@@ -66,10 +69,35 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // --- 2.1 ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ УПРАВЛЕНИЯ БЛОКОМ АНАЛИЗА ---
+    // Комментарий: Эти функции управляют видимостью блока опроса (#questionnaire)
+    // при различных состояниях пользователя (ожидание/разблокировка)
+    
+    function hideQuestionnaireBlock() {
+        // Комментарий: Скрывает блок анализа при статусе "ОЖИДАНИЕ"
+        const questionnaire = document.getElementById('questionnaire');
+        if (questionnaire) {
+            questionnaire.style.display = 'none';
+            console.log('Блок анализа скрыт');
+        }
+    }
+    
+    function showQuestionnaireBlock() {
+        // Комментарий: Показывает блок анализа при разблокировке
+        const questionnaire = document.getElementById('questionnaire');
+        if (questionnaire) {
+            questionnaire.style.display = 'block';
+            console.log('Блок анализа показан');
+        }
+    }
+    
     function unlockAndResetTariffButtons() {
         console.log('Разблокировка и сброс обработчиков');
         unlockTariffButtons();
         setupTariffButtons(); // Перевешиваем обработчики
+        
+        // ДОПОЛНЕНИЕ: При разблокировке показываем блок анализа
+        showQuestionnaireBlock(); // НОВЫЙ ВЫЗОВ
     }
 
     // --- 3. ПРОВЕРКА И БЛОКИРОВКА ТАРИФОВ ---
@@ -215,8 +243,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
                 
+                // ДОПОЛНЕНИЕ: Скрываем блок анализа при статусе "ОЖИДАНИЕ"
+                hideQuestionnaireBlock(); // НОВЫЙ ВЫЗОВ
+                
                 startActivationCheck();
             }
+        } else {
+            // ДОПОЛНЕНИЕ: Если нет активного ожидания — показываем блок анализа
+            showQuestionnaireBlock(); // НОВЫЙ ВЫЗОВ
         }
     }
     
@@ -292,64 +326,66 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-  // --- 8. СТРАНИЦА ОПЛАТЫ (ИСПРАВЛЕННАЯ) ---
-function setupPaymentPage() {
-    if (window.location.pathname.includes('payment.html')) {
-        console.log('💰 Инициализация страницы оплаты');
-        
-        const urlParams = new URLSearchParams(window.location.search);
-        const planKey = urlParams.get('plan') || 'extended';
-        const orderID = localStorage.getItem('lastOrderID');
-        const plan = planDetails[planKey] || planDetails.extended;
-        
-        // ПРАВИЛЬНАЯ ЦЕНА из planDetails
-        const price = plan.price.replace(' ₽', '').replace(/\s/g, ''); // "500 ₽" → "500"
-        
-        // Обновляем название тарифа
-        if (document.getElementById('selectedPlanName')) {
-            document.getElementById('selectedPlanName').textContent = plan.name;
+    // --- 8. СТРАНИЦА ОПЛАТЫ (ИСПРАВЛЕННАЯ) ---
+    // Комментарий: Этот блок был обновлён ранее для правильного отображения цены
+    // и заполнения полей manualPrice и stepAmount (элементы <strong>)
+    function setupPaymentPage() {
+        if (window.location.pathname.includes('payment.html')) {
+            console.log('💰 Инициализация страницы оплаты');
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const planKey = urlParams.get('plan') || 'extended';
+            const orderID = localStorage.getItem('lastOrderID');
+            const plan = planDetails[planKey] || planDetails.extended;
+            
+            // ПРАВИЛЬНАЯ ЦЕНА из planDetails
+            const price = plan.price.replace(' ₽', '').replace(/\s/g, ''); // "500 ₽" → "500"
+            
+            // Обновляем название тарифа
+            if (document.getElementById('selectedPlanName')) {
+                document.getElementById('selectedPlanName').textContent = plan.name;
+            }
+            
+            // Обновляем цену и ID
+            const priceEl = document.getElementById('selectedPlanPrice');
+            if (priceEl) {
+                priceEl.innerHTML = `${price} ₽ <br><span style="color:red; font-size:1rem;">ID: ${orderID}</span>`;
+            }
+            
+            // Обновляем ID тарифа
+            const planIdEl = document.getElementById('selectedPlanId');
+            if (planIdEl) {
+                planIdEl.textContent = `ID: ${orderID}`;
+            }
+            
+            // Обновляем описание тарифа
+            const planDescEl = document.getElementById('selectedPlanDesc');
+            if (planDescEl) {
+                planDescEl.textContent = plan.desc;
+            }
+            
+            // ОБНОВЛЯЕМ поле manualPrice (это <strong> элемент!)
+            const manualPriceEl = document.getElementById('manualPrice');
+            if (manualPriceEl) {
+                manualPriceEl.textContent = price; // не .value, а .textContent!
+            }
+            
+            // ОБНОВЛЯЕМ поле stepAmount (это тоже <strong> элемент!)
+            const stepAmountEl = document.getElementById('stepAmount');
+            if (stepAmountEl) {
+                stepAmountEl.textContent = price; // не .value, а .textContent!
+            }
+            
+            // Генерируем QR-код
+            const qrImg = document.getElementById('qrCodeImage');
+            if (qrImg) {
+                const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(baseQR + '&sum=' + price + '&label=' + orderID)}`;
+            }
+            
+            console.log('💰 Данные обновлены:', { planKey, price, orderID });
         }
-        
-        // Обновляем цену и ID
-        const priceEl = document.getElementById('selectedPlanPrice');
-        if (priceEl) {
-            priceEl.innerHTML = `${price} ₽ <br><span style="color:red; font-size:1rem;">ID: ${orderID}</span>`;
-        }
-        
-        // Обновляем ID тарифа
-        const planIdEl = document.getElementById('selectedPlanId');
-        if (planIdEl) {
-            planIdEl.textContent = `ID: ${orderID}`;
-        }
-        
-        // Обновляем описание тарифа
-        const planDescEl = document.getElementById('selectedPlanDesc');
-        if (planDescEl) {
-            planDescEl.textContent = plan.desc;
-        }
-        
-        // ОБНОВЛЯЕМ поле manualPrice (это <strong> элемент!)
-        const manualPriceEl = document.getElementById('manualPrice');
-        if (manualPriceEl) {
-            manualPriceEl.textContent = price; // не .value, а .textContent!
-        }
-        
-        // ОБНОВЛЯЕМ поле stepAmount (это тоже <strong> элемент!)
-        const stepAmountEl = document.getElementById('stepAmount');
-        if (stepAmountEl) {
-            stepAmountEl.textContent = price; // не .value, а .textContent!
-        }
-        
-        // Генерируем QR-код
-        const qrImg = document.getElementById('qrCodeImage');
-        if (qrImg) {
-            const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
-            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(baseQR + '&sum=' + price + '&label=' + orderID)}`;
-        }
-        
-        console.log('💰 Данные обновлены:', { planKey, price, orderID });
     }
-}
 
     // --- 9. ИНИЦИАЛИЗАЦИЯ ---
     try {
