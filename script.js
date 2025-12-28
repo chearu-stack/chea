@@ -1,6 +1,6 @@
 // ===================================================================
 // АДВОКАТ МЕДНОГО ГРОША — script.js
-// РАБОЧАЯ ВЕРСИЯ С КОРРЕКТНОЙ БЛОКИРОВКОЙ
+// ВЕРСИЯ С КОРРЕКТНОЙ БЛОКИРОВКОЙ И ПЕРЕВЕШИВАНИЕМ ОБРАБОТЧИКОВ
 // ===================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -66,6 +66,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function unlockAndResetTariffButtons() {
+        console.log('Разблокировка и сброс обработчиков');
+        unlockTariffButtons();
+        setupTariffButtons(); // Перевешиваем обработчики
+    }
+
     // --- 3. ПРОВЕРКА И БЛОКИРОВКА ТАРИФОВ ---
     async function checkAndBlockTariffs() {
         try {
@@ -82,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const timePassed = Date.now() - parseInt(lockTime);
             if (timePassed > 24 * 60 * 60 * 1000) {
                 clearLocalStorage();
-                unlockTariffButtons();
+                unlockAndResetTariffButtons(); // Разблокируем со сбросом
                 return;
             }
             
@@ -90,11 +96,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch(`https://chea.onrender.com/check-status?code=${savedOrderID}`);
             const status = await response.json();
             
-            // Если код не найден (удалён) → сразу разблокируем
+            // Если код не найден (удалён) → разблокируем со сбросом
             if (!status.code) {
-                console.log('Код удалён из БД → разблокировка');
+                console.log('Код удалён из БД → разблокировка и сброс обработчиков');
                 clearLocalStorage();
-                unlockTariffButtons();
+                unlockAndResetTariffButtons(); // КЛЮЧЕВОЕ ИЗМЕНЕНИЕ
                 return;
             }
             
@@ -114,12 +120,19 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`💰 Найдено кнопок тарифов: ${tariffButtons.length}`);
         
         tariffButtons.forEach(button => {
+            // Удаляем все старые обработчики
             const newButton = button.cloneNode(true);
             button.parentNode.replaceChild(newButton, button);
             
             newButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+                
+                // Проверяем не заблокирована ли кнопка
+                if (this.hasAttribute('disabled')) {
+                    console.log('Кнопка заблокирована, игнорируем клик');
+                    return false;
+                }
                 
                 console.log('💰 Клик по тарифу:', this.getAttribute('data-plan'));
                 
@@ -332,4 +345,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-console.log('✅ script.js загружен (рабочая версия с блокировкой)');
+console.log('✅ script.js загружен (с корректной разблокировкой)');
