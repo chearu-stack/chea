@@ -1,6 +1,6 @@
 // ===================================================================
 // АДВОКАТ МЕДНОГО ГРОША — script.js
-// ВЕРСИЯ С БЛОКИРОВКОЙ ТАРИФОВ
+// ВЕРСИЯ С БЛОКИРОВКОЙ ТАРИФОВ И ПОДДЕРЖКОЙ УДАЛЕНИЯ
 // ===================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const planDetails = {
         'basic': { name: 'Базовый', price: '500 ₽', desc: 'Диагноз, план и 1 претензия. 7 вопросов боту.' },
-        'extended': { name: 'Расширенный', price: '1 200 ₽', desc: 'Всё из Базового + расчёт неустойки и 2 документа. 20 вопросов.' },
+        'extended': { name: 'Расширенный', price: '1 200 ₽', desc: 'Всё из Базового + расчёт неустойки и 3 документа. 20 вопросов.' },
         'subscription': { name: 'Профессиональный', price: '2 500 ₽', desc: 'Борьба с отписками, стратегия и сложные расчёты. 50 вопросов.' }
     };
 
@@ -49,8 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Проверяем не истёк ли срок блокировки (24 часа)
             const timePassed = Date.now() - parseInt(lockTime);
             if (timePassed > BLOCK_DURATION) {
-                localStorage.removeItem('selectedPlan');
-                localStorage.removeItem('lockTime');
+                clearLocalStorage();
                 unlockTariffButtons();
                 return;
             }
@@ -64,6 +63,15 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const status = await response.json();
             console.log('Статус тарифа для блокировки:', status);
+            
+            // --- КРИТИЧЕСКАЯ ПРОВЕРКА: если код удалён из БД ---
+            if (!status.code && !status.error) {
+                // status.code будет null если код не найден в БД
+                console.log('Код удалён из БД или не найден, разблокируем выбор');
+                clearLocalStorage();
+                unlockTariffButtons();
+                return;
+            }
             
             if (status.active && status.is_fully_used) {
                 // Тариф использован полностью → разблокируем
@@ -87,6 +95,12 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Ошибка проверки блокировки:', error);
             unlockTariffButtons();
         }
+    }
+
+    function clearLocalStorage() {
+        localStorage.removeItem('selectedPlan');
+        localStorage.removeItem('lockTime');
+        localStorage.removeItem('lastOrderID');
     }
 
     function blockTariffButtons(message) {
@@ -339,4 +353,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-console.log('✅ script.js загружен (с блокировкой тарифов)');
+console.log('✅ script.js загружен (с блокировкой тарифов и поддержкой удаления)');
