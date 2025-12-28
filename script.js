@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-   // --- 8. СТРАНИЦА ОПЛАТЫ (ИСПРАВЛЕННАЯ) ---
+  // --- 8. СТРАНИЦА ОПЛАТЫ (ИСПРАВЛЕННАЯ) ---
 function setupPaymentPage() {
     if (window.location.pathname.includes('payment.html')) {
         console.log('💰 Инициализация страницы оплаты');
@@ -302,30 +302,45 @@ function setupPaymentPage() {
         const orderID = localStorage.getItem('lastOrderID');
         const plan = planDetails[planKey] || planDetails.extended;
         
-        // ПРАВИЛЬНАЯ ЦЕНА из planDetails, а не из URL
+        // ПРАВИЛЬНАЯ ЦЕНА из planDetails
         const price = plan.price.replace(' ₽', '').replace(/\s/g, ''); // "500 ₽" → "500"
         
+        // Обновляем название тарифа
         if (document.getElementById('selectedPlanName')) {
             document.getElementById('selectedPlanName').textContent = plan.name;
         }
         
+        // Обновляем цену и ID
         const priceEl = document.getElementById('selectedPlanPrice');
         if (priceEl) {
             priceEl.innerHTML = `${price} ₽ <br><span style="color:red; font-size:1rem;">ID: ${orderID}</span>`;
         }
         
-        // ОБНОВЛЯЕМ поле manualPrice
-        const manualPriceInput = document.getElementById('manualPrice');
-        if (manualPriceInput) {
-            manualPriceInput.value = price;
+        // Обновляем ID тарифа
+        const planIdEl = document.getElementById('selectedPlanId');
+        if (planIdEl) {
+            planIdEl.textContent = `ID: ${orderID}`;
         }
         
-        // ОБНОВЛЯЕМ поле stepAmount если есть
-        const stepAmountInput = document.getElementById('stepAmount');
-        if (stepAmountInput) {
-            stepAmountInput.value = price;
+        // Обновляем описание тарифа
+        const planDescEl = document.getElementById('selectedPlanDesc');
+        if (planDescEl) {
+            planDescEl.textContent = plan.desc;
         }
         
+        // ОБНОВЛЯЕМ поле manualPrice (это <strong> элемент!)
+        const manualPriceEl = document.getElementById('manualPrice');
+        if (manualPriceEl) {
+            manualPriceEl.textContent = price; // не .value, а .textContent!
+        }
+        
+        // ОБНОВЛЯЕМ поле stepAmount (это тоже <strong> элемент!)
+        const stepAmountEl = document.getElementById('stepAmount');
+        if (stepAmountEl) {
+            stepAmountEl.textContent = price; // не .value, а .textContent!
+        }
+        
+        // Генерируем QR-код
         const qrImg = document.getElementById('qrCodeImage');
         if (qrImg) {
             const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
