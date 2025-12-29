@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AMG — Промо-коды</title>
+    <title>AMG — Промо-акции и коды</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="admin.css">
 </head>
@@ -18,7 +18,7 @@
 
     <div id="adminPage" class="admin-content" style="display: none;">
         <header class="admin-header">
-            <h1>Промо-коды</h1>
+            <h1>Промо-акции и коды</h1>
             <div class="header-actions">
                 <div class="admin-nav">
                     <a href="admin.html" class="nav-link">Заявки</a>
@@ -29,30 +29,135 @@
             </div>
         </header>
 
-        <div class="admin-table-container">
+        <!-- СЕКЦИЯ 1: СОЗДАНИЕ АКЦИИ -->
+        <div class="admin-card" id="createCampaignSection" style="display: none;">
+            <h2><i class="fas fa-plus-circle"></i> Создать новую промо-акцию</h2>
+            <div class="campaign-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Название акции *</label>
+                        <input type="text" id="campaignTitle" placeholder="Например: Новогодняя акция" maxlength="50">
+                    </div>
+                    <div class="form-group">
+                        <label>Описание *</label>
+                        <textarea id="campaignDescription" rows="2" placeholder="Краткое описание для баннера"></textarea>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Тип промо-кода *</label>
+                        <select id="campaignPackage">
+                            <option value="PROMO_BASIC">Базовый тариф (PROMO_BASIC)</option>
+                            <option value="PROMO_EXTENDED">Расширенный тариф (PROMO_EXTENDED)</option>
+                            <option value="PROMO_SUBSCRIPTION">Профессиональный тариф (PROMO_SUBSCRIPTION)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Срок действия (дней) *</label>
+                        <input type="number" id="campaignExpiresDays" value="30" min="1" max="365">
+                    </div>
+                    <div class="form-group">
+                        <label>Цвет баннера</label>
+                        <div class="color-picker">
+                            <button type="button" class="color-option" style="background: #dd6b20;" onclick="selectColor('#dd6b20')"></button>
+                            <button type="button" class="color-option" style="background: #3182ce;" onclick="selectColor('#3182ce')"></button>
+                            <button type="button" class="color-option" style="background: #38a169;" onclick="selectColor('#38a169')"></button>
+                            <button type="button" class="color-option" style="background: #805ad5;" onclick="selectColor('#805ad5')"></button>
+                            <input type="text" id="campaignColor" value="#dd6b20" style="width: 100px;">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button onclick="createCampaign()" class="btn btn-primary">
+                        <i class="fas fa-rocket"></i> Запустить акцию
+                    </button>
+                    <button onclick="hideCreateCampaignForm()" class="btn btn-outline">
+                        Отмена
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- СЕКЦИЯ 2: АКТИВНЫЕ АКЦИИ -->
+        <div class="admin-card">
+            <h2><i class="fas fa-bullhorn"></i> Активные промо-акции</h2>
+            <div class="campaigns-list" id="campaignsList">
+                <div class="empty-state">Нет активных акций</div>
+            </div>
+        </div>
+
+        <!-- СЕКЦИЯ 3: ПРОМО-КОДЫ -->
+        <div class="admin-card">
+            <h2><i class="fas fa-ticket-alt"></i> Промо-коды</h2>
             <div class="admin-table-actions">
-                <button onclick="loadPromoCodes()" class="btn btn-secondary">Обновить список</button>
-                <button onclick="showCreatePromoForm()" class="btn btn-primary">Создать промо-код</button>
+                <button onclick="loadPromoCodes()" class="btn btn-secondary">
+                    <i class="fas fa-sync-alt"></i> Обновить
+                </button>
+                <button onclick="showCreatePromoForm()" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Создать промо-код
+                </button>
+                <div class="filter-controls">
+                    <select id="promoFilter" onchange="loadPromoCodes()">
+                        <option value="all">Все промо-коды</option>
+                        <option value="PROMO_BASIC">Только BASIC</option>
+                        <option value="PROMO_EXTENDED">Только EXTENDED</option>
+                        <option value="PROMO_SUBSCRIPTION">Только SUBSCRIPTION</option>
+                        <option value="active">Только активные</option>
+                        <option value="inactive">Только неактивные</option>
+                    </select>
+                </div>
             </div>
 
             <table class="admin-orders-table">
                 <thead>
                     <tr>
                         <th>Промо-код</th>
-                        <th>Получатель</th>
                         <th>Тип</th>
-                        <th>Создан</th>
-                        <th>Действует до</th>
                         <th>Статус</th>
-                        <th>Действие</th>
+                        <th>Создан</th>
+                        <th>Активирован</th>
+                        <th>Капсы (исп/лимит)</th>
+                        <th>Действия</th>
                     </tr>
                 </thead>
                 <tbody id="promoCodesBody">
-                    <tr><td colspan="7" class="loading-row">Загрузка...</td></tr>
+                    <tr><td colspan="7" class="loading-row">Загрузка промо-кодов...</td></tr>
                 </tbody>
             </table>
         </div>
+
+        <!-- СЕКЦИЯ 4: ФОРМА СОЗДАНИЯ ОТДЕЛЬНОГО ПРОМО-КОДА -->
+        <div class="admin-card" id="createPromoSection" style="display: none;">
+            <h2><i class="fas fa-ticket-alt"></i> Создать отдельный промо-код</h2>
+            <div class="promo-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Тип промо-кода *</label>
+                        <select id="promoPackage">
+                            <option value="PROMO_BASIC">Базовый тариф (PROMO_BASIC)</option>
+                            <option value="PROMO_EXTENDED">Расширенный тариф (PROMO_EXTENDED)</option>
+                            <option value="PROMO_SUBSCRIPTION">Профессиональный тариф (PROMO_SUBSCRIPTION)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Лимит капсов *</label>
+                        <input type="number" id="promoCapsLimit" value="30000" min="1000" step="1000">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button onclick="createSinglePromoCode()" class="btn btn-primary">
+                        <i class="fas fa-ticket-alt"></i> Создать промо-код
+                    </button>
+                    <button onclick="hideCreatePromoForm()" class="btn btn-outline">
+                        Отмена
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
+
     <script src="admin_promo.js"></script>
 </body>
 </html>
