@@ -26,12 +26,20 @@ exports.handler = async (event, context) => {
 
     if (error) throw error;
 
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: нормализуем is_active
+    const normalizedData = (data || []).map(item => ({
+      ...item,
+      // Преобразуем null в false, оставляем true как есть
+      is_active: item.is_active === true
+    }));
+
     return {
       statusCode: 200,
       headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify(data || []),
+      body: JSON.stringify(normalizedData),
     };
   } catch (error) {
+    console.error('❌ Ошибка в get-promo-codes:', error);
     return {
       statusCode: 500,
       headers,
