@@ -421,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ========== ПРОМО-АКЦИИ ==========
 
-    // --- 9.1 ПРОВЕРКА АКТИВНОЙ АКЦИИ ---
+    // --- 9.1 ПРОВЕРКА АКТИВНОЙ АКЦИИ (ИСПРАВЛЕНА) ---
     async function checkActiveCampaign() {
         try {
             const response = await fetch(`${API_BASE}/get-active-campaign`);
@@ -430,11 +430,12 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('🎁 Проверка акции:', campaign.active ? 'Активна' : 'Нет акций');
             
             if (campaign.active) {
-                showPromoBanner(campaign);
+                // Баннер показываем ТОЛЬКО если пользователь ещё не участвовал
                 if (!hasParticipatedInPromo()) {
-                    showPromoHeroCard(campaign);
+                    showPromoBanner(campaign); // Показываем баннер с кнопкой
+                    showPromoHeroCard(campaign); // Показываем информационный Hero-card
                 } else {
-                    // Если уже участвовали, показываем статус ожидания
+                    // Уже участвовал — баннер НЕ показываем, только статус ожидания
                     const lastPromoCode = localStorage.getItem('lastPromoCode');
                     if (lastPromoCode) {
                         showPromoWaitingStatus(lastPromoCode, campaign.package);
@@ -465,7 +466,7 @@ document.addEventListener('DOMContentLoaded', function() {
         banner.style.display = 'flex';
     }
 
-    // --- 9.3 ИЗМЕНЕНИЕ HERO-CARD ДЛЯ АКЦИИ ---
+    // --- 9.3 ИЗМЕНЕНИЕ HERO-CARD ДЛЯ АКЦИИ (ИСПРАВЛЕНА - БЕЗ КНОПКИ) ---
     function showPromoHeroCard(campaign) {
         const cardHeader = document.querySelector('.card-header');
         const cardBody = document.querySelector('.card-body');
@@ -485,16 +486,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 <p style="margin-bottom: 10px; font-weight: 600;">
                     ${campaign.description || ''}
                 </p>
-                <p style="color: #718096; font-size: 0.9rem; margin-bottom: 15px;">
-                    ⚠️ Код будет активирован сразу, но доступ действует только ${campaign.expires_days || 30} дней
+                <p style="color: #718096; font-size: 0.9rem; margin-bottom: 10px;">
+                    ⚠️ Код будет активирован вручную после проверки
                 </p>
-                <button id="promoHeroBtn" class="btn-promo-hero" style="width: 100%; padding: 12px; background: ${campaign.color || '#dd6b20'}; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
-                    <i class="fas fa-bolt"></i> Участвовать в акции
-                </button>
+                <p style="color: #718096; font-size: 0.9rem; margin-bottom: 5px;">
+                    ⏱️ Доступ действует ${campaign.expires_days || 30} дней
+                </p>
+                <p style="color: #2d3748; font-size: 0.9rem; margin-top: 15px; font-style: italic;">
+                    <i class="fas fa-mouse-pointer"></i> Нажмите кнопку "Участвовать" в баннере ниже
+                </p>
             </div>
         `;
-        
-        document.getElementById('promoHeroBtn').onclick = () => participateInPromo(campaign.package);
+        // КНОПКУ УБРАЛИ - она теперь только в баннере
     }
 
     // --- 9.4 ВОССТАНОВЛЕНИЕ ОРИГИНАЛЬНОГО HERO-CARD ---
@@ -521,7 +524,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return timePassed < 30 * 24 * 60 * 60 * 1000;
     }
 
-    // --- 9.6 УЧАСТИЕ В АКЦИИ ---
+    // --- 9.6 УЧАСТИЕ В АКЦИИ (ИСПРАВЛЕНА - ГАРАНТИРОВАННОЕ СКРЫТИЕ БАННЕРА) ---
     async function participateInPromo(packageType) {
         console.log('🎁 Участие в промо-акции:', packageType);
         
@@ -544,7 +547,12 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('lastPromoCode', data.code);
             localStorage.setItem('promoTime', Date.now());
             
-            document.getElementById('promo-banner').style.display = 'none';
+            // ГАРАНТИРОВАННО СКРЫВАЕМ БАННЕР ПОСЛЕ УЧАСТИЯ
+            const banner = document.getElementById('promo-banner');
+            if (banner) {
+                banner.style.display = 'none';
+            }
+            
             restoreOriginalHeroCard();
             showPromoWaitingStatus(data.code, packageType);
             
@@ -569,7 +577,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return `AMG25-${mm}${dd}${hh}${min}-${planLetter}${userFP.substring(0,2).toUpperCase()}`;
     }
 
-    // --- 9.8 СТАТУС "ОЖИДАНИЕ" ДЛЯ ПРОМО-КОДА ---
+    // --- 9.8 СТАТУС "ОЖИДАНИЕ" ДЛЯ ПРОМО-КОДА (ИСПРАВЛЕНА - УБРАЛИ ЛИШНЕЕ) ---
     function showPromoWaitingStatus(code, packageType) {
         const cardHeader = document.querySelector('.card-header');
         const cardBody = document.querySelector('.card-body');
@@ -600,9 +608,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <p style="font-size: 0.8rem; color: #718096; margin-top: 15px;">
                     ⚠️ После активации код будет действовать 30 дней
                 </p>
-                <p style="font-size: 0.8rem; color: #718096; margin-top: 10px; font-style: italic;">
-                    🔄 Статус проверяется автоматически каждые 10 секунд
-                </p>
+                <!-- УБРАЛИ СТРОКУ ПРО "Статус проверяется каждые 10 секунд" -->
             </div>
         `;
         
