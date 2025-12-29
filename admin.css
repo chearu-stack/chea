@@ -618,3 +618,347 @@ tr.status-expired-row {
 .nav-link[href*="admin_promo.html"]::before {
     content: "🎁";
 }
+
+/* ========== СТИЛИ ДЛЯ АДМИНКИ ПРОМО-АКЦИЙ (ДОБАВЛЯЕМ В КОНЕЦ) ========== */
+
+/* === КАРТОЧКИ АДМИНКИ === */
+.admin-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px 30px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    margin-bottom: 30px;
+    border-top: 4px solid #4299e1;
+}
+
+.admin-card h2 {
+    color: #1a365d;
+    font-family: 'Merriweather', serif;
+    font-size: 1.5rem;
+    margin-top: 0;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-card h2 i {
+    color: #4299e1;
+}
+
+/* === ЗАГОЛОВОК С КНОПКОЙ === */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+/* === ФОРМА СОЗДАНИЯ АКЦИИ === */
+.campaign-form {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 25px;
+    border: 1px solid #e2e8f0;
+}
+
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 250px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #4a5568;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: all 0.3s;
+    background: white;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-group small {
+    display: block;
+    margin-top: 5px;
+    color: #a0aec0;
+    font-size: 0.85rem;
+}
+
+/* === ВЫБОР ЦВЕТА === */
+.color-picker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.color-option {
+    width: 30px;
+    height: 30px;
+    border: 3px solid white;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.color-option:hover {
+    transform: scale(1.1);
+}
+
+.color-option.active {
+    border-color: #2d3748;
+}
+
+/* === КНОПКИ ФОРМЫ === */
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+}
+
+/* === СПИСОК АКЦИЙ === */
+.campaigns-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.campaign-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    border-left: 4px solid #4299e1;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+}
+
+.campaign-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.campaign-header h3 {
+    margin: 0;
+    color: #2d3748;
+    font-size: 1.2rem;
+}
+
+.campaign-body p {
+    color: #4a5568;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.campaign-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    background: #f8fafc;
+    padding: 15px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.campaign-details div {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.campaign-details strong {
+    color: #4a5568;
+}
+
+.color-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: inline-block;
+    border: 2px solid white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.campaign-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* === ФИЛЬТРЫ === */
+.filter-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-controls select {
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: white;
+    font-size: 0.9rem;
+}
+
+/* === СОСТОЯНИЯ === */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #a0aec0;
+    font-style: italic;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 2px dashed #e2e8f0;
+}
+
+.empty-state p {
+    margin-bottom: 15px;
+}
+
+.error-state {
+    text-align: center;
+    padding: 20px;
+    color: #e53e3e;
+    background: #fff5f5;
+    border-radius: 8px;
+    border: 1px solid #fed7d7;
+}
+
+/* === КНОПКИ СПЕЦИАЛЬНЫЕ === */
+.btn-promo {
+    background: linear-gradient(90deg, #dd6b20, #ed8936);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-promo:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(221, 107, 32, 0.3);
+}
+
+.btn-promo-hero {
+    background: linear-gradient(90deg, #38a169, #2f855a);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+}
+
+.btn-promo-hero:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(56, 161, 105, 0.3);
+}
+
+/* === ИКОНКИ В ЗАГОЛОВКАХ === */
+.fa-bullhorn { color: #dd6b20; }
+.fa-ticket-alt { color: #805ad5; }
+.fa-hourglass-half { color: #d69e2e; }
+.fa-plus-circle { color: #38a169; }
+.fa-rocket { color: #4299e1; }
+.fa-pause { color: #a0aec0; }
+
+/* === АДАПТИВНОСТЬ ДЛЯ НОВЫХ ЭЛЕМЕНТОВ === */
+@media (max-width: 768px) {
+    .admin-card {
+        padding: 20px;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .section-header .btn {
+        align-self: flex-start;
+    }
+    
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .form-group {
+        min-width: 100%;
+    }
+    
+    .campaign-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .campaign-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+    }
+}
+
+/* === АНИМАЦИЯ ПОЯВЛЕНИЯ === */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.campaign-card,
+.admin-card {
+    animation: fadeIn 0.4s ease-out;
+}
