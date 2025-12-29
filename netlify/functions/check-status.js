@@ -38,15 +38,32 @@ exports.handler = async (event) => {
             };
         }
 
+        // ========== ИСПРАВЛЕНИЕ: РАЗДЕЛЕНИЕ ЛОГИКИ ==========
         let query = supabase
             .from('access_codes')
             .select('is_active, caps_used, caps_limit, package, code, fingerprint, id, activated_at')
-            .order('id', { ascending: false }) // Сортируем по ID (больший ID = новее запись)
+            .order('id', { ascending: false })
             .limit(1);
 
         if (code) {
+            // ДЛЯ ПРОМО-КОДОВ: проверяем ТОЛЬКО по коду, игнорируем fingerprint
             query = query.eq('code', code);
+            
+            // Важно: проверяем, что это именно промо-код, а не случайный код
+            // (промо-коды начинаются с AMG25- или PROMO_)
+            const isPromoCode = code.startsWith('AMG25-') || code.startsWith('PROMO_');
+            
+            if (isPromoCode) {
+                // Для промо-кодов fingerprint НЕ учитываем
+                // Продолжаем запрос как есть
+            } else {
+                // Для обычных кодов проверяем и fingerprint
+                if (fp) {
+                    query = query.eq('fingerprint', fp);
+                }
+            }
         } else {
+            // Если нет code, проверяем по fingerprint (старая логика)
             query = query.eq('fingerprint', fp);
         }
 
@@ -68,6 +85,28 @@ exports.handler = async (event) => {
                     package: null,
                     is_fully_used: false,
                     code: null
+                })
+            };
+        }
+
+        // Дополнительная защита: если это НЕ промо-код, проверяем fingerprint
+        const isPromoRecord = record.code.startsWith('AMG25-') || 
+                              record.code.startsWith('PROMO_') || 
+                              record.package.startsWith('PROMO_');
+        
+        if (!isPromoRecord && fp && record.fingerprint !== fp) {
+            // Обычный код, но fingerprint не совпадает
+            return {
+                statusCode: 200,
+                headers,
+                body: JSON.stringify({ 
+                    active: false,
+                    caps_used: 0,
+                    caps_limit: 0,
+                    package: null,
+                    is_fully_used: false,
+                    code: null,
+                    reason: 'fingerprint_mismatch'
                 })
             };
         }
