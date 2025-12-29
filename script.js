@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // --- 6. ПРОВЕРКА АКТИВАЦИИ ---
+    // --- 6. ПРОВЕРКА АКТИВАЦИИ (РАЗДЕЛЁННАЯ ЛОГИКА) ---
     let activationCheckInterval = null;
     
     function startActivationCheck() {
@@ -245,20 +245,41 @@ document.addEventListener('DOMContentLoaded', function() {
         
         activationCheckInterval = setInterval(async () => {
             try {
-                const response = await fetch(`${API_BASE}/check-status?fp=${userFP}`);
-                const data = await response.json();
+                // РАЗДЕЛЕНИЕ: промо-код проверяем по коду, платный — по fingerprint
+                const lastPromoCode = localStorage.getItem('lastPromoCode');
+                const lastOrderID = localStorage.getItem('lastOrderID');
                 
-                console.log('Проверка активации:', data);
+                let response;
+                
+                if (lastPromoCode) {
+                    // ПРОМО-АКЦИЯ: проверяем по коду (fingerprint игнорируется)
+                    response = await fetch(`${API_BASE}/check-status?code=${lastPromoCode}`);
+                    console.log('🔄 Проверка промо-кода:', lastPromoCode);
+                } else if (lastOrderID) {
+                    // ПЛАТНЫЙ ТАРИФ: проверяем по fingerprint (старая логика)
+                    response = await fetch(`${API_BASE}/check-status?fp=${userFP}`);
+                    console.log('🔄 Проверка платного тарифа по fingerprint');
+                } else {
+                    // Ничего не проверяем
+                    return;
+                }
+                
+                const data = await response.json();
+                console.log('Результат проверки:', data);
                 
                 if (data.active === true) {
-                    showActivatedStatus();
+                    if (lastPromoCode) {
+                        showPromoActivatedStatus(lastPromoCode);
+                    } else {
+                        showActivatedStatus();
+                    }
                     clearInterval(activationCheckInterval);
                 }
                 
             } catch (error) {
                 console.log('Ошибка проверки активации:', error);
             }
-        }, 10000);
+        }, 10000); // Каждые 10 секунд
     }
     
     // --- 7. СТАТУС "АКТИВИРОВАН" (С ПРОВЕРКОЙ) ---
@@ -301,6 +322,49 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Ошибка проверки кода:', error);
             clearLocalStorage();
+        }
+    }
+    
+    // --- 7.1 СТАТУС "АКТИВИРОВАН" ДЛЯ ПРОМО-КОДА ---
+    async function showPromoActivatedStatus(promoCode) {
+        if (!promoCode) return;
+        
+        try {
+            const response = await fetch(`${API_BASE}/check-status?code=${promoCode}`);
+            const status = await response.json();
+            
+            if (!status.code || !status.active) {
+                console.log('Промо-код не активен или удалён');
+                return;
+            }
+            
+            const cardHeader = document.querySelector('.card-header');
+            const cardBody = document.querySelector('.card-body');
+            
+            if (cardHeader && cardBody) {
+                cardHeader.innerHTML = `<i class="fas fa-check-circle"></i> Акция: АКТИВИРОВАНА`;
+                cardBody.innerHTML = `
+                    <div style="text-align: center;">
+                        <p style="margin-bottom: 20px; font-weight: 600;">
+                            <strong>Ваш промо-доступ активирован!</strong> Все инструменты цифрового адвоката разблокированы.
+                        </p>
+                        <a href="https://bothub-bridge.onrender.com/?access_code=${promoCode}" 
+                           target="_blank"
+                           style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                           ВХОД В ЛИЧНЫЙ КАБИНЕТ
+                        </a>
+                        <p style="font-size: 0.9rem; color: #718096; margin-top: 15px;">
+                            Промо-код: <code>${promoCode}</code>
+                        </p>
+                        <p style="font-size: 0.8rem; color: #718096; margin-top: 10px;">
+                            ⚠️ Доступ действует 30 дней с момента активации
+                        </p>
+                    </div>
+                `;
+            }
+            
+        } catch (error) {
+            console.error('Ошибка проверки промо-кода:', error);
         }
     }
     
@@ -369,6 +433,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 showPromoBanner(campaign);
                 if (!hasParticipatedInPromo()) {
                     showPromoHeroCard(campaign);
+                } else {
+                    // Если уже участвовали, показываем статус ожидания
+                    const lastPromoCode = localStorage.getItem('lastPromoCode');
+                    if (lastPromoCode) {
+                        showPromoWaitingStatus(lastPromoCode, campaign.package);
+                        // Запускаем проверку активации
+                        startActivationCheck();
+                    }
                 }
             }
         } catch (error) {
@@ -476,6 +548,9 @@ document.addEventListener('DOMContentLoaded', function() {
             restoreOriginalHeroCard();
             showPromoWaitingStatus(data.code, packageType);
             
+            // ЗАПУСКАЕМ ПРОВЕРКУ АКТИВАЦИИ ДЛЯ ПРОМО-КОДА
+            startActivationCheck();
+            
         } catch (error) {
             console.error('❌ Ошибка участия в акции:', error);
             alert('Ошибка участия в акции. Попробуйте позже.');
@@ -524,6 +599,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 </a>
                 <p style="font-size: 0.8rem; color: #718096; margin-top: 15px;">
                     ⚠️ После активации код будет действовать 30 дней
+                </p>
+                <p style="font-size: 0.8rem; color: #718096; margin-top: 10px; font-style: italic;">
+                    🔄 Статус проверяется автоматически каждые 10 секунд
                 </p>
             </div>
         `;
