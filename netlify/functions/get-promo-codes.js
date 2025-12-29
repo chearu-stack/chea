@@ -17,11 +17,11 @@ exports.handler = async (event, context) => {
   );
 
   try {
-    // ПРОМО-КОДЫ: нужно уточнить название таблицы
-    // Сейчас использую 'promo_codes' - поправьте если нужно
+    // ПРАВИЛЬНЫЙ ЗАПРОС: промо-коды в access_codes с префиксом PROMO_
     const { data, error } = await supabase
-      .from('promo_codes')
+      .from('access_codes')
       .select('*')
+      .like('package', 'PROMO_%')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
