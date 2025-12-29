@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMG — Активные коды</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-body">
+    <div id="loginOverlay" class="admin-login-overlay">
+        <div class="admin-login-box">
+            <h2>Вход в панель</h2>
+            <input type="password" id="adminPass" placeholder="Пароль" class="admin-pass-input">
+            <button onclick="checkAuth()" class="btn btn-primary admin-login-btn">Войти</button>
+        </div>
+    </div>
+
+    <div id="adminPage" class="admin-content" style="display: none;">
+        <header class="admin-header">
+            <h1><i class="fas fa-chart-line"></i> Активные коды</h1>
+            <div class="header-actions">
+                <button onclick="loadActiveCodes()" class="btn btn-secondary">Обновить</button>
+                <button onclick="logout()" class="admin-logout-btn">Выйти</button>
+            </div>
+        </header>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-number" id="totalActive">0</div>
+                <div class="stat-label">Активных</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalCapsUsed">0</div>
+                <div class="stat-label">CAPS использовано</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="avgUsage">0%</div>
+                <div class="stat-label">Средняя загрузка</div>
+            </div>
+        </div>
+
+        <div class="admin-table-container">
+            <table class="admin-orders-table">
+                <thead>
+                    <tr>
+                        <th>Код</th>
+                        <th>Тариф</th>
+                        <th>Активирован</th>
+                        <th>CAPS (исп/лимит)</th>
+                        <th>Отпечаток</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody id="activeCodesBody">
+                    <tr><td colspan="6" class="loading-row">Загрузка...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script src="admin_active.js"></script>
+</body>
+</html>
