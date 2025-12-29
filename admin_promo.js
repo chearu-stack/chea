@@ -86,14 +86,7 @@ async function loadCampaigns() {
         campaignsList.innerHTML = '';
         
         if (!campaign.active) {
-            campaignsList.innerHTML = `
-                <div class="empty-state">
-                    <p>Нет активных акций</p>
-                    <button onclick="showCreateCampaignForm()" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Создать первую акцию
-                    </button>
-                </div>
-            `;
+            campaignsList.innerHTML = '<div class="empty-state">Нет активных акций</div>';
             return;
         }
         
