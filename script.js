@@ -1,7 +1,10 @@
 // ===================================================================
 // АДВОКАТ МЕДНОГО ГРОША — script.js
-// ВЕРСИЯ С КОРРЕКТНОЙ БЛОКИРОВКОЙ И ПЕРЕВЕШИВАНИЕМ ОБРАБОТЧИКОВ
+// ВЕРСИЯ С КОРРЕКТНОЙ БЛОКИРОВКОЙ, ПЕРЕВЕШИВАНИЕМ ОБРАБОТЧИКОВ И ПРОМО-АКЦИЯМИ
 // ===================================================================
+
+// Глобальные константы
+const API_BASE = 'https://chea.onrender.com';
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('💰 Тарифы: инициализация с блокировкой');
@@ -38,8 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.removeItem('lastOrderID');
         console.log('localStorage очищен');
         
-        // ДОПОЛНЕНИЕ: При очистке показываем блок анализа
-        showQuestionnaireBlock(); // НОВАЯ ФУНКЦИЯ
+        showQuestionnaireBlock();
     }
 
     function blockTariffButtons(message) {
@@ -70,11 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- 2.1 ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ УПРАВЛЕНИЯ БЛОКОМ АНАЛИЗА ---
-    // Комментарий: Эти функции управляют видимостью блока опроса (#questionnaire)
-    // при различных состояниях пользователя (ожидание/разблокировка)
-    
     function hideQuestionnaireBlock() {
-        // Комментарий: Скрывает блок анализа при статусе "ОЖИДАНИЕ"
         const questionnaire = document.getElementById('questionnaire');
         if (questionnaire) {
             questionnaire.style.display = 'none';
@@ -83,7 +81,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function showQuestionnaireBlock() {
-        // Комментарий: Показывает блок анализа при разблокировке
         const questionnaire = document.getElementById('questionnaire');
         if (questionnaire) {
             questionnaire.style.display = 'block';
@@ -94,10 +91,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function unlockAndResetTariffButtons() {
         console.log('Разблокировка и сброс обработчиков');
         unlockTariffButtons();
-        setupTariffButtons(); // Перевешиваем обработчики
-        
-        // ДОПОЛНЕНИЕ: При разблокировке показываем блок анализа
-        showQuestionnaireBlock(); // НОВЫЙ ВЫЗОВ
+        setupTariffButtons();
+        showQuestionnaireBlock();
     }
 
     // --- 3. ПРОВЕРКА И БЛОКИРОВКА ТАРИФОВ ---
@@ -112,27 +107,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Проверяем срок блокировки (24 часа)
             const timePassed = Date.now() - parseInt(lockTime);
             if (timePassed > 24 * 60 * 60 * 1000) {
                 clearLocalStorage();
-                unlockAndResetTariffButtons(); // Разблокируем со сбросом
+                unlockAndResetTariffButtons();
                 return;
             }
             
-            // ПРОВЕРКА: есть ли код в БД?
-            const response = await fetch(`https://chea.onrender.com/check-status?code=${savedOrderID}`);
+            const response = await fetch(`${API_BASE}/check-status?code=${savedOrderID}`);
             const status = await response.json();
             
-            // Если код не найден (удалён) → разблокируем со сбросом
             if (!status.code) {
                 console.log('Код удалён из БД → разблокировка и сброс обработчиков');
                 clearLocalStorage();
-                unlockAndResetTariffButtons(); // КЛЮЧЕВОЕ ИЗМЕНЕНИЕ
+                unlockAndResetTariffButtons();
                 return;
             }
             
-            // Если код есть → блокируем на оставшееся время
             const hoursLeft = Math.ceil((24 * 60 * 60 * 1000 - timePassed) / (60 * 60 * 1000));
             blockTariffButtons(`Тариф выбран. Смена через ${hoursLeft}ч`);
             
@@ -148,7 +139,6 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`💰 Найдено кнопок тарифов: ${tariffButtons.length}`);
         
         tariffButtons.forEach(button => {
-            // Удаляем все старые обработчики
             const newButton = button.cloneNode(true);
             button.parentNode.replaceChild(newButton, button);
             
@@ -156,7 +146,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                // Проверяем не заблокирована ли кнопка
                 if (this.hasAttribute('disabled')) {
                     console.log('Кнопка заблокирована, игнорируем клик');
                     return false;
@@ -165,18 +154,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('💰 Клик по тарифу:', this.getAttribute('data-plan'));
                 
                 const planKey = this.getAttribute('data-plan');
-                
-                // 1. Генерация и сохранение
                 const newID = generateOrderIdentifier(planKey);
                 localStorage.setItem('lastOrderID', newID);
                 localStorage.setItem('selectedPlan', planKey);
                 localStorage.setItem('lockTime', Date.now());
 
-                // 2. Отправка в БД
                 try {
                     const capsLimits = { 'basic': 30000, 'extended': 60000, 'subscription': 90000 };
                     
-                    fetch('https://chea.onrender.com/generate-code', {
+                    fetch(`${API_BASE}/generate-code`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -193,10 +179,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error("❌ Ошибка:", err);
                 }
 
-                // 3. Блокируем кнопки сразу после выбора
                 checkAndBlockTariffs();
 
-                // 4. Переход на payment.html
                 const href = this.getAttribute('href');
                 if (href) {
                     setTimeout(() => {
@@ -243,14 +227,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
                 
-                // ДОПОЛНЕНИЕ: Скрываем блок анализа при статусе "ОЖИДАНИЕ"
-                hideQuestionnaireBlock(); // НОВЫЙ ВЫЗОВ
-                
+                hideQuestionnaireBlock();
                 startActivationCheck();
             }
         } else {
-            // ДОПОЛНЕНИЕ: Если нет активного ожидания — показываем блок анализа
-            showQuestionnaireBlock(); // НОВЫЙ ВЫЗОВ
+            showQuestionnaireBlock();
         }
     }
     
@@ -264,7 +245,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         activationCheckInterval = setInterval(async () => {
             try {
-                const response = await fetch(`https://chea.onrender.com/check-status?fp=${userFP}`);
+                const response = await fetch(`${API_BASE}/check-status?fp=${userFP}`);
                 const data = await response.json();
                 
                 console.log('Проверка активации:', data);
@@ -286,18 +267,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!savedOrderID) return;
         
         try {
-            // ПРОВЕРКА: есть ли ещё этот код в БД?
-            const response = await fetch(`https://chea.onrender.com/check-status?code=${savedOrderID}`);
+            const response = await fetch(`${API_BASE}/check-status?code=${savedOrderID}`);
             const status = await response.json();
             
-            // Если код удалён → не показываем "АКТИВИРОВАН"
             if (!status.code || !status.active) {
                 console.log('Код удалён, скрываем статус');
                 clearLocalStorage();
                 return;
             }
             
-            // Код есть и активен → показываем
             const cardHeader = document.querySelector('.card-header');
             const cardBody = document.querySelector('.card-body');
             
@@ -327,8 +305,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // --- 8. СТРАНИЦА ОПЛАТЫ (ИСПРАВЛЕННАЯ) ---
-    // Комментарий: Этот блок был обновлён ранее для правильного отображения цены
-    // и заполнения полей manualPrice и stepAmount (элементы <strong>)
     function setupPaymentPage() {
         if (window.location.pathname.includes('payment.html')) {
             console.log('💰 Инициализация страницы оплаты');
@@ -338,45 +314,37 @@ document.addEventListener('DOMContentLoaded', function() {
             const orderID = localStorage.getItem('lastOrderID');
             const plan = planDetails[planKey] || planDetails.extended;
             
-            // ПРАВИЛЬНАЯ ЦЕНА из planDetails
-            const price = plan.price.replace(' ₽', '').replace(/\s/g, ''); // "500 ₽" → "500"
+            const price = plan.price.replace(' ₽', '').replace(/\s/g, '');
             
-            // Обновляем название тарифа
             if (document.getElementById('selectedPlanName')) {
                 document.getElementById('selectedPlanName').textContent = plan.name;
             }
             
-            // Обновляем цену и ID
             const priceEl = document.getElementById('selectedPlanPrice');
             if (priceEl) {
                 priceEl.innerHTML = `${price} ₽ <br><span style="color:red; font-size:1rem;">ID: ${orderID}</span>`;
             }
             
-            // Обновляем ID тарифа
             const planIdEl = document.getElementById('selectedPlanId');
             if (planIdEl) {
                 planIdEl.textContent = `ID: ${orderID}`;
             }
             
-            // Обновляем описание тарифа
             const planDescEl = document.getElementById('selectedPlanDesc');
             if (planDescEl) {
                 planDescEl.textContent = plan.desc;
             }
             
-            // ОБНОВЛЯЕМ поле manualPrice (это <strong> элемент!)
             const manualPriceEl = document.getElementById('manualPrice');
             if (manualPriceEl) {
-                manualPriceEl.textContent = price; // не .value, а .textContent!
+                manualPriceEl.textContent = price;
             }
             
-            // ОБНОВЛЯЕМ поле stepAmount (это тоже <strong> элемент!)
             const stepAmountEl = document.getElementById('stepAmount');
             if (stepAmountEl) {
-                stepAmountEl.textContent = price; // не .value, а .textContent!
+                stepAmountEl.textContent = price;
             }
             
-            // Генерируем QR-код
             const qrImg = document.getElementById('qrCodeImage');
             if (qrImg) {
                 const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
@@ -387,20 +355,190 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- 9. ИНИЦИАЛИЗАЦИЯ ---
+    // ========== ПРОМО-АКЦИИ ==========
+
+    // --- 9.1 ПРОВЕРКА АКТИВНОЙ АКЦИИ ---
+    async function checkActiveCampaign() {
+        try {
+            const response = await fetch(`${API_BASE}/get-active-campaign`);
+            const campaign = await response.json();
+            
+            console.log('🎁 Проверка акции:', campaign.active ? 'Активна' : 'Нет акций');
+            
+            if (campaign.active) {
+                showPromoBanner(campaign);
+                if (!hasParticipatedInPromo()) {
+                    showPromoHeroCard(campaign);
+                }
+            }
+        } catch (error) {
+            console.error('❌ Ошибка проверки акции:', error);
+        }
+    }
+
+    // --- 9.2 ПОКАЗ БАННЕРА ---
+    function showPromoBanner(campaign) {
+        const banner = document.getElementById('promo-banner');
+        const title = document.getElementById('promoTitle');
+        const description = document.getElementById('promoDescription');
+        const button = document.getElementById('promoBtn');
+        
+        if (!banner) return;
+        
+        title.textContent = campaign.title || '🎁 АКЦИЯ';
+        description.textContent = campaign.description || 'Специальное предложение';
+        banner.style.background = campaign.color || 'linear-gradient(90deg, #dd6b20, #ed8936)';
+        
+        button.onclick = () => participateInPromo(campaign.package);
+        banner.style.display = 'flex';
+    }
+
+    // --- 9.3 ИЗМЕНЕНИЕ HERO-CARD ДЛЯ АКЦИИ ---
+    function showPromoHeroCard(campaign) {
+        const cardHeader = document.querySelector('.card-header');
+        const cardBody = document.querySelector('.card-body');
+        
+        if (!cardHeader || !cardBody) return;
+        
+        if (!window.originalHeroContent) {
+            window.originalHeroContent = {
+                header: cardHeader.innerHTML,
+                body: cardBody.innerHTML
+            };
+        }
+        
+        cardHeader.innerHTML = `<i class="fas fa-gift"></i> ${campaign.title || 'Акция'}`;
+        cardBody.innerHTML = `
+            <div style="text-align: left;">
+                <p style="margin-bottom: 10px; font-weight: 600;">
+                    ${campaign.description || ''}
+                </p>
+                <p style="color: #718096; font-size: 0.9rem; margin-bottom: 15px;">
+                    ⚠️ Код будет активирован сразу, но доступ действует только ${campaign.expires_days || 30} дней
+                </p>
+                <button id="promoHeroBtn" class="btn-promo-hero" style="width: 100%; padding: 12px; background: ${campaign.color || '#dd6b20'}; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                    <i class="fas fa-bolt"></i> Участвовать в акции
+                </button>
+            </div>
+        `;
+        
+        document.getElementById('promoHeroBtn').onclick = () => participateInPromo(campaign.package);
+    }
+
+    // --- 9.4 ВОССТАНОВЛЕНИЕ ОРИГИНАЛЬНОГО HERO-CARD ---
+    function restoreOriginalHeroCard() {
+        if (!window.originalHeroContent) return;
+        
+        const cardHeader = document.querySelector('.card-header');
+        const cardBody = document.querySelector('.card-body');
+        
+        if (cardHeader && cardBody) {
+            cardHeader.innerHTML = window.originalHeroContent.header;
+            cardBody.innerHTML = window.originalHeroContent.body;
+        }
+    }
+
+    // --- 9.5 ПРОВЕРКА УЧАСТИЯ В АКЦИИ ---
+    function hasParticipatedInPromo() {
+        const lastPromoCode = localStorage.getItem('lastPromoCode');
+        const promoTime = localStorage.getItem('promoTime');
+        
+        if (!lastPromoCode || !promoTime) return false;
+        
+        const timePassed = Date.now() - parseInt(promoTime);
+        return timePassed < 30 * 24 * 60 * 60 * 1000;
+    }
+
+    // --- 9.6 УЧАСТИЕ В АКЦИИ ---
+    async function participateInPromo(packageType) {
+        console.log('🎁 Участие в промо-акции:', packageType);
+        
+        try {
+            const response = await fetch(`${API_BASE}/generate-code`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    code: generatePromoIdentifier(packageType),
+                    package: packageType,
+                    caps_limit: 30000,
+                    fingerprint: userFP,
+                    metadata: { is_promo: true }
+                })
+            });
+            
+            const data = await response.json();
+            console.log('✅ Промо-код создан:', data);
+            
+            localStorage.setItem('lastPromoCode', data.code);
+            localStorage.setItem('promoTime', Date.now());
+            
+            document.getElementById('promo-banner').style.display = 'none';
+            restoreOriginalHeroCard();
+            showPromoWaitingStatus(data.code, packageType);
+            
+        } catch (error) {
+            console.error('❌ Ошибка участия в акции:', error);
+            alert('Ошибка участия в акции. Попробуйте позже.');
+        }
+    }
+
+    // --- 9.7 ГЕНЕРАЦИЯ ПРОМО-КОДА ---
+    function generatePromoIdentifier(packageType) {
+        const now = new Date();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const planLetters = { 'PROMO_BASIC': 'P', 'PROMO_EXTENDED': 'Q', 'PROMO_SUBSCRIPTION': 'R' };
+        const planLetter = planLetters[packageType] || 'P';
+        return `AMG25-${mm}${dd}${hh}${min}-${planLetter}${userFP.substring(0,2).toUpperCase()}`;
+    }
+
+    // --- 9.8 СТАТУС "ОЖИДАНИЕ" ДЛЯ ПРОМО-КОДА ---
+    function showPromoWaitingStatus(code, packageType) {
+        const cardHeader = document.querySelector('.card-header');
+        const cardBody = document.querySelector('.card-body');
+        
+        if (!cardHeader || !cardBody) return;
+        
+        const planName = packageType === 'PROMO_BASIC' ? 'Базовый' : 
+                        packageType === 'PROMO_EXTENDED' ? 'Расширенный' : 'Профессиональный';
+        
+        cardHeader.innerHTML = `<i class="fas fa-clock"></i> Акция: ${planName}`;
+        cardBody.innerHTML = `
+            <div style="text-align: left;">
+                <p style="font-weight: bold; color: #e67e22; margin-bottom: 10px;">
+                    <i class="fas fa-hourglass-half"></i> Статус: ОЖИДАНИЕ ПОДТВЕРЖДЕНИЯ
+                </p>
+                <p style="margin-bottom: 10px;">Вы участвуете в акции. Сохраните ваш код:</p>
+                <div style="background: #f7fafc; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-family: monospace; font-weight: bold; text-align: center;">
+                    ${code}
+                </div>
+                <p style="font-size: 0.9rem; margin-bottom: 15px;">
+                    <strong>Отправьте скриншот подписки и этот код в Telegram:</strong>
+                </p>
+                <a href="https://t.me/chearu252?text=${encodeURIComponent('Промо-акция! Код: ' + code + '. Скриншот прикреплён.')}" 
+                   target="_blank" 
+                   style="display: block; background: #0088cc; color: white; padding: 12px; border-radius: 6px; text-decoration: none; text-align: center; font-weight: 600;">
+                   <i class="fab fa-telegram"></i> ОТПРАВИТЬ СКРИНШОТ В TELEGRAM
+                </a>
+                <p style="font-size: 0.8rem; color: #718096; margin-top: 15px;">
+                    ⚠️ После активации код будет действовать 30 дней
+                </p>
+            </div>
+        `;
+        
+        hideQuestionnaireBlock();
+    }
+
+    // --- 10. ИНИЦИАЛИЗАЦИЯ ---
     try {
         console.log('💰 Начало инициализации...');
         
-        // Настройка тарифов (сначала вешаем обработчики)
         setupTariffButtons();
-        
-        // Проверяем и блокируем тарифы если нужно (после настройки)
         checkAndBlockTariffs();
-        
-        // Показываем статус "ОЖИДАНИЕ" если есть сохранённый план
         showWaitingStatus();
-        
-        // Настройка страницы оплаты
+        checkActiveCampaign(); // ← ПРОВЕРКА АКЦИЙ ДОБАВЛЕНА
         setupPaymentPage();
         
         console.log('✅ Модуль инициализирован');
@@ -410,4 +548,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-console.log('✅ script.js загружен (с корректной разблокировкой)');
+console.log('✅ script.js загружен (с промо-акциями)');
