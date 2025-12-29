@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AMG — Активные коды</title>
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="admin.css">
 </head>
 <body class="admin-body">
@@ -17,47 +18,38 @@
 
     <div id="adminPage" class="admin-content" style="display: none;">
         <header class="admin-header">
-            <h1><i class="fas fa-chart-line"></i> Активные коды</h1>
+            <h1>Активные коды</h1>
             <div class="header-actions">
-                <button onclick="loadActiveCodes()" class="btn btn-secondary">Обновить</button>
+                <div class="admin-nav">
+                    <a href="admin.html" class="nav-link">Заявки</a>
+                    <a href="admin_active.html" class="nav-link active">Активные</a>
+                    <a href="admin_promo.html" class="nav-link">Промо</a>
+                </div>
                 <button onclick="logout()" class="admin-logout-btn">Выйти</button>
             </div>
         </header>
 
-        <div class="stats-container">
-            <div class="stat-card">
-                <div class="stat-number" id="totalActive">0</div>
-                <div class="stat-label">Активных</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="totalCapsUsed">0</div>
-                <div class="stat-label">CAPS использовано</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="avgUsage">0%</div>
-                <div class="stat-label">Средняя загрузка</div>
-            </div>
-        </div>
-
         <div class="admin-table-container">
+            <div class="admin-table-actions">
+                <button onclick="loadActiveCodes()" class="btn btn-secondary">Обновить список</button>
+            </div>
+
             <table class="admin-orders-table">
                 <thead>
                     <tr>
-                        <th>Код</th>
+                        <th>Код доступа</th>
                         <th>Тариф</th>
-                        <th>Активирован</th>
+                        <th>Дата активации</th>
                         <th>CAPS (исп/лимит)</th>
-                        <th>Отпечаток</th>
                         <th>Действие</th>
                     </tr>
                 </thead>
                 <tbody id="activeCodesBody">
-                    <tr><td colspan="6" class="loading-row">Загрузка...</td></tr>
+                    <tr><td colspan="5" class="loading-row">Загрузка...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
-    
     <script src="admin_active.js"></script>
 </body>
 </html>
