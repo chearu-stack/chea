@@ -421,33 +421,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ========== ПРОМО-АКЦИИ ==========
 
-    // --- 9.1 ПРОВЕРКА АКТИВНОЙ АКЦИИ (ИСПРАВЛЕНА) ---
-    async function checkActiveCampaign() {
-        try {
-            const response = await fetch(`${API_BASE}/get-active-campaign`);
-            const campaign = await response.json();
-            
-            console.log('🎁 Проверка акции:', campaign.active ? 'Активна' : 'Нет акций');
-            
-            if (campaign.active) {
-                // Баннер показываем ТОЛЬКО если пользователь ещё не участвовал
-                if (!hasParticipatedInPromo()) {
-                    showPromoBanner(campaign); // Показываем баннер с кнопкой
-                    showPromoHeroCard(campaign); // Показываем информационный Hero-card
-                } else {
-                    // Уже участвовал — баннер НЕ показываем, только статус ожидания
-                    const lastPromoCode = localStorage.getItem('lastPromoCode');
-                    if (lastPromoCode) {
-                        showPromoWaitingStatus(lastPromoCode, campaign.package);
-                        // Запускаем проверку активации
-                        startActivationCheck();
-                    }
+   // --- 9.1 ПРОВЕРКА АКТИВНОЙ АКЦИИ (ИСПРАВЛЕНА) ---
+async function checkActiveCampaign() {
+    try {
+        const response = await fetch(`${API_BASE}/get-active-campaign`);
+        const campaign = await response.json();
+        
+        console.log('🎁 Проверка акции:', campaign.active ? 'Активна' : 'Нет акций');
+        
+        // Сохраняем данные акции для определения типа
+        window.currentCampaign = campaign;
+        
+        if (campaign.active) {
+            // Баннер показываем ТОЛЬКО если пользователь ещё не участвовал
+            if (!hasParticipatedInPromo()) {
+                showPromoBanner(campaign); // Показываем баннер с кнопкой
+                showPromoHeroCard(campaign); // Показываем информационный Hero-card
+            } else {
+                // Уже участвовал — баннер НЕ показываем, только статус ожидания
+                const lastPromoCode = localStorage.getItem('lastPromoCode');
+                if (lastPromoCode) {
+                    showPromoWaitingStatus(lastPromoCode, campaign.package);
+                    // Запускаем проверку активации
+                    startActivationCheck();
                 }
             }
-        } catch (error) {
-            console.error('❌ Ошибка проверки акции:', error);
         }
+    } catch (error) {
+        console.error('❌ Ошибка проверки акции:', error);
     }
+}
 
     // --- 9.2 ПОКАЗ БАННЕРА ---
     function showPromoBanner(campaign) {
@@ -577,43 +580,78 @@ document.addEventListener('DOMContentLoaded', function() {
         return `AMG25-${mm}${dd}${hh}${min}-${planLetter}${userFP.substring(0,2).toUpperCase()}`;
     }
 
-    // --- 9.8 СТАТУС "ОЖИДАНИЕ" ДЛЯ ПРОМО-КОДА (ИСПРАВЛЕНА - УБРАЛИ ЛИШНЕЕ) ---
-    function showPromoWaitingStatus(code, packageType) {
-        const cardHeader = document.querySelector('.card-header');
-        const cardBody = document.querySelector('.card-body');
-        
-        if (!cardHeader || !cardBody) return;
-        
-        const planName = packageType === 'PROMO_BASIC' ? 'Базовый' : 
-                        packageType === 'PROMO_EXTENDED' ? 'Расширенный' : 'Профессиональный';
-        
-        cardHeader.innerHTML = `<i class="fas fa-clock"></i> Акция: ${planName}`;
-        cardBody.innerHTML = `
-            <div style="text-align: left;">
-                <p style="font-weight: bold; color: #e67e22; margin-bottom: 10px;">
-                    <i class="fas fa-hourglass-half"></i> Статус: ОЖИДАНИЕ ПОДТВЕРЖДЕНИЯ
-                </p>
-                <p style="margin-bottom: 10px;">Вы участвуете в акции. Сохраните ваш код:</p>
-                <div style="background: #f7fafc; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-family: monospace; font-weight: bold; text-align: center;">
-                    ${code}
-                </div>
-                <p style="font-size: 0.9rem; margin-bottom: 15px;">
-                    <strong>Отправьте скриншот подписки и этот код в Telegram:</strong>
-                </p>
-                <a href="https://t.me/chearu252?text=${encodeURIComponent('Промо-акция! Код: ' + code + '. Скриншот прикреплён.')}" 
-                   target="_blank" 
-                   style="display: block; background: #0088cc; color: white; padding: 12px; border-radius: 6px; text-decoration: none; text-align: center; font-weight: 600;">
-                   <i class="fab fa-telegram"></i> ОТПРАВИТЬ СКРИНШОТ В TELEGRAM
-                </a>
-                <p style="font-size: 0.8rem; color: #718096; margin-top: 15px;">
-                    ⚠️ После активации код будет действовать 30 дней
-                </p>
-                <!-- УБРАЛИ СТРОКУ ПРО "Статус проверяется каждые 10 секунд" -->
-            </div>
-        `;
-        
-        hideQuestionnaireBlock();
+    // --- 9.8 СТАТУС "ОЖИДАНИЕ" ДЛЯ ПРОМО-КОДА (ИСПРАВЛЕНА - АДАПТИВНЫЙ ТЕКСТ) ---
+function showPromoWaitingStatus(code, packageType) {
+    const cardHeader = document.querySelector('.card-header');
+    const cardBody = document.querySelector('.card-body');
+    
+    if (!cardHeader || !cardBody) return;
+    
+    const planName = packageType === 'PROMO_BASIC' ? 'Базовый' : 
+                    packageType === 'PROMO_EXTENDED' ? 'Расширенный' : 'Профессиональный';
+    
+    // ОПРЕДЕЛЯЕМ ТИП АКЦИИ ПО ТЕКСТУ (временное решение)
+    // Завтра можно добавить поле в metadata кампании
+    let actionText, telegramText, buttonText;
+    
+    // Проверяем заголовок/описание акции чтобы понять тип
+    const currentCampaign = window.currentCampaign || {}; // Нужно сохранять при получении акции
+    const title = currentCampaign.title || '';
+    const description = currentCampaign.description || '';
+    
+    if (title.includes('тестировщик') || title.includes('тестирование') || 
+        description.includes('тестировщик') || description.includes('тестирование')) {
+        // АКЦИЯ ДЛЯ ТЕСТИРОВЩИКОВ
+        actionText = "Напишите в Telegram для получения доступа:";
+        telegramText = encodeURIComponent('Хочу участвовать в тестировании. Код: ' + code);
+        buttonText = "НАПИСАТЬ ДЛЯ УЧАСТИЯ";
+    } 
+    else if (title.includes('лотерея') || title.includes('розыгрыш') || 
+             description.includes('лотерея') || description.includes('розыгрыш')) {
+        // ЛОТЕРЕЯ
+        actionText = "Отправьте данные для участия в лотерее:";
+        telegramText = encodeURIComponent('Участвую в лотерее. Код: ' + code);
+        buttonText = "УЧАСТВОВАТЬ В ЛОТЕРЕЕ";
     }
+    else if (title.includes('подписк') || description.includes('подписк')) {
+        // ПОДПИСКА НА КАНАЛЫ
+        actionText = "Отправьте скриншот подписки и этот код в Telegram:";
+        telegramText = encodeURIComponent('Промо-акция! Код: ' + code + '. Скриншот прикреплён.');
+        buttonText = "ОТПРАВИТЬ СКРИНШОТ В TELEGRAM";
+    }
+    else {
+        // ПО УМОЛЧАНИЮ (старый текст)
+        actionText = "Отправьте скриншот подписки и этот код в Telegram:";
+        telegramText = encodeURIComponent('Промо-акция! Код: ' + code + '. Скриншот прикреплён.');
+        buttonText = "ОТПРАВИТЬ СКРИНШОТ В TELEGRAM";
+    }
+    
+    cardHeader.innerHTML = `<i class="fas fa-clock"></i> Акция: ${planName}`;
+    cardBody.innerHTML = `
+        <div style="text-align: left;">
+            <p style="font-weight: bold; color: #e67e22; margin-bottom: 10px;">
+                <i class="fas fa-hourglass-half"></i> Статус: ОЖИДАНИЕ ПОДТВЕРЖДЕНИЯ
+            </p>
+            <p style="margin-bottom: 10px;">Вы участвуете в акции. Сохраните ваш код:</p>
+            <div style="background: #f7fafc; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-family: monospace; font-weight: bold; text-align: center;">
+                ${code}
+            </div>
+            <p style="font-size: 0.9rem; margin-bottom: 15px;">
+                <strong>${actionText}</strong>
+            </p>
+            <a href="https://t.me/chearu252?text=${telegramText}" 
+               target="_blank" 
+               style="display: block; background: #0088cc; color: white; padding: 12px; border-radius: 6px; text-decoration: none; text-align: center; font-weight: 600;">
+               <i class="fab fa-telegram"></i> ${buttonText}
+            </a>
+            <p style="font-size: 0.8rem; color: #718096; margin-top: 15px;">
+                ⚠️ После активации код будет действовать 30 дней
+            </p>
+        </div>
+    `;
+    
+    hideQuestionnaireBlock();
+}
 
     // --- 10. ИНИЦИАЛИЗАЦИЯ ---
     try {
