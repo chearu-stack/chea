@@ -17,19 +17,17 @@ exports.handler = async (event, context) => {
   );
 
   try {
-    // ПРАВИЛЬНЫЙ ЗАПРОС: промо-коды в access_codes с префиксом PROMO_
     const { data, error } = await supabase
       .from('access_codes')
       .select('*')
-      .like('package', 'PROMO_%')
-      .order('created_at', { ascending: false });
+      .like('package', 'PROMO_%');
 
     if (error) throw error;
 
-    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: нормализуем is_active
-    const normalizedData = (data || []).map(item => ({
+    const sortedData = (data || []).sort((a, b) => b.id - a.id);
+
+    const normalizedData = sortedData.map(item => ({
       ...item,
-      // Преобразуем null в false, оставляем true как есть
       is_active: item.is_active === true
     }));
 
@@ -39,7 +37,7 @@ exports.handler = async (event, context) => {
       body: JSON.stringify(normalizedData),
     };
   } catch (error) {
-    console.error('❌ Ошибка в get-promo-codes:', error);
+    console.error('❌ Ошибка в get-promo-codes:', error.message);
     return {
       statusCode: 500,
       headers,
