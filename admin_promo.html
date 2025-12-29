@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMG — Промо-коды</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-body">
+    <div id="loginOverlay" class="admin-login-overlay">
+        <div class="admin-login-box">
+            <h2>Вход в панель</h2>
+            <input type="password" id="adminPass" placeholder="Пароль" class="admin-pass-input">
+            <button onclick="checkAuth()" class="btn btn-primary admin-login-btn">Войти</button>
+        </div>
+    </div>
+
+    <div id="adminPage" class="admin-content" style="display: none;">
+        <header class="admin-header">
+            <h1>Промо-коды</h1>
+            <div class="header-actions">
+                <div class="admin-nav">
+                    <a href="admin.html" class="nav-link">Заявки</a>
+                    <a href="admin_active.html" class="nav-link">Активные</a>
+                    <a href="admin_promo.html" class="nav-link active">Промо</a>
+                </div>
+                <button onclick="logout()" class="admin-logout-btn">Выйти</button>
+            </div>
+        </header>
+
+        <div class="admin-table-container">
+            <div class="admin-table-actions">
+                <button onclick="loadPromoCodes()" class="btn btn-secondary">Обновить список</button>
+                <button onclick="showCreatePromoForm()" class="btn btn-primary">Создать промо-код</button>
+            </div>
+
+            <table class="admin-orders-table">
+                <thead>
+                    <tr>
+                        <th>Промо-код</th>
+                        <th>Получатель</th>
+                        <th>Тип</th>
+                        <th>Создан</th>
+                        <th>Действует до</th>
+                        <th>Статус</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody id="promoCodesBody">
+                    <tr><td colspan="7" class="loading-row">Загрузка...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script src="admin_promo.js"></script>
+</body>
+</html>
