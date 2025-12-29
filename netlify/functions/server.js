@@ -23,7 +23,11 @@ const verifyCode = require('./verify-code');
 const testBothub = require('./test-bothub');
 const proxy = require('./proxy');
 const deleteCode = require('./delete-code');
-const checkStatus = require('./check-status'); // ← ДОБАВИЛИ
+const checkStatus = require('./check-status');
+// +++ НОВЫЕ ИМПОРТЫ +++
+const getActiveCodes = require('./netlify/functions/get-active-codes');
+const getPromoCodes = require('./netlify/functions/get-promo-codes');
+// +++++++++++++++++++++
 
 // Вспомогательная функция
 const createNetlifyEvent = (req) => ({
@@ -56,7 +60,11 @@ app.post('/verify-code', handleRequest(verifyCode));
 app.post('/test-bothub', handleRequest(testBothub));
 app.post('/proxy', handleRequest(proxy));
 app.all('/delete-code', handleRequest(deleteCode));
-app.get('/check-status', handleRequest(checkStatus)); // ← ДОБАВИЛИ
+app.get('/check-status', handleRequest(checkStatus));
+// +++ НОВЫЕ МАРШРУТЫ +++
+app.get('/get-active-codes', handleRequest(getActiveCodes));
+app.get('/get-promo-codes', handleRequest(getPromoCodes));
+// ++++++++++++++++++++++
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
