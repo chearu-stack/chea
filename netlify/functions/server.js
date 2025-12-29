@@ -24,10 +24,10 @@ const testBothub = require('./test-bothub');
 const proxy = require('./proxy');
 const deleteCode = require('./delete-code');
 const checkStatus = require('./check-status');
-// +++ НОВЫЕ ИМПОРТЫ +++
-const getActiveCodes = require('./netlify/functions/get-active-codes');
-const getPromoCodes = require('./netlify/functions/get-promo-codes');
-// +++++++++++++++++++++
+// +++ НОВЫЕ ИМПОРТЫ (корректные пути из той же папки) +++
+const getActiveCodes = require('./get-active-codes');
+const getPromoCodes = require('./get-promo-codes');
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 // Вспомогательная функция
 const createNetlifyEvent = (req) => ({
