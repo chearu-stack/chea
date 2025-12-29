@@ -19,7 +19,14 @@
     <div id="adminPage" class="admin-content" style="display: none;">
         <header class="admin-header">
             <h1>Входящие заявки</h1>
-            <button onclick="logout()" class="admin-logout-btn">Выйти</button>
+            <div class="header-actions">
+                <div class="admin-nav">
+                    <a href="admin.html" class="nav-link active">Заявки</a>
+                    <a href="admin_active.html" class="nav-link">Активные</a>
+                    <a href="admin_promo.html" class="nav-link">Промо</a>
+                </div>
+                <button onclick="logout()" class="admin-logout-btn">Выйти</button>
+            </div>
         </header>
 
         <div class="admin-table-container">
