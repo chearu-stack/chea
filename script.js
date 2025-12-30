@@ -1,6 +1,6 @@
 // ===================================================================
 // АДВОКАТ МЕДНОГО ГРОША — script.js
-// ВЕРСИЯ С КОРРЕКТНОЙ БЛОКИРОВКОЙ, ПЕРЕВЕШИВАНИЕМ ОБРАБОТЧИКОВ И ПРОМО-АКЦИЯМИ
+// ВЕРСИЯ С ПРОМО-АКЦИЯМИ И ПРАВИЛЬНЫМИ ССЫЛКАМИ ЧЕРЕЗ CHAT.HTML
 // ===================================================================
 
 // Глобальные константы
@@ -279,10 +279,10 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 console.log('Ошибка проверки активации:', error);
             }
-        }, 10000); // Каждые 10 секунд
+        }, 10000);
     }
     
-    // --- 7. СТАТУС "АКТИВИРОВАН" (С ПРОВЕРКОЙ) ---
+    // --- 7. СТАТУС "АКТИВИРОВАН" ДЛЯ ПЛАТНЫХ ТАРИФОВ (С ПРАВИЛЬНОЙ ССЫЛКОЙ) ---
     async function showActivatedStatus() {
         const savedOrderID = localStorage.getItem('lastOrderID');
         if (!savedOrderID) return;
@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p style="margin-bottom: 20px; font-weight: 600;">
                             <strong>Ваш пакет полностью готов.</strong> Все инструменты цифрового адвоката разблокированы.
                         </p>
-                        <a href="https://bothub-bridge.onrender.com/?access_code=${savedOrderID}" 
+                        <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${savedOrderID}" 
                            target="_blank"
                            style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600;">
                            ВХОД В ЛИЧНЫЙ КАБИНЕТ
@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // --- 7.1 СТАТУС "АКТИВИРОВАН" ДЛЯ ПРОМО-КОДА ---
+    // --- 7.1 СТАТУС "АКТИВИРОВАН" ДЛЯ ПРОМО-КОДА (С ПРАВИЛЬНОЙ ССЫЛКОЙ) ---
     async function showPromoActivatedStatus(promoCode) {
         if (!promoCode) return;
         
@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p style="margin-bottom: 20px; font-weight: 600;">
                             <strong>Ваш промо-доступ активирован!</strong> Все инструменты цифрового адвоката разблокированы.
                         </p>
-                        <a href="https://bothub-bridge.onrender.com/?access_code=${promoCode}" 
+                        <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${promoCode}" 
                            target="_blank"
                            style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600;">
                            ВХОД В ЛИЧНЫЙ КАБИНЕТ
@@ -368,7 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // --- 8. СТРАНИЦА ОПЛАТЫ (ИСПРАВЛЕННАЯ) ---
+    // --- 8. СТРАНИЦА ОПЛАТЫ ---
     function setupPaymentPage() {
         if (window.location.pathname.includes('payment.html')) {
             console.log('💰 Инициализация страницы оплаты');
@@ -421,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ========== ПРОМО-АКЦИИ ==========
 
-    // --- 9.1 ПРОВЕРКА АКТИВНОЙ АКЦИИ (ИСПРАВЛЕНА) ---
+    // --- 9.1 ПРОВЕРКА АКТИВНОЙ АКЦИИ ---
     async function checkActiveCampaign() {
         try {
             const response = await fetch(`${API_BASE}/get-active-campaign`);
@@ -430,20 +430,16 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('🎁 Проверка акции:', campaign.active ? 'Активна' : 'Нет акций');
             console.log('🎁 Данные кампании с сервера:', campaign);
             
-            // Сохраняем данные акции для определения типа
             window.currentCampaign = campaign;
             
             if (campaign.active) {
-                // Баннер показываем ТОЛЬКО если пользователь ещё не участвовал
                 if (!hasParticipatedInPromo()) {
-                    showPromoBanner(campaign); // Показываем баннер с кнопкой
-                    showPromoHeroCard(campaign); // Показываем информационный Hero-card
+                    showPromoBanner(campaign);
+                    showPromoHeroCard(campaign);
                 } else {
-                    // Уже участвовал — баннер НЕ показываем, только статус ожидания
                     const lastPromoCode = localStorage.getItem('lastPromoCode');
                     if (lastPromoCode) {
                         showPromoWaitingStatus(lastPromoCode, campaign.package);
-                        // Запускаем проверку активации
                         startActivationCheck();
                     }
                 }
@@ -470,7 +466,7 @@ document.addEventListener('DOMContentLoaded', function() {
         banner.style.display = 'flex';
     }
 
-    // --- 9.3 ИЗМЕНЕНИЕ HERO-CARD ДЛЯ АКЦИИ (ИСПРАВЛЕНА - БЕЗ КНОПКИ) ---
+    // --- 9.3 ИЗМЕНЕНИЕ HERO-CARD ДЛЯ АКЦИИ (БЕЗ КНОПКИ) ---
     function showPromoHeroCard(campaign) {
         const cardHeader = document.querySelector('.card-header');
         const cardBody = document.querySelector('.card-body');
@@ -501,7 +497,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </p>
             </div>
         `;
-        // КНОПКУ УБРАЛИ - она теперь только в баннере
     }
 
     // --- 9.4 ВОССТАНОВЛЕНИЕ ОРИГИНАЛЬНОГО HERO-CARD ---
@@ -528,15 +523,13 @@ document.addEventListener('DOMContentLoaded', function() {
         return timePassed < 30 * 24 * 60 * 60 * 1000;
     }
 
-    // --- 9.6 УЧАСТИЕ В АКЦИИ (ИСПРАВЛЕННАЯ) ---
+    // --- 9.6 УЧАСТИЕ В АКЦИИ ---
     async function participateInPromo(campaign) {
         console.log('🎁 Участие в промо-акции:', campaign);
         
         try {
-            // Генерируем промо-код
             const promoCode = generatePromoIdentifier(campaign.package);
             
-            // Отправляем запрос с campaign_code
             const response = await fetch(`${API_BASE}/generate-code`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -547,7 +540,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     fingerprint: userFP,
                     metadata: { 
                         is_promo: true,
-                        campaign_code: campaign.code // Ключевое исправление: передаём код кампании
+                        campaign_code: campaign.code
                     }
                 })
             });
@@ -555,16 +548,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             console.log('✅ Промо-код создан:', data);
             
-            // Сохраняем в localStorage
             localStorage.setItem('lastPromoCode', promoCode);
             localStorage.setItem('promoTime', Date.now());
             
-            // Обновляем интерфейс
             document.getElementById('promo-banner').style.display = 'none';
             restoreOriginalHeroCard();
             showPromoWaitingStatus(promoCode, campaign);
             
-            // Запускаем проверку активации
             startActivationCheck();
             
         } catch (error) {
@@ -585,7 +575,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return `AMG25-${mm}${dd}${hh}${min}-${planLetter}${userFP.substring(0,2).toUpperCase()}`;
     }
 
-    // --- 9.8 СТАТУС "ОЖИДАНИЕ" ДЛЯ ПРОМО-КОДА (ИСПРАВЛЕННАЯ) ---
+    // --- 9.8 СТАТУС "ОЖИДАНИЕ" ДЛЯ ПРОМО-КОДА ---
     function showPromoWaitingStatus(code, campaign) {
         const cardHeader = document.querySelector('.card-header');
         const cardBody = document.querySelector('.card-body');
@@ -595,33 +585,28 @@ document.addEventListener('DOMContentLoaded', function() {
         const planName = campaign.package === 'PROMO_BASIC' ? 'Базовый' : 
                         campaign.package === 'PROMO_EXTENDED' ? 'Расширенный' : 'Профессиональный';
         
-        // Определяем тип акции из данных кампании
         let actionText, telegramText, buttonText;
         const title = campaign.title || '';
         const description = campaign.description || '';
         
         if (title.includes('тестировщик') || title.includes('тестирование') || 
             description.includes('тестировщик') || description.includes('тестирование')) {
-            // АКЦИЯ ДЛЯ ТЕСТИРОВЩИКОВ
             actionText = "Напишите в Telegram для получения доступа:";
             telegramText = encodeURIComponent('Хочу участвовать в тестировании. Код: ' + code);
             buttonText = "НАПИСАТЬ ДЛЯ УЧАСТИЯ";
         } 
         else if (title.includes('лотерея') || title.includes('розыгрыш') || 
                  description.includes('лотерея') || description.includes('розыгрыш')) {
-            // ЛОТЕРЕЯ
             actionText = "Отправьте данные для участия в лотерее:";
             telegramText = encodeURIComponent('Участвую в лотерее. Код: ' + code);
             buttonText = "УЧАСТВОВАТЬ В ЛОТЕРЕЕ";
         }
         else if (title.includes('подписк') || description.includes('подписк')) {
-            // ПОДПИСКА НА КАНАЛЫ
             actionText = "Отправьте скриншот подписки и этот код в Telegram:";
             telegramText = encodeURIComponent('Промо-акция! Код: ' + code + '. Скриншот прикреплён.');
             buttonText = "ОТПРАВИТЬ СКРИНШОТ В TELEGRAM";
         }
         else {
-            // ПО УМОЛЧАНИЮ
             actionText = "Отправьте данные для участия в акции:";
             telegramText = encodeURIComponent('Промо-акция! Код: ' + code);
             buttonText = "УЧАСТВОВАТЬ В АКЦИИ";
@@ -671,4 +656,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-console.log('✅ script.js загружен (с исправленной промо-логикой)');
+console.log('✅ script.js загружен (с промо-акциями и правильными ссылками на chat.html)');
