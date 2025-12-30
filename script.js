@@ -264,23 +264,32 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                const data = await response.json();
-                console.log('Результат проверки:', data);
-                
-                if (data.active === true) {
-                    if (lastPromoCode) {
-                        showPromoActivatedStatus(lastPromoCode);
-                    } else {
-                        showActivatedStatus();
-                    }
-                    clearInterval(activationCheckInterval);
-                }
-                
-            } catch (error) {
-                console.log('Ошибка проверки активации:', error);
-            }
-        }, 10000);
+              const data = await response.json();
+console.log('Результат проверки:', data);
+
+// ИСПРАВЛЕНИЕ: проверяем не только active, но и метаданные
+if (data.active === true) {
+    // ДЛЯ ПЛАТНЫХ ТАРИФОВ: проверяем, что код подтверждён (is_activated === true)
+    // или что remaining > 0 (если лимит не израсходован)
+    if (lastOrderID && data.is_activated !== true && data.remaining <= 0) {
+        console.log('Тариф создан, но не активирован администратором. Ждём...');
+        return; // Не показываем статус "Активирован"
     }
+    
+    // ДЛЯ ПРОМО-КОДОВ: проверяем, что код подтверждён
+    if (lastPromoCode && data.is_activated !== true) {
+        console.log('Промо-код создан, но не активирован. Ждём...');
+        return;
+    }
+    
+    // Только если все проверки пройдены — показываем статус
+    if (lastPromoCode) {
+        showPromoActivatedStatus(lastPromoCode);
+    } else {
+        showActivatedStatus();
+    }
+    clearInterval(activationCheckInterval);
+}
     
     // --- 7. СТАТУС "АКТИВИРОВАН" ДЛЯ ПЛАТНЫХ ТАРИФОВ (С ПРОГРЕСС-БАРОМ И ИСПРАВЛЕННОЙ ССЫЛКОЙ) ---
     async function showActivatedStatus() {
