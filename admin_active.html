@@ -17,18 +17,33 @@
     </div>
 
     <div id="adminPage" class="admin-content" style="display: none;">
+        <!-- НОВАЯ ШАПКА С ЛОГО И МЕНЮ -->
         <header class="admin-header">
-            <h1>Активные коды</h1>
-            <div class="header-actions">
-                <div class="admin-nav">
-                    <a href="admin.html" class="nav-link">Заявки</a>
-                    <a href="admin_active.html" class="nav-link active">Активные</a>
-                    <a href="admin_promo.html" class="nav-link">Промо</a>
+            <div class="admin-header-top">
+                <div class="admin-logo">
+                    <div class="logo-icon">⚖️</div>
+                    <div class="logo-text">
+                        <h1>АМГ | Адвокат Медного Гроша</h1>
+                        <p class="logo-subtitle">Админ-панель управления</p>
+                    </div>
                 </div>
                 <button onclick="logout()" class="admin-logout-btn">Выйти</button>
             </div>
+            
+            <nav class="admin-nav">
+                <a href="admin.html" class="nav-link">
+                    <i class="fas fa-inbox"></i> Заявки
+                </a>
+                <a href="admin_active.html" class="nav-link active">
+                    <i class="fas fa-check-circle"></i> Активные
+                </a>
+                <a href="admin_promo.html" class="nav-link">
+                    <i class="fas fa-gift"></i> Промо
+                </a>
+            </nav>
         </header>
 
+        <!-- ОСНОВНОЙ КОНТЕНТ (без изменений) -->
         <div class="admin-table-container">
             <div class="admin-table-actions">
                 <button onclick="loadActiveCodes()" class="btn btn-secondary">Обновить список</button>
