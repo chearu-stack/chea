@@ -527,7 +527,7 @@ async function checkActiveCampaign() {
         return timePassed < 30 * 24 * 60 * 60 * 1000;
     }
 
-    // --- 9.6 УЧАСТИЕ В АКЦИИ (ИСПРАВЛЕНА - ГАРАНТИРОВАННОЕ СКРЫТИЕ БАННЕРА) ---
+        // --- 9.6 УЧАСТИЕ В АКЦИИ (ИСПРАВЛЕННАЯ) ---
     async function participateInPromo(packageType) {
         console.log('🎁 Участие в промо-акции:', packageType);
         
@@ -550,12 +550,7 @@ async function checkActiveCampaign() {
             localStorage.setItem('lastPromoCode', data.code);
             localStorage.setItem('promoTime', Date.now());
             
-            // ГАРАНТИРОВАННО СКРЫВАЕМ БАННЕР ПОСЛЕ УЧАСТИЯ
-            const banner = document.getElementById('promo-banner');
-            if (banner) {
-                banner.style.display = 'none';
-            }
-            
+            document.getElementById('promo-banner').style.display = 'none';
             restoreOriginalHeroCard();
             showPromoWaitingStatus(data.code, packageType);
             
@@ -580,78 +575,78 @@ async function checkActiveCampaign() {
         return `AMG25-${mm}${dd}${hh}${min}-${planLetter}${userFP.substring(0,2).toUpperCase()}`;
     }
 
-    // --- 9.8 СТАТУС "ОЖИДАНИЕ" ДЛЯ ПРОМО-КОДА (ИСПРАВЛЕНА - АДАПТИВНЫЙ ТЕКСТ) ---
-function showPromoWaitingStatus(code, packageType) {
-    const cardHeader = document.querySelector('.card-header');
-    const cardBody = document.querySelector('.card-body');
-    
-    if (!cardHeader || !cardBody) return;
-    
-    const planName = packageType === 'PROMO_BASIC' ? 'Базовый' : 
-                    packageType === 'PROMO_EXTENDED' ? 'Расширенный' : 'Профессиональный';
-    
-    // ОПРЕДЕЛЯЕМ ТИП АКЦИИ ПО ТЕКСТУ (временное решение)
-    // Завтра можно добавить поле в metadata кампании
-    let actionText, telegramText, buttonText;
-    
-    // Проверяем заголовок/описание акции чтобы понять тип
-    const currentCampaign = window.currentCampaign || {}; // Нужно сохранять при получении акции
-    const title = currentCampaign.title || '';
-    const description = currentCampaign.description || '';
-    
-    if (title.includes('тестировщик') || title.includes('тестирование') || 
-        description.includes('тестировщик') || description.includes('тестирование')) {
-        // АКЦИЯ ДЛЯ ТЕСТИРОВЩИКОВ
-        actionText = "Напишите в Telegram для получения доступа:";
-        telegramText = encodeURIComponent('Хочу участвовать в тестировании. Код: ' + code);
-        buttonText = "НАПИСАТЬ ДЛЯ УЧАСТИЯ";
-    } 
-    else if (title.includes('лотерея') || title.includes('розыгрыш') || 
-             description.includes('лотерея') || description.includes('розыгрыш')) {
-        // ЛОТЕРЕЯ
-        actionText = "Отправьте данные для участия в лотерее:";
-        telegramText = encodeURIComponent('Участвую в лотерее. Код: ' + code);
-        buttonText = "УЧАСТВОВАТЬ В ЛОТЕРЕЕ";
-    }
-    else if (title.includes('подписк') || description.includes('подписк')) {
-        // ПОДПИСКА НА КАНАЛЫ
-        actionText = "Отправьте скриншот подписки и этот код в Telegram:";
-        telegramText = encodeURIComponent('Промо-акция! Код: ' + code + '. Скриншот прикреплён.');
-        buttonText = "ОТПРАВИТЬ СКРИНШОТ В TELEGRAM";
-    }
-    else {
-        // ПО УМОЛЧАНИЮ (старый текст)
-        actionText = "Отправьте скриншот подписки и этот код в Telegram:";
-        telegramText = encodeURIComponent('Промо-акция! Код: ' + code + '. Скриншот прикреплён.');
-        buttonText = "ОТПРАВИТЬ СКРИНШОТ В TELEGRAM";
-    }
-    
-    cardHeader.innerHTML = `<i class="fas fa-clock"></i> Акция: ${planName}`;
-    cardBody.innerHTML = `
-        <div style="text-align: left;">
-            <p style="font-weight: bold; color: #e67e22; margin-bottom: 10px;">
-                <i class="fas fa-hourglass-half"></i> Статус: ОЖИДАНИЕ ПОДТВЕРЖДЕНИЯ
-            </p>
-            <p style="margin-bottom: 10px;">Вы участвуете в акции. Сохраните ваш код:</p>
-            <div style="background: #f7fafc; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-family: monospace; font-weight: bold; text-align: center;">
-                ${code}
+        // --- 9.8 СТАТУС "ОЖИДАНИЕ" ДЛЯ ПРОМО-КОДА (СЛОЖНАЯ ВЕРСИЯ С ИСПРАВЛЕНИЕМ) ---
+    function showPromoWaitingStatus(code, packageType) {
+        const cardHeader = document.querySelector('.card-header');
+        const cardBody = document.querySelector('.card-body');
+        
+        if (!cardHeader || !cardBody) return;
+        
+        const planName = packageType === 'PROMO_BASIC' ? 'Базовый' : 
+                        packageType === 'PROMO_EXTENDED' ? 'Расширенный' : 'Профессиональный';
+        
+        // ВОССТАНАВЛИВАЕМ ЛОГИКУ ОПРЕДЕЛЕНИЯ ТИПА АКЦИИ
+        let actionText, telegramText, buttonText;
+        
+        // БЕРЁМ ДАННЫЕ ИЗ window.currentCampaign - КАК БЫЛО В ИСХОДНОМ КОДЕ
+        const currentCampaign = window.currentCampaign || {};
+        const title = currentCampaign.title || '';
+        const description = currentCampaign.description || '';
+        
+        // ОРИГИНАЛЬНАЯ ЛОГИКА ОПРЕДЕЛЕНИЯ ТИПА АКЦИИ
+        if (title.includes('тестировщик') || title.includes('тестирование') || 
+            description.includes('тестировщик') || description.includes('тестирование')) {
+            // АКЦИЯ ДЛЯ ТЕСТИРОВЩИКОВ
+            actionText = "Напишите в Telegram для получения доступа:";
+            telegramText = encodeURIComponent('Хочу участвовать в тестировании. Код: ' + code);
+            buttonText = "НАПИСАТЬ ДЛЯ УЧАСТИЯ";
+        } 
+        else if (title.includes('лотерея') || title.includes('розыгрыш') || 
+                 description.includes('лотерея') || description.includes('розыгрыш')) {
+            // ЛОТЕРЕЯ
+            actionText = "Отправьте данные для участия в лотерее:";
+            telegramText = encodeURIComponent('Участвую в лотерее. Код: ' + code);
+            buttonText = "УЧАСТВОВАТЬ В ЛОТЕРЕЕ";
+        }
+        else if (title.includes('подписк') || description.includes('подписк')) {
+            // ПОДПИСКА НА КАНАЛЫ
+            actionText = "Отправьте скриншот подписки и этот код в Telegram:";
+            telegramText = encodeURIComponent('Промо-акция! Код: ' + code + '. Скриншот прикреплён.');
+            buttonText = "ОТПРАВИТЬ СКРИНШОТ В TELEGRAM";
+        }
+        else {
+            // ПО УМОЛЧАНИЮ
+            actionText = "Отправьте данные для участия в акции:";
+            telegramText = encodeURIComponent('Промо-акция! Код: ' + code);
+            buttonText = "УЧАСТВОВАТЬ В АКЦИИ";
+        }
+        
+        cardHeader.innerHTML = `<i class="fas fa-clock"></i> Акция: ${planName}`;
+        cardBody.innerHTML = `
+            <div style="text-align: left;">
+                <p style="font-weight: bold; color: #e67e22; margin-bottom: 10px;">
+                    <i class="fas fa-hourglass-half"></i> Статус: ОЖИДАНИЕ ПОДТВЕРЖДЕНИЯ
+                </p>
+                <p style="margin-bottom: 10px;">Вы участвуете в акции. Сохраните ваш код:</p>
+                <div style="background: #f7fafc; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-family: monospace; font-weight: bold; text-align: center;">
+                    ${code}
+                </div>
+                <p style="font-size: 0.9rem; margin-bottom: 15px;">
+                    <strong>${actionText}</strong>
+                </p>
+                <a href="https://t.me/chearu252?text=${telegramText}" 
+                   target="_blank" 
+                   style="display: block; background: #0088cc; color: white; padding: 12px; border-radius: 6px; text-decoration: none; text-align: center; font-weight: 600;">
+                   <i class="fab fa-telegram"></i> ${buttonText}
+                </a>
+                <p style="font-size: 0.8rem; color: #718096; margin-top: 15px;">
+                    ⚠️ После активации код будет действовать 30 дней
+                </p>
             </div>
-            <p style="font-size: 0.9rem; margin-bottom: 15px;">
-                <strong>${actionText}</strong>
-            </p>
-            <a href="https://t.me/chearu252?text=${telegramText}" 
-               target="_blank" 
-               style="display: block; background: #0088cc; color: white; padding: 12px; border-radius: 6px; text-decoration: none; text-align: center; font-weight: 600;">
-               <i class="fab fa-telegram"></i> ${buttonText}
-            </a>
-            <p style="font-size: 0.8rem; color: #718096; margin-top: 15px;">
-                ⚠️ После активации код будет действовать 30 дней
-            </p>
-        </div>
-    `;
-    
-    hideQuestionnaireBlock();
-}
+        `;
+        
+        hideQuestionnaireBlock();
+    }
 
     // --- 10. ИНИЦИАЛИЗАЦИЯ ---
     try {
