@@ -17,41 +17,46 @@ exports.handler = async (event, context) => {
   );
 
   try {
-    // Получаем ВСЕ кампании
+    // Получаем ВСЕ кампании (сортируем по id, так как created_at нет в таблице)
     const { data: campaigns, error } = await supabase
       .from('access_codes')
       .select('*')
       .eq('package', 'PROMO_CAMPAIGN')
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: false }); // ← СОРТИРУЕМ ПО ID
 
     if (error) throw error;
 
     // Подсчитываем промо-коды для каждой кампании
-    const enrichedCampaigns = await Promise.all(
-      (campaigns || []).map(async (campaign) => {
-        // Считаем промо-коды, созданные во время активности этой кампании
-        const { count } = await supabase
-          .from('access_codes')
-          .select('*', { count: 'exact', head: true })
-          .like('package', 'PROMO_%')
-          .not('package', 'eq', 'PROMO_CAMPAIGN')
-          .gte('created_at', campaign.created_at) // созданы после начала кампании
-          .lt('created_at', new Date(Date.now() + (campaign.metadata?.expires_days || 30) * 24 * 60 * 60 * 1000).toISOString());
+    const enrichedCampaigns = (campaigns || []).map((campaign) => {
+        // Используем дату из metadata или текущую дату
+        const campaignDate = campaign.metadata?.created_at || 
+                           campaign.activated_at || 
+                           new Date().toISOString();
+        
+        // Преобразуем дату для отображения
+        let displayDate = '—';
+        try {
+            const date = new Date(campaignDate);
+            displayDate = date.toLocaleDateString('ru-RU');
+        } catch (e) {
+            // Если дата некорректна, оставляем прочерк
+        }
 
         return {
           code: campaign.code,
           title: campaign.metadata?.title || 'Без названия',
           description: campaign.metadata?.description || '',
           is_active: campaign.is_active === true,
-          created_at: campaign.created_at || campaign.activated_at,
+          created_at: displayDate, // Форматированная дата для отображения
+          created_at_raw: campaignDate, // Исходная дата
           color: campaign.metadata?.color || '#dd6b20',
           package: campaign.metadata?.package || 'PROMO_BASIC',
           expires_days: campaign.metadata?.expires_days || 30,
-          promo_codes_count: count || 0,
+          // Временно не считаем промо-коды (чтобы не усложнять)
+          promo_codes_count: 0, // Временно 0
           metadata: campaign.metadata || {}
         };
-      })
-    );
+      });
 
     return {
       statusCode: 200,
