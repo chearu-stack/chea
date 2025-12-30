@@ -41,7 +41,11 @@ exports.handler = async (event, context) => {
           metadata = {};
         }
 
-        // 1. Дата создания
+        // 1. Генерируем уникальный campaign_code для связи
+        // Используем существующий campaign_id из metadata или создаём из code кампании
+        const campaignCode = metadata.campaign_id || `CAMPAIGN_${campaign.code}`;
+        
+        // 2. Дата создания
         let createdDate = '—';
         let rawDate = null;
         const dateSources = [metadata.created_at, campaign.activated_at];
@@ -61,19 +65,16 @@ exports.handler = async (event, context) => {
           }
         }
 
-        // 2. Подсчитываем промо-коды для этой кампании
+        // 3. Подсчитываем промо-коды для ЭТОЙ КОНКРЕТНОЙ КАМПАНИИ
         let promoCount = 0;
         
-        // Определяем дату начала кампании для фильтрации
-        const campaignStartDate = rawDate || campaign.activated_at || '2024-01-01';
-        
         try {
-          // Считаем все промо-коды (не кампании), созданные после начала кампании
+          // Ищем промо-коды, у которых в metadata есть campaign_code, равный нашему
           const { count, error: countError } = await supabase
             .from('access_codes')
             .select('*', { count: 'exact', head: true })
             .in('package', ['PROMO_BASIC', 'PROMO_EXTENDED', 'PROMO_SUBSCRIPTION'])
-            .gte('created_at', campaignStartDate);
+            .or(`metadata->>campaign_code.eq.${campaignCode},metadata->>campaign_id.eq.${campaignCode}`);
           
           if (!countError) {
             promoCount = count || 0;
@@ -82,11 +83,12 @@ exports.handler = async (event, context) => {
           console.warn(`Не удалось посчитать коды для кампании ${campaign.code}:`, countErr.message);
         }
 
-        // 3. Срок действия
+        // 4. Срок действия
         const expiresDays = metadata.expires_days || 30;
 
         return {
-          code: campaign.code,
+          code: campaign.code, // оригинальный код записи в БД
+          campaign_code: campaignCode, // уникальный идентификатор кампании для связи
           title: metadata.title || 'Без названия',
           description: metadata.description || '',
           is_active: campaign.is_active === true,
@@ -95,7 +97,7 @@ exports.handler = async (event, context) => {
           color: metadata.color || '#dd6b20',
           package: metadata.package || 'PROMO_BASIC',
           expires_days: expiresDays,
-          promo_codes_count: promoCount, // Теперь будет показывать реальное количество
+          promo_codes_count: promoCount,
           metadata: metadata
         };
       })
