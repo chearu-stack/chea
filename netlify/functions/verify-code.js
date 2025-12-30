@@ -32,24 +32,12 @@ exports.handler = async (event, context) => {
       return { statusCode: 404, headers, body: JSON.stringify({ error: 'Доступ не найден' }) };
     }
 
-    // 2. ПРОВЕРКА СТАТУСА - КРИТИЧНОЕ ИСПРАВЛЕНИЕ
-    if (accessData.status !== 'active') {
-      return {
-        statusCode: 403,
-        headers,
-        body: JSON.stringify({ 
-          error: 'Доступ не активирован', 
-          is_active: false // ← Оставляем старое поле для совместимости
-        })
-      };
-    }
-
-    // 3. Проверка активации (галочка в Supabase)
+    // 2. Проверка активации (галочка в Supabase)
     if (!accessData.is_active) {
       return {
         statusCode: 403,
         headers,
-        body: JSON.stringify({ error: 'Доступ отключен администратором', is_active: false })
+        body: JSON.stringify({ error: 'Доступ еще не активирован', is_active: false })
       };
     }
 
@@ -57,7 +45,7 @@ exports.handler = async (event, context) => {
     const capsUsed = accessData.caps_used || 0;
     const requestedUsage = parseInt(usage, 10) || 0;
 
-    // 4. Проверка лимитов
+    // 3. Проверка лимитов
     if (capsUsed + requestedUsage > capsLimit) {
       return {
         statusCode: 403,
@@ -66,7 +54,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 5. Списание капсов
+    // 4. Списание капсов
     let currentCapsUsed = capsUsed;
     if (requestedUsage > 0) {
       const { error: updateError } = await supabase
@@ -78,17 +66,15 @@ exports.handler = async (event, context) => {
       currentCapsUsed = capsUsed + requestedUsage;
     }
 
-    // 6. Возвращаем ОРИГИНАЛЬНЫЙ формат ответа (как было)
     return {
       statusCode: 200,
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         success: true,
-        code: accessData.code,
+        code: accessData.code, // Возвращаем код, чтобы ЛК его знал
         remaining: capsLimit - currentCapsUsed,
         caps_limit: capsLimit,
         caps_used: currentCapsUsed
-        // НЕ добавляем новые поля, чтобы не сломать bothub-bridge
       })
     };
 
