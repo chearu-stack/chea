@@ -133,11 +133,24 @@ async function loadCampaigns() {
             campaignCard.className = 'campaign-card';
             campaignCard.style.borderLeft = `4px solid ${campaign.color || '#dd6b20'}`;
             
-            // Форматируем дату
+            // ИСПРАВЛЕННЫЙ БЛОК: Форматируем дату
             let createdDate = '—';
-            if (campaign.created_at) {
-                const date = new Date(campaign.created_at);
-                createdDate = date.toLocaleDateString('ru-RU');
+            if (campaign.created_at && campaign.created_at !== "Invalid Date") {
+                // Если это уже отформатированная дата (например "29.12.2024")
+                if (typeof campaign.created_at === 'string' && /^\d{2}\.\d{2}\.\d{4}$/.test(campaign.created_at)) {
+                    createdDate = campaign.created_at;
+                } 
+                // Если это ISO строка или другой формат
+                else {
+                    try {
+                        const date = new Date(campaign.created_at);
+                        if (!isNaN(date.getTime())) {
+                            createdDate = date.toLocaleDateString('ru-RU');
+                        }
+                    } catch (e) {
+                        // Оставляем прочерк
+                    }
+                }
             }
             
             // Статус
