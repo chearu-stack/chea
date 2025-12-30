@@ -27,7 +27,8 @@ const checkStatus = require('./check-status');
 // +++ НОВЫЕ ИМПОРТЫ (корректные пути из той же папки) +++
 const getActiveCodes = require('./get-active-codes');
 const getPromoCodes = require('./get-promo-codes');
-const getActiveCampaign = require('./get-active-campaign'); // ← ДОБАВЛЕНО
+const getActiveCampaign = require('./get-active-campaign');
+const getAllCampaigns = require('./get-all-campaigns'); // ← ВОТ ЭТО ДОБАВЛЯЕМ
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 // Вспомогательная функция
@@ -65,7 +66,8 @@ app.get('/check-status', handleRequest(checkStatus));
 // +++ НОВЫЕ МАРШРУТЫ +++
 app.get('/get-active-codes', handleRequest(getActiveCodes));
 app.get('/get-promo-codes', handleRequest(getPromoCodes));
-app.get('/get-active-campaign', handleRequest(getActiveCampaign)); // ← ДОБАВЛЕНО
+app.get('/get-active-campaign', handleRequest(getActiveCampaign));
+app.get('/get-all-campaigns', handleRequest(getAllCampaigns)); // ← И ВОТ ЭТО ДОБАВЛЯЕМ
 // ++++++++++++++++++++++
 
 const PORT = process.env.PORT || 10000;
