@@ -33,6 +33,7 @@ exports.handler = async (event, context) => {
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         active: true,
+        code: data.code, // ← ДОБАВЛЕНО: уникальный код кампании для связи
         title: data.metadata?.title || 'Акция',
         description: data.metadata?.description || '',
         button_text: data.metadata?.button_text || 'Участвовать',
