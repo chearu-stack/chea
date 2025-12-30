@@ -421,38 +421,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ========== ПРОМО-АКЦИИ ==========
 
-   // --- 9.1 ПРОВЕРКА АКТИВНОЙ АКЦИИ (ИСПРАВЛЕНА) ---
-async function checkActiveCampaign() {
-    try {
-        const response = await fetch(`${API_BASE}/get-active-campaign`);
-        const campaign = await response.json();
-        
-        console.log('🎁 Проверка акции:', campaign.active ? 'Активна' : 'Нет акций');
-        console.log('🎁 Данные кампании с сервера:', campaign);
-        
-        // Сохраняем данные акции для определения типа
-        window.currentCampaign = campaign;
-        console.log('🎁 Сохранено в window.currentCampaign:', window.currentCampaign);
-        
-        if (campaign.active) {
-            // Баннер показываем ТОЛЬКО если пользователь ещё не участвовал
-            if (!hasParticipatedInPromo()) {
-                showPromoBanner(campaign); // Показываем баннер с кнопкой
-                showPromoHeroCard(campaign); // Показываем информационный Hero-card
-            } else {
-                // Уже участвовал — баннер НЕ показываем, только статус ожидания
-                const lastPromoCode = localStorage.getItem('lastPromoCode');
-                if (lastPromoCode) {
-                    showPromoWaitingStatus(lastPromoCode, campaign.package);
-                    // Запускаем проверку активации
-                    startActivationCheck();
+    // --- 9.1 ПРОВЕРКА АКТИВНОЙ АКЦИИ (ИСПРАВЛЕНА) ---
+    async function checkActiveCampaign() {
+        try {
+            const response = await fetch(`${API_BASE}/get-active-campaign`);
+            const campaign = await response.json();
+            
+            console.log('🎁 Проверка акции:', campaign.active ? 'Активна' : 'Нет акций');
+            console.log('🎁 Данные кампании с сервера:', campaign);
+            
+            // Сохраняем данные акции для определения типа
+            window.currentCampaign = campaign;
+            
+            if (campaign.active) {
+                // Баннер показываем ТОЛЬКО если пользователь ещё не участвовал
+                if (!hasParticipatedInPromo()) {
+                    showPromoBanner(campaign); // Показываем баннер с кнопкой
+                    showPromoHeroCard(campaign); // Показываем информационный Hero-card
+                } else {
+                    // Уже участвовал — баннер НЕ показываем, только статус ожидания
+                    const lastPromoCode = localStorage.getItem('lastPromoCode');
+                    if (lastPromoCode) {
+                        showPromoWaitingStatus(lastPromoCode, campaign.package);
+                        // Запускаем проверку активации
+                        startActivationCheck();
+                    }
                 }
             }
+        } catch (error) {
+            console.error('❌ Ошибка проверки акции:', error);
         }
-    } catch (error) {
-        console.error('❌ Ошибка проверки акции:', error);
     }
-}
 
     // --- 9.2 ПОКАЗ БАННЕРА ---
     function showPromoBanner(campaign) {
@@ -467,7 +466,7 @@ async function checkActiveCampaign() {
         description.textContent = campaign.description || 'Специальное предложение';
         banner.style.background = campaign.color || 'linear-gradient(90deg, #dd6b20, #ed8936)';
         
-        button.onclick = () => participateInPromo(campaign.package);
+        button.onclick = () => participateInPromo(campaign);
         banner.style.display = 'flex';
     }
 
@@ -529,24 +528,26 @@ async function checkActiveCampaign() {
         return timePassed < 30 * 24 * 60 * 60 * 1000;
     }
 
-            // --- 9.6 УЧАСТИЕ В АКЦИИ (ИСПРАВЛЕННАЯ) ---
-    async function participateInPromo(packageType) {
-        console.log('🎁 Участие в промо-акции:', packageType);
-        console.log('🎁 window.currentCampaign при создании:', window.currentCampaign);
-        console.log('🎁 Код кампании:', window.currentCampaign?.code);
+    // --- 9.6 УЧАСТИЕ В АКЦИИ (ИСПРАВЛЕННАЯ) ---
+    async function participateInPromo(campaign) {
+        console.log('🎁 Участие в промо-акции:', campaign);
         
         try {
+            // Генерируем промо-код
+            const promoCode = generatePromoIdentifier(campaign.package);
+            
+            // Отправляем запрос с campaign_code
             const response = await fetch(`${API_BASE}/generate-code`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    code: generatePromoIdentifier(packageType),
-                    package: packageType,
+                    code: promoCode,
+                    package: campaign.package,
                     caps_limit: 30000,
                     fingerprint: userFP,
                     metadata: { 
                         is_promo: true,
-                        campaign_code: window.currentCampaign?.code || ''
+                        campaign_code: campaign.code // Ключевое исправление: передаём код кампании
                     }
                 })
             });
@@ -554,14 +555,16 @@ async function checkActiveCampaign() {
             const data = await response.json();
             console.log('✅ Промо-код создан:', data);
             
-            localStorage.setItem('lastPromoCode', data.code);
+            // Сохраняем в localStorage
+            localStorage.setItem('lastPromoCode', promoCode);
             localStorage.setItem('promoTime', Date.now());
             
+            // Обновляем интерфейс
             document.getElementById('promo-banner').style.display = 'none';
             restoreOriginalHeroCard();
-            showPromoWaitingStatus(data.code, packageType);
+            showPromoWaitingStatus(promoCode, campaign);
             
-            // ЗАПУСКАЕМ ПРОВЕРКУ АКТИВАЦИИ ДЛЯ ПРОМО-КОДА
+            // Запускаем проверку активации
             startActivationCheck();
             
         } catch (error) {
@@ -582,25 +585,21 @@ async function checkActiveCampaign() {
         return `AMG25-${mm}${dd}${hh}${min}-${planLetter}${userFP.substring(0,2).toUpperCase()}`;
     }
 
-        // --- 9.8 СТАТУС "ОЖИДАНИЕ" ДЛЯ ПРОМО-КОДА (СЛОЖНАЯ ВЕРСИЯ С ИСПРАВЛЕНИЕМ) ---
-    function showPromoWaitingStatus(code, packageType) {
+    // --- 9.8 СТАТУС "ОЖИДАНИЕ" ДЛЯ ПРОМО-КОДА (ИСПРАВЛЕННАЯ) ---
+    function showPromoWaitingStatus(code, campaign) {
         const cardHeader = document.querySelector('.card-header');
         const cardBody = document.querySelector('.card-body');
         
         if (!cardHeader || !cardBody) return;
         
-        const planName = packageType === 'PROMO_BASIC' ? 'Базовый' : 
-                        packageType === 'PROMO_EXTENDED' ? 'Расширенный' : 'Профессиональный';
+        const planName = campaign.package === 'PROMO_BASIC' ? 'Базовый' : 
+                        campaign.package === 'PROMO_EXTENDED' ? 'Расширенный' : 'Профессиональный';
         
-        // ВОССТАНАВЛИВАЕМ ЛОГИКУ ОПРЕДЕЛЕНИЯ ТИПА АКЦИИ
+        // Определяем тип акции из данных кампании
         let actionText, telegramText, buttonText;
+        const title = campaign.title || '';
+        const description = campaign.description || '';
         
-        // БЕРЁМ ДАННЫЕ ИЗ window.currentCampaign - КАК БЫЛО В ИСХОДНОМ КОДЕ
-        const currentCampaign = window.currentCampaign || {};
-        const title = currentCampaign.title || '';
-        const description = currentCampaign.description || '';
-        
-        // ОРИГИНАЛЬНАЯ ЛОГИКА ОПРЕДЕЛЕНИЯ ТИПА АКЦИИ
         if (title.includes('тестировщик') || title.includes('тестирование') || 
             description.includes('тестировщик') || description.includes('тестирование')) {
             // АКЦИЯ ДЛЯ ТЕСТИРОВЩИКОВ
@@ -647,7 +646,7 @@ async function checkActiveCampaign() {
                    <i class="fab fa-telegram"></i> ${buttonText}
                 </a>
                 <p style="font-size: 0.8rem; color: #718096; margin-top: 15px;">
-                    ⚠️ После активации код будет действовать 30 дней
+                    ⚠️ После активации код будет действовать ${campaign.expires_days || 30} дней
                 </p>
             </div>
         `;
@@ -662,7 +661,7 @@ async function checkActiveCampaign() {
         setupTariffButtons();
         checkAndBlockTariffs();
         showWaitingStatus();
-        checkActiveCampaign(); // ← ПРОВЕРКА АКЦИЙ ДОБАВЛЕНА
+        checkActiveCampaign(); // ← ПРОВЕРКА АКЦИЙ
         setupPaymentPage();
         
         console.log('✅ Модуль инициализирован');
@@ -672,4 +671,4 @@ async function checkActiveCampaign() {
     }
 });
 
-console.log('✅ script.js загружен (с промо-акциями)');
+console.log('✅ script.js загружен (с исправленной промо-логикой)');
