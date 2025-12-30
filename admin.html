@@ -43,42 +43,46 @@
             </nav>
         </header>
 
-        <!-- БЛОК СТАТИСТИКИ -->
-        <div class="admin-stats-container">
-            <div class="stats-header">
-                <h2><i class="fas fa-chart-bar"></i> Сводка</h2>
-                <button onclick="loadAllData()" class="btn btn-primary">
-                    <i class="fas fa-sync-alt"></i> Обновить данные
-                </button>
-            </div>
-            
-            <div class="stats-cards" id="statsCards">
-                <!-- Карточки будут заполняться через JS -->
-                <div class="stat-card loading">
-                    <div class="stat-icon">⏳</div>
-                    <div class="stat-content">
-                        <div class="stat-label">Ожидает активации</div>
-                        <div class="stat-value">...</div>
-                    </div>
-                </div>
-                
-                <div class="stat-card loading">
-                    <div class="stat-icon">🎁</div>
-                    <div class="stat-content">
-                        <div class="stat-label">Промо-ожидают</div>
-                        <div class="stat-value">...</div>
-                    </div>
-                </div>
-                
-                <div class="stat-card loading">
-                    <div class="stat-icon">✅</div>
-                    <div class="stat-content">
-                        <div class="stat-label">Активные коды</div>
-                        <div class="stat-value">...</div>
-                    </div>
-                </div>
+       <!-- БЛОК СТАТИСТИКИ -->
+<div class="admin-stats-container">
+    <div class="stats-header">
+        <h2><i class="fas fa-chart-bar"></i> Сводка</h2>
+        <button onclick="loadAllData()" class="btn btn-primary">
+            <i class="fas fa-sync-alt"></i> Обновить данные
+        </button>
+    </div>
+    
+    <div class="stats-single-row" id="statsRow">
+        <!-- Три цифры в одной строке -->
+        <div class="stat-item">
+            <div class="stat-item-icon">⏳</div>
+            <div class="stat-item-content">
+                <div class="stat-item-label">Ожидает активации</div>
+                <div class="stat-item-value" id="statPending">0</div>
             </div>
         </div>
+        
+        <div class="stat-divider"></div>
+        
+        <div class="stat-item">
+            <div class="stat-item-icon">🎁</div>
+            <div class="stat-item-content">
+                <div class="stat-item-label">Промо-ожидают</div>
+                <div class="stat-item-value" id="statPromo">0</div>
+            </div>
+        </div>
+        
+        <div class="stat-divider"></div>
+        
+        <div class="stat-item">
+            <div class="stat-item-icon">✅</div>
+            <div class="stat-item-content">
+                <div class="stat-item-label">Активные коды</div>
+                <div class="stat-item-value" id="statActive">0</div>
+            </div>
+        </div>
+    </div>
+</div>
 
         <!-- ТАБЛИЦА ЗАЯВОК -->
         <div class="admin-table-container">
