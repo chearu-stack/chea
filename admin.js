@@ -1,5 +1,5 @@
 const API_BASE = 'https://chea.onrender.com';
-const ADMIN_PASS = "amg2025"; // Пароль в нижнем регистре
+// const ADMIN_PASS = "amg2025"; // Пароль в нижнем регистре
 
 // ========== АВТОРИЗАЦИЯ ==========
 
@@ -23,60 +23,73 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function checkAuth() {
+async function checkAuth() {
     const input = document.getElementById('adminPass');
     const enteredPass = input ? input.value : '';
     
-    console.log('🔑 Проверка пароля:', {
-        введено: `"${enteredPass}"`,
-        ожидается: `"${ADMIN_PASS}"`,
-        длина: `${enteredPass.length}/${ADMIN_PASS.length}`,
-        совпадение: enteredPass === ADMIN_PASS
-    });
+    console.log('🔑 Проверка пароля через БД...');
     
-    // Сравниваем БЕЗ trim() - пароль "amg2025" без пробелов
-    if (enteredPass === ADMIN_PASS) {
-        console.log('✅ Пароль верный');
-        sessionStorage.setItem('adminAuth', 'true');
+    // Визуальная обратная связь
+    const loginBtn = document.querySelector('.admin-login-btn');
+    if (loginBtn) {
+        loginBtn.disabled = true;
+        loginBtn.textContent = '⏳ Проверка...';
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/check-admin-pass`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: enteredPass })
+        });
         
-        // Визуальная обратная связь
-        const loginBtn = document.querySelector('.admin-login-btn');
-        if (loginBtn) {
-            loginBtn.textContent = '✅ Успешно!';
-            loginBtn.style.background = '#38a169';
-            loginBtn.disabled = true;
+        const data = await response.json();
+        console.log('📥 Ответ сервера:', data);
+        
+        if (data.valid) {
+            console.log('✅ Пароль верный (проверено через БД)');
+            sessionStorage.setItem('adminAuth', 'true');
+            
+            // Визуальная обратная связь
+            if (loginBtn) {
+                loginBtn.textContent = '✅ Успешно!';
+                loginBtn.style.background = '#38a169';
+            }
+            
+            // Перезагрузка с небольшой задержкой
+            setTimeout(() => {
+                console.log('🔄 Перезагрузка страницы...');
+                location.reload();
+            }, 800);
+        } else {
+            console.log('❌ Пароль неверный');
+            if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Войти';
+                loginBtn.style.background = '';
+            }
+            alert("❌ Неверный пароль");
+            if (input) {
+                input.value = '';
+                input.focus();
+                input.style.borderColor = '#e53e3e';
+                setTimeout(() => input.style.borderColor = '', 2000);
+            }
         }
-        
-        // Перезагрузка с небольшой задержкой
-        setTimeout(() => {
-            console.log('🔄 Перезагрузка страницы...');
-            location.reload();
-        }, 800);
-    } else {
-        console.log('❌ Пароль неверный');
-        alert("❌ Неверный пароль. Попробуйте: amg2025");
+    } catch (error) {
+        console.error('❌ Ошибка сети при проверке пароля:', error);
+        if (loginBtn) {
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'Войти';
+            loginBtn.style.background = '';
+        }
+        alert("❌ Ошибка соединения с сервером");
         if (input) {
             input.value = '';
             input.focus();
-            input.style.borderColor = '#e53e3e';
-            setTimeout(() => input.style.borderColor = '', 2000);
         }
     }
 }
-
-// Поддержка Enter в поле пароля
-document.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter' && document.getElementById('loginOverlay').style.display !== 'none') {
-        checkAuth();
-    }
-});
-
-function logout() {
-    sessionStorage.removeItem('adminAuth');
-    console.log('🚪 Выход из системы');
-    location.reload();
-}
-
 // ========== НОРМАЛИЗАЦИЯ ТАРИФОВ ==========
 
 function normalizeTariff(tariff) {
