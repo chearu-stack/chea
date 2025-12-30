@@ -527,7 +527,7 @@ async function checkActiveCampaign() {
         return timePassed < 30 * 24 * 60 * 60 * 1000;
     }
 
-        // --- 9.6 УЧАСТИЕ В АКЦИИ (ИСПРАВЛЕННАЯ) ---
+            // --- 9.6 УЧАСТИЕ В АКЦИИ (ИСПРАВЛЕННАЯ) ---
     async function participateInPromo(packageType) {
         console.log('🎁 Участие в промо-акции:', packageType);
         
@@ -540,7 +540,10 @@ async function checkActiveCampaign() {
                     package: packageType,
                     caps_limit: 30000,
                     fingerprint: userFP,
-                    metadata: { is_promo: true }
+                    metadata: { 
+                        is_promo: true,
+                        campaign_code: window.currentCampaign?.code || ''
+                    }
                 })
             });
             
