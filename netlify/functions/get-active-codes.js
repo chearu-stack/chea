@@ -21,6 +21,7 @@ exports.handler = async (event, context) => {
       .from('access_codes')
       .select('code, package, activated_at, caps_used, caps_limit, is_active')
       .eq('is_active', true)
+      .not('package', 'ilike', 'PROMO_%') // ← ИСКЛЮЧАЕМ ВСЕ ПРОМО-ЗАПИСИ
       .order('activated_at', { ascending: false });
 
     if (error) throw error;
