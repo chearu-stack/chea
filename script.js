@@ -1,6 +1,6 @@
 // ===================================================================
 // АДВОКАТ МЕДНОГО ГРОША — script.js
-// ВЕРСИЯ С ПРОМО-АКЦИЯМИ, ПРОГРЕСС-БАРОМ И ИСПРАВЛЕННЫМИ ССЫЛКАМИ
+// ВЕРСИЯ С ПРОМО-АКЦИЯМИ И ПРАВИЛЬНЫМИ ССЫЛКАМИ ЧЕРЕЗ CHAT.HTML
 // ===================================================================
 
 // Глобальные константы
@@ -264,34 +264,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-              const data = await response.json();
-console.log('Результат проверки:', data);
-
-// ИСПРАВЛЕНИЕ: проверяем не только active, но и метаданные
-if (data.active === true) {
-    // ДЛЯ ПЛАТНЫХ ТАРИФОВ: проверяем, что код подтверждён (is_activated === true)
-    // или что remaining > 0 (если лимит не израсходован)
-    if (lastOrderID && data.is_activated !== true && data.remaining <= 0) {
-        console.log('Тариф создан, но не активирован администратором. Ждём...');
-        return; // Не показываем статус "Активирован"
+                const data = await response.json();
+                console.log('Результат проверки:', data);
+                
+                if (data.active === true) {
+                    if (lastPromoCode) {
+                        showPromoActivatedStatus(lastPromoCode);
+                    } else {
+                        showActivatedStatus();
+                    }
+                    clearInterval(activationCheckInterval);
+                }
+                
+            } catch (error) {
+                console.log('Ошибка проверки активации:', error);
+            }
+        }, 10000);
     }
     
-    // ДЛЯ ПРОМО-КОДОВ: проверяем, что код подтверждён
-    if (lastPromoCode && data.is_activated !== true) {
-        console.log('Промо-код создан, но не активирован. Ждём...');
-        return;
-    }
-    
-    // Только если все проверки пройдены — показываем статус
-    if (lastPromoCode) {
-        showPromoActivatedStatus(lastPromoCode);
-    } else {
-        showActivatedStatus();
-    }
-    clearInterval(activationCheckInterval);
-}
-    
-    // --- 7. СТАТУС "АКТИВИРОВАН" ДЛЯ ПЛАТНЫХ ТАРИФОВ (С ПРОГРЕСС-БАРОМ И ИСПРАВЛЕННОЙ ССЫЛКОЙ) ---
+    // --- 7. СТАТУС "АКТИВИРОВАН" ДЛЯ ПЛАТНЫХ ТАРИФОВ (С ПРАВИЛЬНОЙ ССЫЛКОЙ) ---
     async function showActivatedStatus() {
         const savedOrderID = localStorage.getItem('lastOrderID');
         if (!savedOrderID) return;
@@ -306,13 +297,6 @@ if (data.active === true) {
                 return;
             }
             
-            // ВОССТАНОВЛЕННАЯ ЛОГИКА ПРОГРЕСС-БАРА
-            const remaining = status.remaining || 0;
-            const total = status.caps_limit || 100000;
-            const pct = Math.max(5, Math.min(100, Math.round((remaining / total) * 100)));
-            
-            const barColor = pct < 20 ? '#ff4d4d' : (pct < 50 ? '#ffa500' : '#00ff88');
-            
             const cardHeader = document.querySelector('.card-header');
             const cardBody = document.querySelector('.card-body');
             
@@ -323,12 +307,9 @@ if (data.active === true) {
                         <p style="margin-bottom: 20px; font-weight: 600;">
                             <strong>Ваш пакет полностью готов.</strong> Все инструменты цифрового адвоката разблокированы.
                         </p>
-                        
-                                      
-                        <!-- ИСПРАВЛЕННАЯ ССЫЛКА (защита от undefined) -->
-                        <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${savedOrderID ? encodeURIComponent(savedOrderID) : ''}" 
+                        <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${savedOrderID}" 
                            target="_blank"
-                           style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 15px;">
+                           style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600;">
                            ВХОД В ЛИЧНЫЙ КАБИНЕТ
                         </a>
                         <p style="font-size: 0.9rem; color: #718096; margin-top: 15px;">
@@ -336,13 +317,6 @@ if (data.active === true) {
                         </p>
                     </div>
                 `;
-                
-                // Инициализация прогресс-бара в DOM
-                const bar = document.getElementById('res-bar');
-                if (bar) {
-                    bar.style.width = pct + '%';
-                    bar.style.backgroundColor = barColor;
-                }
             }
             
         } catch (error) {
@@ -351,7 +325,7 @@ if (data.active === true) {
         }
     }
     
-    // --- 7.1 СТАТУС "АКТИВИРОВАН" ДЛЯ ПРОМО-КОДА (С ПРОГРЕСС-БАРОМ И ИСПРАВЛЕННОЙ ССЫЛКОЙ) ---
+    // --- 7.1 СТАТУС "АКТИВИРОВАН" ДЛЯ ПРОМО-КОДА (С ПРАВИЛЬНОЙ ССЫЛКОЙ) ---
     async function showPromoActivatedStatus(promoCode) {
         if (!promoCode) return;
         
@@ -364,13 +338,6 @@ if (data.active === true) {
                 return;
             }
             
-            // ВОССТАНОВЛЕННАЯ ЛОГИКА ПРОГРЕСС-БАРА
-            const remaining = status.remaining || 0;
-            const total = status.caps_limit || 100000;
-            const pct = Math.max(5, Math.min(100, Math.round((remaining / total) * 100)));
-            
-            const barColor = pct < 20 ? '#ff4d4d' : (pct < 50 ? '#ffa500' : '#00ff88');
-            
             const cardHeader = document.querySelector('.card-header');
             const cardBody = document.querySelector('.card-body');
             
@@ -381,24 +348,9 @@ if (data.active === true) {
                         <p style="margin-bottom: 20px; font-weight: 600;">
                             <strong>Ваш промо-доступ активирован!</strong> Все инструменты цифрового адвоката разблокированы.
                         </p>
-                        
-                        <!-- ВОССТАНОВЛЕННЫЙ ПРОГРЕСС-БАР -->
-                        <div style="background: #e0e0e0; border-radius: 10px; height: 20px; margin: 20px auto; width: 80%; position: relative; overflow: hidden;">
-                            <div id="res-bar-promo" style="width: ${pct}%; height: 100%; background-color: ${barColor}; border-radius: 10px; transition: width 0.5s ease;">
-                                <div style="position: absolute; width: 100%; text-align: center; font-size: 0.8rem; font-weight: bold; color: #000; line-height: 20px;">
-                                    ${pct}%
-                                </div>
-                            </div>
-                        </div>
-                        <p style="font-size: 0.9rem; color: #718096; margin-bottom: 20px;">
-                            Ресурс системы: ${pct}%
-                        </p>
-                        <!-- КОНЕЦ ПРОГРЕСС-БАРА -->
-                        
-                        <!-- ИСПРАВЛЕННАЯ ССЫЛКА (защита от undefined) -->
-                        <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${promoCode ? encodeURIComponent(promoCode) : ''}" 
+                        <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${promoCode}" 
                            target="_blank"
-                           style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 15px;">
+                           style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600;">
                            ВХОД В ЛИЧНЫЙ КАБИНЕТ
                         </a>
                         <p style="font-size: 0.9rem; color: #718096; margin-top: 15px;">
@@ -409,13 +361,6 @@ if (data.active === true) {
                         </p>
                     </div>
                 `;
-                
-                // Инициализация прогресс-бара в DOM
-                const bar = document.getElementById('res-bar-promo');
-                if (bar) {
-                    bar.style.width = pct + '%';
-                    bar.style.backgroundColor = barColor;
-                }
             }
             
         } catch (error) {
@@ -711,4 +656,4 @@ if (data.active === true) {
     }
 });
 
-console.log('✅ script.js загружен (с промо-акциями, прогресс-баром и исправленными ссылками)');
+console.log('✅ script.js загружен (с промо-акциями и правильными ссылками на chat.html)');
