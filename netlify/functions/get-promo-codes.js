@@ -20,7 +20,8 @@ exports.handler = async (event, context) => {
     const { data, error } = await supabase
       .from('access_codes')
       .select('*')
-      .like('package', 'PROMO_%');
+      .like('package', 'PROMO_%')
+      .not('package', 'eq', 'PROMO_CAMPAIGN'); // ← ВОТ ЭТА СТРОЧКА ФИЛЬТРУЕТ КАМПАНИИ!
 
     if (error) throw error;
 
