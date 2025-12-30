@@ -1,6 +1,6 @@
 // ===================================================================
 // АДВОКАТ МЕДНОГО ГРОША — script.js
-// ВЕРСИЯ С ПРОМО-АКЦИЯМИ И ПРАВИЛЬНЫМИ ССЫЛКАМИ ЧЕРЕЗ CHAT.HTML
+// ВЕРСИЯ С ПРОМО-АКЦИЯМИ, ПРОГРЕСС-БАРОМ И ИСПРАВЛЕННЫМИ ССЫЛКАМИ
 // ===================================================================
 
 // Глобальные константы
@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 10000);
     }
     
-    // --- 7. СТАТУС "АКТИВИРОВАН" ДЛЯ ПЛАТНЫХ ТАРИФОВ (С ПРАВИЛЬНОЙ ССЫЛКОЙ) ---
+    // --- 7. СТАТУС "АКТИВИРОВАН" ДЛЯ ПЛАТНЫХ ТАРИФОВ (С ПРОГРЕСС-БАРОМ И ИСПРАВЛЕННОЙ ССЫЛКОЙ) ---
     async function showActivatedStatus() {
         const savedOrderID = localStorage.getItem('lastOrderID');
         if (!savedOrderID) return;
@@ -297,28 +297,55 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
+            // ВОССТАНОВЛЕННАЯ ЛОГИКА ПРОГРЕСС-БАРА
+            const remaining = status.remaining || 0;
+            const total = status.caps_limit || 100000;
+            const pct = Math.max(5, Math.min(100, Math.round((remaining / total) * 100)));
+            
+            const barColor = pct < 20 ? '#ff4d4d' : (pct < 50 ? '#ffa500' : '#00ff88');
+            
             const cardHeader = document.querySelector('.card-header');
             const cardBody = document.querySelector('.card-body');
             
             if (cardHeader && cardBody) {
-                // ИСПРАВЛЕНИЕ 1: Защита от undefined в ссылке
-                const linkCode = savedOrderID || (status && status.code);
                 cardHeader.innerHTML = `<i class="fas fa-check-circle"></i> Статус: АКТИВИРОВАН`;
                 cardBody.innerHTML = `
                     <div style="text-align: center;">
                         <p style="margin-bottom: 20px; font-weight: 600;">
                             <strong>Ваш пакет полностью готов.</strong> Все инструменты цифрового адвоката разблокированы.
                         </p>
-                        <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${linkCode ? encodeURIComponent(linkCode) : ''}" 
+                        
+                        <!-- ВОССТАНОВЛЕННЫЙ ПРОГРЕСС-БАР -->
+                        <div style="background: #e0e0e0; border-radius: 10px; height: 20px; margin: 20px auto; width: 80%; position: relative; overflow: hidden;">
+                            <div id="res-bar" style="width: ${pct}%; height: 100%; background-color: ${barColor}; border-radius: 10px; transition: width 0.5s ease;">
+                                <div style="position: absolute; width: 100%; text-align: center; font-size: 0.8rem; font-weight: bold; color: #000; line-height: 20px;">
+                                    ${pct}%
+                                </div>
+                            </div>
+                        </div>
+                        <p style="font-size: 0.9rem; color: #718096; margin-bottom: 20px;">
+                            Ресурс системы: ${pct}%
+                        </p>
+                        <!-- КОНЕЦ ПРОГРЕСС-БАРА -->
+                        
+                        <!-- ИСПРАВЛЕННАЯ ССЫЛКА (защита от undefined) -->
+                        <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${savedOrderID ? encodeURIComponent(savedOrderID) : ''}" 
                            target="_blank"
-                           style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600; ${!linkCode ? 'pointer-events: none; opacity: 0.6;' : ''}">
+                           style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 15px;">
                            ВХОД В ЛИЧНЫЙ КАБИНЕТ
                         </a>
                         <p style="font-size: 0.9rem; color: #718096; margin-top: 15px;">
-                            Код доступа: <code>${linkCode || 'не определён'}</code>
+                            Код доступа: <code>${savedOrderID}</code>
                         </p>
                     </div>
                 `;
+                
+                // Инициализация прогресс-бара в DOM
+                const bar = document.getElementById('res-bar');
+                if (bar) {
+                    bar.style.width = pct + '%';
+                    bar.style.backgroundColor = barColor;
+                }
             }
             
         } catch (error) {
@@ -327,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // --- 7.1 СТАТУС "АКТИВИРОВАН" ДЛЯ ПРОМО-КОДА (С ПРАВИЛЬНОЙ ССЫЛКОЙ) ---
+    // --- 7.1 СТАТУС "АКТИВИРОВАН" ДЛЯ ПРОМО-КОДА (С ПРОГРЕСС-БАРОМ И ИСПРАВЛЕННОЙ ССЫЛКОЙ) ---
     async function showPromoActivatedStatus(promoCode) {
         if (!promoCode) return;
         
@@ -340,31 +367,58 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
+            // ВОССТАНОВЛЕННАЯ ЛОГИКА ПРОГРЕСС-БАРА
+            const remaining = status.remaining || 0;
+            const total = status.caps_limit || 100000;
+            const pct = Math.max(5, Math.min(100, Math.round((remaining / total) * 100)));
+            
+            const barColor = pct < 20 ? '#ff4d4d' : (pct < 50 ? '#ffa500' : '#00ff88');
+            
             const cardHeader = document.querySelector('.card-header');
             const cardBody = document.querySelector('.card-body');
             
             if (cardHeader && cardBody) {
-                // ИСПРАВЛЕНИЕ 2: Защита от undefined в ссылке
-                const linkCode = promoCode;
                 cardHeader.innerHTML = `<i class="fas fa-check-circle"></i> Акция: АКТИВИРОВАНА`;
                 cardBody.innerHTML = `
                     <div style="text-align: center;">
                         <p style="margin-bottom: 20px; font-weight: 600;">
                             <strong>Ваш промо-доступ активирован!</strong> Все инструменты цифрового адвоката разблокированы.
                         </p>
-                        <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${linkCode ? encodeURIComponent(linkCode) : ''}" 
+                        
+                        <!-- ВОССТАНОВЛЕННЫЙ ПРОГРЕСС-БАР -->
+                        <div style="background: #e0e0e0; border-radius: 10px; height: 20px; margin: 20px auto; width: 80%; position: relative; overflow: hidden;">
+                            <div id="res-bar-promo" style="width: ${pct}%; height: 100%; background-color: ${barColor}; border-radius: 10px; transition: width 0.5s ease;">
+                                <div style="position: absolute; width: 100%; text-align: center; font-size: 0.8rem; font-weight: bold; color: #000; line-height: 20px;">
+                                    ${pct}%
+                                </div>
+                            </div>
+                        </div>
+                        <p style="font-size: 0.9rem; color: #718096; margin-bottom: 20px;">
+                            Ресурс системы: ${pct}%
+                        </p>
+                        <!-- КОНЕЦ ПРОГРЕСС-БАРА -->
+                        
+                        <!-- ИСПРАВЛЕННАЯ ССЫЛКА (защита от undefined) -->
+                        <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${promoCode ? encodeURIComponent(promoCode) : ''}" 
                            target="_blank"
-                           style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600; ${!linkCode ? 'pointer-events: none; opacity: 0.6;' : ''}">
+                           style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 15px;">
                            ВХОД В ЛИЧНЫЙ КАБИНЕТ
                         </a>
                         <p style="font-size: 0.9rem; color: #718096; margin-top: 15px;">
-                            Промо-код: <code>${linkCode || 'не определён'}</code>
+                            Промо-код: <code>${promoCode}</code>
                         </p>
                         <p style="font-size: 0.8rem; color: #718096; margin-top: 10px;">
                             ⚠️ Доступ действует 30 дней с момента активации
                         </p>
                     </div>
                 `;
+                
+                // Инициализация прогресс-бара в DOM
+                const bar = document.getElementById('res-bar-promo');
+                if (bar) {
+                    bar.style.width = pct + '%';
+                    bar.style.backgroundColor = barColor;
+                }
             }
             
         } catch (error) {
@@ -660,4 +714,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-console.log('✅ script.js загружен (с промо-акциями и правильными ссылками на chat.html)');
+console.log('✅ script.js загружен (с промо-акциями, прогресс-баром и исправленными ссылками)');
