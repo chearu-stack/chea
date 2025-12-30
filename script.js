@@ -315,19 +315,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <strong>Ваш пакет полностью готов.</strong> Все инструменты цифрового адвоката разблокированы.
                         </p>
                         
-                        <!-- ВОССТАНОВЛЕННЫЙ ПРОГРЕСС-БАР -->
-                        <div style="background: #e0e0e0; border-radius: 10px; height: 20px; margin: 20px auto; width: 80%; position: relative; overflow: hidden;">
-                            <div id="res-bar" style="width: ${pct}%; height: 100%; background-color: ${barColor}; border-radius: 10px; transition: width 0.5s ease;">
-                                <div style="position: absolute; width: 100%; text-align: center; font-size: 0.8rem; font-weight: bold; color: #000; line-height: 20px;">
-                                    ${pct}%
-                                </div>
-                            </div>
-                        </div>
-                        <p style="font-size: 0.9rem; color: #718096; margin-bottom: 20px;">
-                            Ресурс системы: ${pct}%
-                        </p>
-                        <!-- КОНЕЦ ПРОГРЕСС-БАРА -->
-                        
+                                      
                         <!-- ИСПРАВЛЕННАЯ ССЫЛКА (защита от undefined) -->
                         <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${savedOrderID ? encodeURIComponent(savedOrderID) : ''}" 
                            target="_blank"
