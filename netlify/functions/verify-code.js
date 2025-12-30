@@ -32,12 +32,25 @@ exports.handler = async (event, context) => {
       return { statusCode: 404, headers, body: JSON.stringify({ error: 'Доступ не найден' }) };
     }
 
-    // 2. Проверка активации (галочка в Supabase)
+    // 2. ПРОВЕРКА СТАТУСА - ДОБАВЛЕНО!
+    if (accessData.status !== 'active') {
+      return {
+        statusCode: 403,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Доступ не активирован', 
+          status: accessData.status,
+          required_status: 'active'
+        })
+      };
+    }
+
+    // 3. Проверка активации (галочка в Supabase)
     if (!accessData.is_active) {
       return {
         statusCode: 403,
         headers,
-        body: JSON.stringify({ error: 'Доступ еще не активирован', is_active: false })
+        body: JSON.stringify({ error: 'Доступ отключен администратором', is_active: false })
       };
     }
 
@@ -45,7 +58,7 @@ exports.handler = async (event, context) => {
     const capsUsed = accessData.caps_used || 0;
     const requestedUsage = parseInt(usage, 10) || 0;
 
-    // 3. Проверка лимитов
+    // 4. Проверка лимитов
     if (capsUsed + requestedUsage > capsLimit) {
       return {
         statusCode: 403,
@@ -54,7 +67,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 4. Списание капсов
+    // 5. Списание капсов
     let currentCapsUsed = capsUsed;
     if (requestedUsage > 0) {
       const { error: updateError } = await supabase
@@ -74,7 +87,8 @@ exports.handler = async (event, context) => {
         code: accessData.code, // Возвращаем код, чтобы ЛК его знал
         remaining: capsLimit - currentCapsUsed,
         caps_limit: capsLimit,
-        caps_used: currentCapsUsed
+        caps_used: currentCapsUsed,
+        status: accessData.status // Возвращаем статус для отладки
       })
     };
 
