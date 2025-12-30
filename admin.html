@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AMG — Панель заявок</title>
+    <title>AMG — Админ-панель</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="admin.css">
 </head>
@@ -17,21 +17,78 @@
     </div>
 
     <div id="adminPage" class="admin-content" style="display: none;">
+        <!-- ШАПКА С ЛОГО И МЕНЮ -->
         <header class="admin-header">
-            <h1>Входящие заявки</h1>
-            <div class="header-actions">
-                <div class="admin-nav">
-                    <a href="admin.html" class="nav-link active">Заявки</a>
-                    <a href="admin_active.html" class="nav-link">Активные</a>
-                    <a href="admin_promo.html" class="nav-link">Промо</a>
+            <div class="admin-header-top">
+                <div class="admin-logo">
+                    <div class="logo-icon">⚖️</div>
+                    <div class="logo-text">
+                        <h1>АМГ | Адвокат Медного Гроша</h1>
+                        <p class="logo-subtitle">Админ-панель управления</p>
+                    </div>
                 </div>
                 <button onclick="logout()" class="admin-logout-btn">Выйти</button>
             </div>
+            
+            <nav class="admin-nav">
+                <a href="admin.html" class="nav-link active">
+                    <i class="fas fa-inbox"></i> Заявки
+                </a>
+                <a href="admin_active.html" class="nav-link">
+                    <i class="fas fa-check-circle"></i> Активные
+                </a>
+                <a href="admin_promo.html" class="nav-link">
+                    <i class="fas fa-gift"></i> Промо
+                </a>
+            </nav>
         </header>
 
+        <!-- БЛОК СТАТИСТИКИ -->
+        <div class="admin-stats-container">
+            <div class="stats-header">
+                <h2><i class="fas fa-chart-bar"></i> Сводка</h2>
+                <button onclick="loadAllData()" class="btn btn-primary">
+                    <i class="fas fa-sync-alt"></i> Обновить данные
+                </button>
+            </div>
+            
+            <div class="stats-cards" id="statsCards">
+                <!-- Карточки будут заполняться через JS -->
+                <div class="stat-card loading">
+                    <div class="stat-icon">⏳</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Ожидает активации</div>
+                        <div class="stat-value">...</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card loading">
+                    <div class="stat-icon">🎁</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Промо-ожидают</div>
+                        <div class="stat-value">...</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card loading">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Активные коды</div>
+                        <div class="stat-value">...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ТАБЛИЦА ЗАЯВОК -->
         <div class="admin-table-container">
-            <div class="admin-table-actions">
-                <button onclick="loadOrders()" class="btn btn-secondary">Обновить список</button>
+            <div class="table-header">
+                <h3><i class="fas fa-list"></i> Входящие заявки</h3>
+                <div class="table-actions">
+                    <button onclick="loadOrders()" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> Обновить список
+                    </button>
+                </div>
             </div>
 
             <table class="admin-orders-table">
