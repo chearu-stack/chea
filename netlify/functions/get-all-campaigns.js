@@ -29,53 +29,47 @@ exports.handler = async (event, context) => {
     // Обрабатываем кампании с подсчётом промо-кодов
     const enrichedCampaigns = await Promise.all(
       (campaigns || []).map(async (campaign) => {
-        // Парсим metadata
-        let metadata = {};
-        try {
-          if (typeof campaign.metadata === 'string') {
-            metadata = JSON.parse(campaign.metadata);
-          } else if (campaign.metadata && typeof campaign.metadata === 'object') {
-            metadata = campaign.metadata;
-          }
-        } catch (e) {
-          metadata = {};
-        }
-
-        // 1. Генерируем уникальный campaign_code для связи
-        // Используем существующий campaign_id из metadata или создаём из code кампании
-        const campaignCode = metadata.campaign_id || `CAMPAIGN_${campaign.code}`;
-        
-        // 2. Дата создания
+        // 1. Дата создания — берём из metadata или используем текущую
         let createdDate = '—';
         let rawDate = null;
-        const dateSources = [metadata.created_at, campaign.activated_at];
         
-        for (const dateStr of dateSources) {
-          if (dateStr) {
+        if (campaign.metadata?.created_at) {
             try {
-              const date = new Date(dateStr);
-              if (!isNaN(date.getTime())) {
-                createdDate = date.toLocaleDateString('ru-RU');
-                rawDate = dateStr;
-                break;
-              }
+                const date = new Date(campaign.metadata.created_at);
+                if (!isNaN(date.getTime())) {
+                    createdDate = date.toLocaleDateString('ru-RU');
+                    rawDate = campaign.metadata.created_at;
+                }
             } catch (e) {
-              continue;
+                // Оставляем прочерк
             }
-          }
+        }
+        
+        // Если в metadata нет даты, пробуем activated_at
+        if (createdDate === '—' && campaign.activated_at) {
+            try {
+                const date = new Date(campaign.activated_at);
+                if (!isNaN(date.getTime())) {
+                    createdDate = date.toLocaleDateString('ru-RU');
+                    rawDate = campaign.activated_at;
+                }
+            } catch (e) {
+                // Оставляем прочерк
+            }
         }
 
-        // 3. Подсчитываем промо-коды для ЭТОЙ КОНКРЕТНОЙ КАМПАНИИ
+        // 2. Срок действия — берём из metadata или дефолт 30
+        const expiresDays = campaign.metadata?.expires_days || 30;
+
+        // 3. ПОДСЧЁТ ПРОМО-КОДОВ ДЛЯ ЭТОЙ КАМПАНИИ
         let promoCount = 0;
-        
         try {
-          // Ищем промо-коды, у которых в metadata есть campaign_code, равный нашему
           const { count, error: countError } = await supabase
             .from('access_codes')
             .select('*', { count: 'exact', head: true })
             .in('package', ['PROMO_BASIC', 'PROMO_EXTENDED', 'PROMO_SUBSCRIPTION'])
-            .or(`metadata->>campaign_code.eq.${campaignCode},metadata->>campaign_id.eq.${campaignCode}`);
-          
+            .eq('metadata->>campaign_code', campaign.code); // Ключевое исправление: ищем по campaign_code
+
           if (!countError) {
             promoCount = count || 0;
           }
@@ -83,30 +77,26 @@ exports.handler = async (event, context) => {
           console.warn(`Не удалось посчитать коды для кампании ${campaign.code}:`, countErr.message);
         }
 
-        // 4. Срок действия
-        const expiresDays = metadata.expires_days || 30;
-
         return {
-          code: campaign.code, // оригинальный код записи в БД
-          campaign_code: campaignCode, // уникальный идентификатор кампании для связи
-          title: metadata.title || 'Без названия',
-          description: metadata.description || '',
+          code: campaign.code,
+          title: campaign.metadata?.title || 'Без названия',
+          description: campaign.metadata?.description || '',
           is_active: campaign.is_active === true,
           created_at: createdDate,
           created_at_raw: rawDate,
-          color: metadata.color || '#dd6b20',
-          package: metadata.package || 'PROMO_BASIC',
+          color: campaign.metadata?.color || '#dd6b20',
+          package: campaign.metadata?.package || 'PROMO_BASIC',
           expires_days: expiresDays,
-          promo_codes_count: promoCount,
-          metadata: metadata
+          promo_codes_count: promoCount, // Теперь показывает реальное количество
+          metadata: campaign.metadata || {}
         };
       })
     );
 
     // Сортируем по дате (новые сверху)
     enrichedCampaigns.sort((a, b) => {
-      if (!a.created_at_raw || !b.created_at_raw) return 0;
-      return new Date(b.created_at_raw) - new Date(a.created_at_raw);
+        if (!a.created_at_raw || !b.created_at_raw) return 0;
+        return new Date(b.created_at_raw) - new Date(a.created_at_raw);
     });
 
     return {
