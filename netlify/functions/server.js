@@ -24,12 +24,13 @@ const testBothub = require('./test-bothub');
 const proxy = require('./proxy');
 const deleteCode = require('./delete-code');
 const checkStatus = require('./check-status');
-// +++ НОВЫЕ ИМПОРТЫ (корректные пути из той же папки) +++
+// +++ НОВЫЕ ИМПОРТЫ +++
 const getActiveCodes = require('./get-active-codes');
 const getPromoCodes = require('./get-promo-codes');
 const getActiveCampaign = require('./get-active-campaign');
-const getAllCampaigns = require('./get-all-campaigns'); // ← ВОТ ЭТО ДОБАВЛЯЕМ
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+const getAllCampaigns = require('./get-all-campaigns');
+const checkAdminPass = require('./check-admin-pass'); // ← ДОБАВЛЕН ЭТОТ ИМПОРТ
+// ++++++++++++++++++++
 
 // Вспомогательная функция
 const createNetlifyEvent = (req) => ({
@@ -67,7 +68,8 @@ app.get('/check-status', handleRequest(checkStatus));
 app.get('/get-active-codes', handleRequest(getActiveCodes));
 app.get('/get-promo-codes', handleRequest(getPromoCodes));
 app.get('/get-active-campaign', handleRequest(getActiveCampaign));
-app.get('/get-all-campaigns', handleRequest(getAllCampaigns)); // ← И ВОТ ЭТО ДОБАВЛЯЕМ
+app.get('/get-all-campaigns', handleRequest(getAllCampaigns));
+app.post('/check-admin-pass', handleRequest(checkAdminPass)); // ← ДОБАВЛЕН ЭТОТ МАРШРУТ
 // ++++++++++++++++++++++
 
 const PORT = process.env.PORT || 10000;
