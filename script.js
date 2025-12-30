@@ -428,9 +428,11 @@ async function checkActiveCampaign() {
         const campaign = await response.json();
         
         console.log('🎁 Проверка акции:', campaign.active ? 'Активна' : 'Нет акций');
+        console.log('🎁 Данные кампании с сервера:', campaign);
         
         // Сохраняем данные акции для определения типа
         window.currentCampaign = campaign;
+        console.log('🎁 Сохранено в window.currentCampaign:', window.currentCampaign);
         
         if (campaign.active) {
             // Баннер показываем ТОЛЬКО если пользователь ещё не участвовал
@@ -530,6 +532,8 @@ async function checkActiveCampaign() {
             // --- 9.6 УЧАСТИЕ В АКЦИИ (ИСПРАВЛЕННАЯ) ---
     async function participateInPromo(packageType) {
         console.log('🎁 Участие в промо-акции:', packageType);
+        console.log('🎁 window.currentCampaign при создании:', window.currentCampaign);
+        console.log('🎁 Код кампании:', window.currentCampaign?.code);
         
         try {
             const response = await fetch(`${API_BASE}/generate-code`, {
