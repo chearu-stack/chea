@@ -32,15 +32,14 @@ exports.handler = async (event, context) => {
       return { statusCode: 404, headers, body: JSON.stringify({ error: 'Доступ не найден' }) };
     }
 
-    // 2. ПРОВЕРКА СТАТУСА - ДОБАВЛЕНО!
+    // 2. ПРОВЕРКА СТАТУСА - КРИТИЧНОЕ ИСПРАВЛЕНИЕ
     if (accessData.status !== 'active') {
       return {
         statusCode: 403,
         headers,
         body: JSON.stringify({ 
           error: 'Доступ не активирован', 
-          status: accessData.status,
-          required_status: 'active'
+          is_active: false // ← Оставляем старое поле для совместимости
         })
       };
     }
@@ -79,16 +78,17 @@ exports.handler = async (event, context) => {
       currentCapsUsed = capsUsed + requestedUsage;
     }
 
+    // 6. Возвращаем ОРИГИНАЛЬНЫЙ формат ответа (как было)
     return {
       statusCode: 200,
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         success: true,
-        code: accessData.code, // Возвращаем код, чтобы ЛК его знал
+        code: accessData.code,
         remaining: capsLimit - currentCapsUsed,
         caps_limit: capsLimit,
-        caps_used: currentCapsUsed,
-        status: accessData.status // Возвращаем статус для отладки
+        caps_used: currentCapsUsed
+        // НЕ добавляем новые поля, чтобы не сломать bothub-bridge
       })
     };
 
