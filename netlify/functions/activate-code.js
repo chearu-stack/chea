@@ -27,7 +27,26 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Подготовка данных
+    // 1. СНАЧАЛА проверяем, существует ли код в БД
+    const { data: existingCode, error: fetchError } = await supabase
+      .from('access_codes')
+      .select('id, code, package, is_active')
+      .eq('code', code)
+      .single();
+
+    if (fetchError || !existingCode) {
+      return { 
+        statusCode: 404, 
+        headers, 
+        body: JSON.stringify({ 
+          success: false, 
+          error: 'Код не найден в базе данных',
+          code: code
+        }) 
+      };
+    }
+
+    // 2. Подготовка данных для обновления
     const newLimit = limit ? parseInt(limit) : null;
     const activateFlag = active === 'true';
 
@@ -42,33 +61,38 @@ exports.handler = async (event, context) => {
       updateData.caps_limit = newLimit;
     }
 
-    // ВАЖНО: Заменили .single() на .maybeSingle()
-    const { data, error } = await supabase
-      .from('access_codes') 
+    // 3. Обновляем существующую запись
+    const { data: updatedData, error: updateError } = await supabase
+      .from('access_codes')
       .update(updateData)
       .eq('code', code)
       .select()
-      .maybeSingle(); // <--- Исправлено здесь
+      .single();
 
-    if (error) throw error;
+    if (updateError) throw updateError;
 
     return {
       statusCode: 200,
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         success: true, 
-        message: `Activated: ${code}`,
+        message: `Активирован: ${code}`,
         is_active: activateFlag,
         caps_limit: newLimit,
-        data: data // Вернем данные объекта для надежности
+        data: updatedData,
+        package: existingCode.package // Возвращаем информацию о тарифе
       })
     };
 
   } catch (error) {
+    console.error('❌ Ошибка в activate-code:', error.message);
     return { 
       statusCode: 500, 
       headers, 
-      body: JSON.stringify({ error: error.message }) 
+      body: JSON.stringify({ 
+        success: false,
+        error: error.message 
+      }) 
     };
   }
 };
