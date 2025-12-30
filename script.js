@@ -301,19 +301,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const cardBody = document.querySelector('.card-body');
             
             if (cardHeader && cardBody) {
+                // ИСПРАВЛЕНИЕ 1: Защита от undefined в ссылке
+                const linkCode = savedOrderID || (status && status.code);
                 cardHeader.innerHTML = `<i class="fas fa-check-circle"></i> Статус: АКТИВИРОВАН`;
                 cardBody.innerHTML = `
                     <div style="text-align: center;">
                         <p style="margin-bottom: 20px; font-weight: 600;">
                             <strong>Ваш пакет полностью готов.</strong> Все инструменты цифрового адвоката разблокированы.
                         </p>
-                        <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${savedOrderID}" 
+                        <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${linkCode ? encodeURIComponent(linkCode) : ''}" 
                            target="_blank"
-                           style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                           style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600; ${!linkCode ? 'pointer-events: none; opacity: 0.6;' : ''}">
                            ВХОД В ЛИЧНЫЙ КАБИНЕТ
                         </a>
                         <p style="font-size: 0.9rem; color: #718096; margin-top: 15px;">
-                            Код доступа: <code>${savedOrderID}</code>
+                            Код доступа: <code>${linkCode || 'не определён'}</code>
                         </p>
                     </div>
                 `;
@@ -342,19 +344,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const cardBody = document.querySelector('.card-body');
             
             if (cardHeader && cardBody) {
+                // ИСПРАВЛЕНИЕ 2: Защита от undefined в ссылке
+                const linkCode = promoCode;
                 cardHeader.innerHTML = `<i class="fas fa-check-circle"></i> Акция: АКТИВИРОВАНА`;
                 cardBody.innerHTML = `
                     <div style="text-align: center;">
                         <p style="margin-bottom: 20px; font-weight: 600;">
                             <strong>Ваш промо-доступ активирован!</strong> Все инструменты цифрового адвоката разблокированы.
                         </p>
-                        <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${promoCode}" 
+                        <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${linkCode ? encodeURIComponent(linkCode) : ''}" 
                            target="_blank"
-                           style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                           style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600; ${!linkCode ? 'pointer-events: none; opacity: 0.6;' : ''}">
                            ВХОД В ЛИЧНЫЙ КАБИНЕТ
                         </a>
                         <p style="font-size: 0.9rem; color: #718096; margin-top: 15px;">
-                            Промо-код: <code>${promoCode}</code>
+                            Промо-код: <code>${linkCode || 'не определён'}</code>
                         </p>
                         <p style="font-size: 0.8rem; color: #718096; margin-top: 10px;">
                             ⚠️ Доступ действует 30 дней с момента активации
