@@ -77,44 +77,174 @@ async function loadCampaigns() {
     const campaignsList = document.getElementById('campaignsList');
     if (!campaignsList) return;
     
-    campaignsList.innerHTML = '<div class="empty-state">⏳ Загрузка акций...</div>';
+    campaignsList.innerHTML = '<div class="empty-state">⏳ Загрузка кампаний...</div>';
     
     try {
-        const response = await fetch(`${API_BASE}/get-active-campaign`);
-        const campaign = await response.json();
+        // Используем новый эндпоинт для всех кампаний
+        const response = await fetch(`${API_BASE}/get-all-campaigns`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const campaigns = await response.json();
         
         campaignsList.innerHTML = '';
         
-        if (!campaign.active) {
-            campaignsList.innerHTML = '<div class="empty-state">Нет активных акций</div>';
+        if (!campaigns || campaigns.length === 0) {
+            campaignsList.innerHTML = '<div class="empty-state">📭 Нет промо-кампаний</div>';
             return;
         }
         
-        // Отображаем активную акцию
-        campaignsList.innerHTML = `
-            <div class="campaign-card" style="border-left: 4px solid ${campaign.color}">
+        // Добавляем фильтр кампаний
+        const filterHTML = `
+            <div class="filter-section">
+                <label>Фильтр:</label>
+                <select id="campaignFilter" onchange="loadCampaigns()" class="filter-select">
+                    <option value="all">Все кампании</option>
+                    <option value="active">Активные</option>
+                    <option value="inactive">На паузе</option>
+                </select>
+            </div>
+            <div id="campaignsContainer" class="campaigns-container"></div>
+        `;
+        campaignsList.innerHTML = filterHTML;
+        
+        const campaignsContainer = document.getElementById('campaignsContainer');
+        if (!campaignsContainer) return;
+        
+        // Применяем фильтр
+        const filter = document.getElementById('campaignFilter')?.value || 'all';
+        let filteredCampaigns = campaigns;
+        
+        if (filter === 'active') {
+            filteredCampaigns = campaigns.filter(c => c.is_active);
+        } else if (filter === 'inactive') {
+            filteredCampaigns = campaigns.filter(c => !c.is_active);
+        }
+        
+        if (filteredCampaigns.length === 0) {
+            campaignsContainer.innerHTML = '<div class="empty-state">🤷 Нет кампаний с выбранным фильтром</div>';
+            return;
+        }
+        
+        campaignsContainer.innerHTML = '';
+        
+        // Отображаем кампании
+        filteredCampaigns.forEach(campaign => {
+            const campaignCard = document.createElement('div');
+            campaignCard.className = 'campaign-card';
+            campaignCard.style.borderLeft = `4px solid ${campaign.color || '#dd6b20'}`;
+            
+            // Форматируем дату
+            let createdDate = '—';
+            if (campaign.created_at) {
+                const date = new Date(campaign.created_at);
+                createdDate = date.toLocaleDateString('ru-RU');
+            }
+            
+            // Статус
+            const status = campaign.is_active ? 
+                '<span class="status-badge status-active">АКТИВНА</span>' : 
+                '<span class="status-badge status-pending">НА ПАУЗЕ</span>';
+            
+            // Кнопки действий
+            let actionButton = '';
+            if (campaign.is_active) {
+                actionButton = `
+                    <button onclick="toggleCampaign('${campaign.code}', false)" class="btn btn-outline">
+                        <i class="fas fa-pause"></i> Остановить
+                    </button>
+                `;
+            } else {
+                actionButton = `
+                    <button onclick="toggleCampaign('${campaign.code}', true)" class="btn btn-primary">
+                        <i class="fas fa-play"></i> Активировать
+                    </button>
+                `;
+            }
+            
+            campaignCard.innerHTML = `
                 <div class="campaign-header">
-                    <h3>${campaign.title}</h3>
-                    <span class="status-badge status-active">АКТИВНА</span>
+                    <h3>${campaign.title || 'Без названия'}</h3>
+                    ${status}
                 </div>
                 <div class="campaign-body">
-                    <p>${campaign.description}</p>
+                    <p>${campaign.description || 'Нет описания'}</p>
                     <div class="campaign-details">
-                        <div><strong>Тариф:</strong> ${campaign.package}</div>
-                        <div><strong>Срок:</strong> ${campaign.expires_days} дней</div>
-                        <div><strong>Цвет:</strong> <span class="color-dot" style="background: ${campaign.color}"></span></div>
+                        <div><strong>Тариф:</strong> ${campaign.package || 'PROMO_BASIC'}</div>
+                        <div><strong>Срок:</strong> ${campaign.expires_days || 30} дней</div>
+                        <div><strong>Создана:</strong> ${createdDate}</div>
+                        <div><strong>Кодов создано:</strong> ${campaign.promo_codes_count || 0}</div>
+                        <div><strong>Цвет:</strong> <span class="color-dot" style="background: ${campaign.color || '#dd6b20'}"></span></div>
                     </div>
                 </div>
                 <div class="campaign-actions">
-                    <button onclick="deactivateCampaign()" class="btn btn-outline">
-                        <i class="fas fa-pause"></i> Остановить акцию
+                    ${actionButton}
+                    <button onclick="viewCampaignDetails('${campaign.code}')" class="btn btn-secondary">
+                        <i class="fas fa-info-circle"></i> Детали
                     </button>
                 </div>
-            </div>
-        `;
+            `;
+            
+            campaignsContainer.appendChild(campaignCard);
+        });
         
     } catch (error) {
+        console.error('Ошибка загрузки кампаний:', error);
         campaignsList.innerHTML = `<div class="error-state">❌ Ошибка загрузки: ${error.message}</div>`;
+    }
+}
+
+// Переключение статуса кампании
+async function toggleCampaign(campaignCode, activate) {
+    const action = activate ? 'активировать' : 'остановить';
+    if (!confirm(`${activate ? 'Активировать' : 'Остановить'} кампанию?`)) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/activate-code?code=${campaignCode}&is_active=${activate}`, {
+            method: 'GET'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success || response.ok) {
+            alert(`✅ Кампания ${activate ? 'активирована' : 'остановлена'}!`);
+            loadCampaigns();
+        } else {
+            throw new Error(data.error || 'Ошибка изменения статуса');
+        }
+    } catch (error) {
+        alert(`❌ Ошибка: ${error.message}`);
+    }
+}
+
+// Просмотр деталей кампании
+async function viewCampaignDetails(campaignCode) {
+    try {
+        const response = await fetch(`${API_BASE}/get-all-campaigns`);
+        const campaigns = await response.json();
+        const campaign = campaigns.find(c => c.code === campaignCode);
+        
+        if (!campaign) {
+            alert('Кампания не найдена');
+            return;
+        }
+        
+        const details = `
+🎁 Детали кампании:
+
+Название: ${campaign.title}
+Статус: ${campaign.is_active ? 'АКТИВНА' : 'НА ПАУЗЕ'}
+Тариф: ${campaign.package}
+Срок: ${campaign.expires_days} дней
+Кодов создано: ${campaign.promo_codes_count}
+Цвет: ${campaign.color}
+Код кампании: ${campaign.code}
+
+${campaign.description}
+        `;
+        
+        alert(details);
+    } catch (error) {
+        alert(`❌ Ошибка загрузки деталей: ${error.message}`);
     }
 }
 
@@ -154,39 +284,11 @@ async function createCampaign() {
         const data = await response.json();
         
         if (data.success || response.ok) {
-            alert('✅ Акция создана! Баннер появится на главной странице.');
+            alert('✅ Кампания создана! Баннер появится на главной странице.');
             hideCreateCampaignForm();
             loadCampaigns();
         } else {
             throw new Error(data.error || 'Ошибка создания акции');
-        }
-        
-    } catch (error) {
-        alert(`❌ Ошибка: ${error.message}`);
-    }
-}
-
-async function deactivateCampaign() {
-    if (!confirm('Остановить акцию? Баннер исчезнет с главной страницы.')) return;
-    
-    try {
-        // Находим и деактивируем запись PROMO_CAMPAIGN
-        const response = await fetch(`${API_BASE}/get-active-campaign`);
-        const campaign = await response.json();
-        
-        if (!campaign.active) {
-            alert('Акция уже не активна');
-            return;
-        }
-        
-        // Деактивируем через стандартный эндпоинт
-        const deactivateRes = await fetch(`${API_BASE}/activate-code?code=PROMO_CAMPAIGN&is_active=false`);
-        
-        if (deactivateRes.ok) {
-            alert('✅ Акция остановлена');
-            loadCampaigns();
-        } else {
-            throw new Error('Ошибка деактивации');
         }
         
     } catch (error) {
@@ -370,6 +472,7 @@ window.showCreateCampaignForm = showCreateCampaignForm;
 window.hideCreateCampaignForm = hideCreateCampaignForm;
 window.selectColor = selectColor;
 window.createCampaign = createCampaign;
-window.deactivateCampaign = deactivateCampaign;
+window.toggleCampaign = toggleCampaign;
+window.viewCampaignDetails = viewCampaignDetails;
 window.activatePromoCode = activatePromoCode;
 window.deactivatePromoCode = deactivatePromoCode;
