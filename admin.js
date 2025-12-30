@@ -9,7 +9,7 @@ window.addEventListener('DOMContentLoaded', function() {
         console.log('✅ Авторизация пройдена');
         document.getElementById('loginOverlay').style.display = 'none';
         document.getElementById('adminPage').style.display = 'block';
-        loadOrders();
+        loadAllData(); // ← ИЗМЕНЕНО: загружаем ВСЁ (статистику + заявки)
     } else {
         console.log('🔐 Требуется авторизация');
         document.getElementById('loginOverlay').style.display = 'flex';
@@ -181,6 +181,108 @@ function formatOrderDate(code) {
     });
 }
 
+// ========== ЗАГРУЗКА СТАТИСТИКИ ==========
+
+// Функция загрузки всех данных (статистика + заявки)
+async function loadAllData() {
+    console.log('📊 Загрузка всех данных...');
+    const btn = document.querySelector('.stats-header .btn');
+    const originalText = btn ? btn.innerHTML : '';
+    
+    // Добавляем анимацию вращения к иконке
+    if (btn) {
+        btn.classList.add('btn-updating');
+        btn.disabled = true;
+    }
+    
+    try {
+        // Загружаем параллельно
+        await Promise.all([
+            loadStats(),
+            loadOrders()
+        ]);
+        console.log('✅ Все данные загружены');
+    } catch (error) {
+        console.error('❌ Ошибка загрузки данных:', error);
+    } finally {
+        // Восстанавливаем кнопку
+        if (btn) {
+            btn.classList.remove('btn-updating');
+            btn.disabled = false;
+        }
+    }
+}
+
+// Загрузка статистики
+async function loadStats() {
+    console.log('📈 Загрузка статистики...');
+    
+    try {
+        // Загружаем три типа данных параллельно
+        const [pendingResponse, promoCodesResponse, activeCodesResponse] = await Promise.all([
+            fetch(`${API_BASE}/get-pending`),
+            fetch(`${API_BASE}/get-promo-codes`),
+            fetch(`${API_BASE}/get-active-codes`)
+        ]);
+
+        // Проверяем ответы
+        if (!pendingResponse.ok) throw new Error('Ошибка загрузки ожидающих кодов');
+        if (!promoCodesResponse.ok) throw new Error('Ошибка загрузки промо-кодов');
+        if (!activeCodesResponse.ok) throw new Error('Ошибка загрузки активных кодов');
+
+        const pendingCodes = await pendingResponse.json();
+        const promoCodes = await promoCodesResponse.json();
+        const activeCodes = await activeCodesResponse.json();
+
+        // Фильтруем данные
+        const pendingCount = Array.isArray(pendingCodes) ? pendingCodes.length : 0;
+        
+        // Промо-коды ожидающие активации (is_active = false)
+        const promoPendingCount = Array.isArray(promoCodes) 
+            ? promoCodes.filter(code => code.is_active === false).length 
+            : 0;
+        
+        // Активные коды (все)
+        const activeCount = Array.isArray(activeCodes) ? activeCodes.length : 0;
+
+        // Обновляем интерфейс
+        updateStatsDisplay(pendingCount, promoPendingCount, activeCount);
+        
+        console.log('📊 Статистика:', { pendingCount, promoPendingCount, activeCount });
+        
+    } catch (error) {
+        console.error('❌ Ошибка загрузки статистики:', error);
+        // Показываем ошибку в интерфейсе
+        document.getElementById('statPending').textContent = '!';
+        document.getElementById('statPromo').textContent = '!';
+        document.getElementById('statActive').textContent = '!';
+        
+        // Можно добавить тултип с ошибкой
+        document.getElementById('statsRow').title = `Ошибка: ${error.message}`;
+    }
+}
+
+// Обновление отображения статистики
+function updateStatsDisplay(pending, promo, active) {
+    const pendingEl = document.getElementById('statPending');
+    const promoEl = document.getElementById('statPromo');
+    const activeEl = document.getElementById('statActive');
+    
+    if (pendingEl) pendingEl.textContent = pending;
+    if (promoEl) promoEl.textContent = promo;
+    if (activeEl) activeEl.textContent = active;
+    
+    // Добавляем анимацию обновления
+    [pendingEl, promoEl, activeEl].forEach(el => {
+        if (el) {
+            el.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                el.style.transform = 'scale(1)';
+            }, 300);
+        }
+    });
+}
+
 // ========== ЗАГРУЗКА ЗАЯВОК ==========
 
 // Загрузка заявок
@@ -292,7 +394,7 @@ async function activateCode(code, tariff) {
         
         if (data.success || (response.ok && !data.error)) {
             alert(`✅ Успех!\nКод ${code} активирован.\nЛимит: ${limit} CAPS`);
-            loadOrders(); // Обновляем список
+            loadAllData(); // ← ИЗМЕНЕНО: обновляем ВСЁ после активации
         } else {
             const errorMsg = data.error || data.message || 'Неизвестная ошибка';
             alert(`❌ Ошибка активации:\n${errorMsg}`);
@@ -326,7 +428,7 @@ async function deleteCode(code) {
         
         if (data.success || (response.ok && !data.error)) {
             alert(`✅ Код ${code} удален!`);
-            loadOrders(); // Обновляем список
+            loadAllData(); // ← ИЗМЕНЕНО: обновляем ВСЁ после удаления
         } else {
             const errorMsg = data.error || data.message || 'Неизвестная ошибка';
             alert(`❌ Ошибка удаления:\n${errorMsg}`);
@@ -339,11 +441,11 @@ async function deleteCode(code) {
 
 // ========== АВТООБНОВЛЕНИЕ ==========
 
-// Автообновление каждые 30 секунд
+// Автообновление каждые 30 секунд (только статистика)
 setInterval(() => {
     if (sessionStorage.getItem('adminAuth') === 'true') {
-        console.log('🔄 Автообновление списка...');
-        loadOrders();
+        console.log('🔄 Автообновление статистики...');
+        loadStats();
     }
 }, 30000);
 
@@ -352,5 +454,7 @@ setInterval(() => {
 window.checkAuth = checkAuth;
 window.logout = logout;
 window.loadOrders = loadOrders;
+window.loadAllData = loadAllData;
+window.loadStats = loadStats;
 window.activateCode = activateCode;
 window.deleteCode = deleteCode;
