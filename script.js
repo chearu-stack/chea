@@ -14,13 +14,35 @@ import {
 
 import {
     setupTariffButtons,
-    checkAndBlockTariffs
+    checkAndBlockTariffs,
+    showWaitingStatus,
+    showActivatedStatus
 } from './modules/amg-tariff-buttons.js';
 
-import { checkActiveCampaign } from './modules/amg-promo-campaign.js';
-import { startActivationCheck } from './modules/amg-activation-check.js';
-import { setupPaymentPage } from './modules/amg-payment-page.js';
-import { renderHeroCard } from './modules/hero-renderer.js';
+import {
+    checkActiveCampaign,
+    showPromoActivatedStatus
+} from './modules/amg-promo-campaign.js';
+
+import {
+    startActivationCheck
+} from './modules/amg-activation-check.js';
+
+import {
+    setupPaymentPage
+} from './modules/amg-payment-page.js';
+
+import {
+    hideQuestionnaireBlock,
+    showQuestionnaireBlock,
+    blockTariffButtons,
+    unlockTariffButtons,
+    restoreOriginalHeroCard
+} from './modules/amg-dom-helpers.js';
+
+import {
+    renderHeroCard
+} from './modules/hero-renderer.js';
 
 // --- ИНИЦИАЛИЗАЦИЯ ---
 document.addEventListener('DOMContentLoaded', function() {
@@ -32,16 +54,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // 2. Проверка и блокировка тарифов
     checkAndBlockTariffs(API_BASE, userFP);
 
-    // 3. Проверить активные акции И отрендерить hero-карточку
-    checkActiveCampaign(API_BASE, userFP).then(campaignData => {
-        renderHeroCard(API_BASE, planDetails, campaignData);
-    });
+    // 3. Показать статус "Ожидание" (если есть)
+    showWaitingStatus(API_BASE, planDetails);
 
-    // 4. Инициализация страницы оплаты
+    // 4. Показать статус "Активирован" (если уже активен)
+    showActivatedStatus(API_BASE);
+
+    // 5. Проверить активные акции
+    checkActiveCampaign(API_BASE, userFP);
+
+    // 6. Инициализация страницы оплаты (если мы на ней)
     setupPaymentPage(planDetails);
-
-    // 5. Запуск периодической проверки активации
-    startActivationCheck();
 
     console.log('✅ Все модули запущены');
 });
