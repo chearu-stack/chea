@@ -16,6 +16,24 @@ function hasParticipatedInPromo() {
 // --- ПРОВЕРКА АКТИВНОЙ АКЦИИ ---
 export async function checkActiveCampaign(API_BASE, userFP, helpers) {
     try {
+        // === НОВАЯ ПРОВЕРКА: Есть ли уже активный платный код? ===
+        const paidCode = localStorage.getItem('access_code');
+        if (paidCode) {
+            try {
+                const statusResponse = await fetch(`${API_BASE}/check-status?code=${paidCode}`);
+                const status = await statusResponse.json();
+                
+                if (status.code && status.active) {
+                    console.log('🎫 Обнаружен активный платный код, промо-акция скрыта');
+                    return; // Пользователь уже имеет доступ, не показываем промо
+                }
+            } catch (statusError) {
+                console.warn('⚠️ Не удалось проверить статус платного кода:', statusError);
+                // Продолжаем обычную логику при ошибке проверки
+            }
+        }
+        // === КОНЕЦ НОВОЙ ПРОВЕРКИ ===
+
         const response = await fetch(`${API_BASE}/get-active-campaign`);
         const campaign = await response.json();
 
@@ -25,7 +43,7 @@ export async function checkActiveCampaign(API_BASE, userFP, helpers) {
         window.currentCampaign = campaign;
 
         if (campaign.active) {
-            if (!hasParticipatedInPromo()) {  // ← Исправлено: используем локальную функцию
+            if (!hasParticipatedInPromo()) {
                 showPromoBanner(campaign);
                 showPromoHeroCard(campaign);
             } else {
