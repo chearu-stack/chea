@@ -15,36 +15,37 @@ export function startActivationCheck(API_BASE, userFP) {
 
     window.activationCheckInterval = setInterval(async () => {
         try {
-            // РАЗДЕЛЕНИЕ: промо-код проверяем по коду, платный — по fingerprint
+            // ПРОВЕРКА ДВУХ ТИПОВ КОДОВ: платный тариф И промо-акция
             const lastPromoCode = localStorage.getItem('lastPromoCode');
             const lastOrderID = localStorage.getItem('lastOrderID');
 
-            let response;
-
+            // 1. Сначала проверяем промо-код (если есть)
             if (lastPromoCode) {
-                // ПРОМО-АКЦИЯ: проверяем по коду (fingerprint игнорируется)
-                response = await fetch(`${API_BASE}/check-status?code=${lastPromoCode}`);
+                const promoResponse = await fetch(`${API_BASE}/check-status?code=${lastPromoCode}`);
                 console.log('🔄 Проверка промо-кода:', lastPromoCode);
-            } else if (lastOrderID) {
-                // ПЛАТНЫЙ ТАРИФ: проверяем по fingerprint
-                response = await fetch(`${API_BASE}/check-status?fp=${userFP}`);
-                console.log('🔄 Проверка платного тарифа по fingerprint');
-            } else {
-                // Ничего не проверяем
-                return;
+                const promoData = await promoResponse.json();
+                
+                if (promoData.active === true) {
+                    showPromoActivatedStatus(API_BASE, lastPromoCode);
+                    clearInterval(window.activationCheckInterval);
+                    window.activationCheckInterval = null;
+                    return;
+                }
             }
 
-            const data = await response.json();
-            console.log('Результат проверки:', data);
-
-            if (data.active === true) {
-                if (lastPromoCode) {
-                    showPromoActivatedStatus(API_BASE, lastPromoCode);
-                } else {
+            // 2. Затем проверяем платный тариф (если есть)
+            if (lastOrderID) {
+                // ИСПРАВЛЕНИЕ: проверяем по КОДУ, а не по fingerprint
+                const orderResponse = await fetch(`${API_BASE}/check-status?code=${lastOrderID}`);
+                console.log('🔄 Проверка платного тарифа по коду:', lastOrderID);
+                const orderData = await orderResponse.json();
+                
+                if (orderData.active === true) {
                     showActivatedStatus(API_BASE);
+                    clearInterval(window.activationCheckInterval);
+                    window.activationCheckInterval = null;
+                    return;
                 }
-                clearInterval(window.activationCheckInterval);
-                window.activationCheckInterval = null;
             }
 
         } catch (error) {
