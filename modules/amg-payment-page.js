@@ -16,7 +16,7 @@ export function setupPaymentPage(planDetails) {
     console.log('💰 Инициализация страницы оплаты - страница обнаружена');
 
     const urlParams = new URLSearchParams(window.location.search);
-    const planKey = urlParams.get('plan') || 'extended';
+    const planKey = urlParams.get('price') || 'extended';
     const orderID = localStorage.getItem('lastOrderID');
     
     console.log('📊 Параметры URL:', { planKey, orderID });
