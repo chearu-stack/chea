@@ -25,6 +25,7 @@ export function startActivationCheck(API_BASE, userFP) {
                 console.log('🔄 Проверка промо-кода:', lastPromoCode);
                 const promoData = await promoResponse.json();
                 
+                // ИСПРАВЛЕНИЕ: проверяем поле active (маленькая буква)
                 if (promoData.active === true) {
                     showPromoActivatedStatus(API_BASE, lastPromoCode);
                     clearInterval(window.activationCheckInterval);
@@ -35,11 +36,11 @@ export function startActivationCheck(API_BASE, userFP) {
 
             // 2. Затем проверяем платный тариф (если есть)
             if (lastOrderID) {
-                // ИСПРАВЛЕНИЕ: проверяем по КОДУ, а не по fingerprint
                 const orderResponse = await fetch(`${API_BASE}/check-status?code=${lastOrderID}`);
                 console.log('🔄 Проверка платного тарифа по коду:', lastOrderID);
                 const orderData = await orderResponse.json();
                 
+                // ИСПРАВЛЕНИЕ: проверяем поле active (маленькая буква)
                 if (orderData.active === true) {
                     showActivatedStatus(API_BASE);
                     clearInterval(window.activationCheckInterval);
