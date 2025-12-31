@@ -1,6 +1,6 @@
 // ===================================================================
 // АДВОКАТ МЕДНОГО ГРОША — ГЛАВНЫЙ СКРИПТ (ТОЧКА ВХОДЫ)
-// ТОЛЬКО импорты и вызовы (аналог server.js)
+// ТОЛЬКО импорты и вызовы
 // ===================================================================
 
 // Импорт модулей
@@ -14,31 +14,13 @@ import {
 
 import {
     setupTariffButtons,
-    checkAndBlockTariffs,
-    showWaitingStatus,
-    showActivatedStatus
+    checkAndBlockTariffs
 } from './modules/amg-tariff-buttons.js';
 
-import {
-    checkActiveCampaign,
-    showPromoActivatedStatus
-} from './modules/amg-promo-campaign.js';
-
-import {
-    startActivationCheck
-} from './modules/amg-activation-check.js';
-
-import {
-    setupPaymentPage
-} from './modules/amg-payment-page.js';
-
-import {
-    hideQuestionnaireBlock,
-    showQuestionnaireBlock,
-    blockTariffButtons,
-    unlockTariffButtons,
-    restoreOriginalHeroCard
-} from './modules/amg-dom-helpers.js';
+import { checkActiveCampaign } from './modules/amg-promo-campaign.js';
+import { startActivationCheck } from './modules/amg-activation-check.js';
+import { setupPaymentPage } from './modules/amg-payment-page.js';
+import { renderHeroCard } from './modules/hero-renderer.js';
 
 // --- ИНИЦИАЛИЗАЦИЯ ---
 document.addEventListener('DOMContentLoaded', function() {
@@ -50,14 +32,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // 2. Проверка и блокировка тарифов
     checkAndBlockTariffs(API_BASE, userFP);
 
-    // 3. Показать статус "Ожидание" (если есть)
-    showWaitingStatus(API_BASE, planDetails);
+    // 3. Проверить активные акции И отрендерить hero-карточку
+    checkActiveCampaign(API_BASE, userFP).then(campaignData => {
+        renderHeroCard(API_BASE, planDetails, campaignData);
+    });
 
-    // 4. Проверить активные акции
-    checkActiveCampaign(API_BASE, userFP);
-
-    // 5. Инициализация страницы оплаты (если мы на ней)
+    // 4. Инициализация страницы оплаты
     setupPaymentPage(planDetails);
+
+    // 5. Запуск периодической проверки активации
+    startActivationCheck();
 
     console.log('✅ Все модули запущены');
 });
