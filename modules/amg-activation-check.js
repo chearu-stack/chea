@@ -15,20 +15,20 @@ export function startActivationCheck(API_BASE, userFP, planDetails, campaignData
 
     window.activationCheckInterval = setInterval(async () => {
         try {
-            // РАЗДЕЛЕНИЕ: промо-код проверяем по коду, платный — по fingerprint
+            // РАЗДЕЛЕНИЕ: промо-код проверяем по коду, платный — по коду И fingerprint
             const lastPromoCode = localStorage.getItem('lastPromoCode');
             const lastOrderID = localStorage.getItem('lastOrderID');
             
             let response;
             
             if (lastPromoCode) {
-                // ПРОМО-АКЦИЯ: проверяем по коду
+                // ПРОМО-АКЦИЯ: проверяем по коду (fingerprint игнорируется)
                 response = await fetch(`${API_BASE}/check-status?code=${lastPromoCode}`);
                 console.log('🔄 Проверка промо-кода:', lastPromoCode);
             } else if (lastOrderID) {
-                // ПЛАТНЫЙ ТАРИФ: проверяем по fingerprint (как в старой логике)
-                response = await fetch(`${API_BASE}/check-status?fp=${userFP}`);
-                console.log('🔄 Проверка платного тарифа по fingerprint');
+                // ИСПРАВЛЕНО: ПЛАТНЫЙ ТАРИФ проверяем по КОДУ И FINGERPRINT
+                response = await fetch(`${API_BASE}/check-status?code=${lastOrderID}&fp=${userFP}`);
+                console.log('🔄 Проверка платного тарифа по code+fp:', lastOrderID, userFP.substring(0, 6) + '...');
             } else {
                 return;
             }
