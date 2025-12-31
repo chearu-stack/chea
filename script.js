@@ -89,7 +89,7 @@ function checkDOMElements() {
 }
 
 // --- ИНИЦИАЛИЗАЦИЯ ---
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('💰 Адвокат медного гроша: модульная инициализация');
     
     // Диагностика
@@ -117,20 +117,66 @@ document.addEventListener('DOMContentLoaded', function() {
         showQuestionnaireBlock
     });
 
-    // 3. Показать статус "Ожидание" (если есть)
-    console.log('🔧 Проверка статуса ожидания...');
-    showWaitingStatus(API_BASE, planDetails, {
-        hideQuestionnaireBlock,
-        startActivationCheck: () => startActivationCheck(API_BASE, userFP),
-        showQuestionnaireBlock // ДОБАВЛЕНО: передаём функцию
-    });
+    // 3. ПРОВЕРКА АКТИВАЦИИ ПРИ ЗАГРУЗКЕ (как в старом коде - по fingerprint)
+    console.log('🔧 Проверка активации при загрузке...');
+    
+    const lastOrderID = localStorage.getItem('lastOrderID');
+    const lastPromoCode = localStorage.getItem('lastPromoCode');
+    
+    let isAlreadyActive = false;
+    
+    if (lastOrderID) {
+        try {
+            // ПРОВЕРЯЕМ ПО FINGERPRINT (как в старом рабочем коде)
+            const response = await fetch(`${API_BASE}/check-status?fp=${userFP}`);
+            const data = await response.json();
+            console.log('📊 Проверка активации при загрузке (по fp):', data);
+            
+            if (data.active === true) {
+                console.log('✅ Код активирован, показываем вход в ЛК');
+                showActivatedStatus(API_BASE);
+                isAlreadyActive = true;
+            }
+        } catch (error) {
+            console.error('Ошибка проверки при загрузке (по fp):', error);
+        }
+    }
+    
+    // Проверка промо-кода при загрузке
+    if (!isAlreadyActive && lastPromoCode) {
+        try {
+            const response = await fetch(`${API_BASE}/check-status?code=${lastPromoCode}`);
+            const data = await response.json();
+            console.log('📊 Проверка промо-активации при загрузке:', data);
+            
+            if (data.active === true) {
+                console.log('✅ Промо-код активирован');
+                showPromoActivatedStatus(API_BASE, lastPromoCode);
+                isAlreadyActive = true;
+            }
+        } catch (error) {
+            console.error('Ошибка проверки промо при загрузке:', error);
+        }
+    }
 
-    // 4. Проверить активные акции
+    // 4. Показать статус "Ожидание" (если код не активирован)
+    if (!isAlreadyActive) {
+        console.log('🔧 Показ статуса ожидания...');
+        showWaitingStatus(API_BASE, planDetails, {
+            hideQuestionnaireBlock,
+            startActivationCheck: () => startActivationCheck(API_BASE, userFP),
+            showQuestionnaireBlock
+        });
+    } else {
+        // Если уже активирован, скрываем блок анализа
+        hideQuestionnaireBlock();
+    }
+
+    // 5. Проверить активные акции
     console.log('🔧 Проверка акций...');
     checkActiveCampaign(API_BASE, userFP, {
         hasParticipatedInPromo,
         // Эти функции реализованы внутри amg-promo-campaign.js
-        // Они будут вызваны из checkActiveCampaign
         showPromoBanner: () => {},
         showPromoHeroCard: () => {},
         showPromoWaitingStatus: () => {},
@@ -138,11 +184,11 @@ document.addEventListener('DOMContentLoaded', function() {
         restoreOriginalHeroCard
     });
 
-    // 5. Инициализация страницы оплаты (если мы на ней)
+    // 6. Инициализация страницы оплаты (если мы на ней)
     console.log('🔧 Проверка страницы оплаты...');
     setupPaymentPage(planDetails);
 
-    // 6. Проверка localStorage для отладки
+    // 7. Проверка localStorage для отладки
     console.log('📊 localStorage:', {
         lastOrderID: localStorage.getItem('lastOrderID'),
         selectedPlan: localStorage.getItem('selectedPlan'),
