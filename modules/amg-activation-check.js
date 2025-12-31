@@ -15,46 +15,43 @@ export function startActivationCheck(API_BASE, userFP) {
 
     window.activationCheckInterval = setInterval(async () => {
         try {
-            // ПРОВЕРКА ДВУХ ТИПОВ КОДОВ: платный тариф И промо-акция
+            // РАЗДЕЛЕНИЕ: промо-код проверяем по коду, платный — по fingerprint (КАК В СТАРОМ КОДЕ)
             const lastPromoCode = localStorage.getItem('lastPromoCode');
             const lastOrderID = localStorage.getItem('lastOrderID');
-
-            // 1. Сначала проверяем промо-код (если есть)
+            
+            let response;
+            
             if (lastPromoCode) {
-                const promoResponse = await fetch(`${API_BASE}/check-status?code=${lastPromoCode}`);
+                // ПРОМО-АКЦИЯ: проверяем по коду (fingerprint игнорируется)
+                response = await fetch(`${API_BASE}/check-status?code=${lastPromoCode}`);
                 console.log('🔄 Проверка промо-кода:', lastPromoCode);
-                const promoData = await promoResponse.json();
-                
-                // ИСПРАВЛЕНИЕ: проверяем поле active (маленькая буква)
-                if (promoData.active === true) {
+            } else if (lastOrderID) {
+                // ПЛАТНЫЙ ТАРИФ: проверяем по fingerprint (СТАРАЯ ЛОГИКА)
+                response = await fetch(`${API_BASE}/check-status?fp=${userFP}`);
+                console.log('🔄 Проверка платного тарифа по fingerprint');
+            } else {
+                // Ничего не проверяем
+                return;
+            }
+            
+            const data = await response.json();
+            console.log('Результат проверки:', data);
+            
+            if (data.active === true) {
+                if (lastPromoCode) {
                     showPromoActivatedStatus(API_BASE, lastPromoCode);
-                    clearInterval(window.activationCheckInterval);
-                    window.activationCheckInterval = null;
-                    return;
-                }
-            }
-
-            // 2. Затем проверяем платный тариф (если есть)
-            if (lastOrderID) {
-                const orderResponse = await fetch(`${API_BASE}/check-status?code=${lastOrderID}`);
-                console.log('🔄 Проверка платного тарифа по коду:', lastOrderID);
-                const orderData = await orderResponse.json();
-                
-                // ИСПРАВЛЕНИЕ: проверяем поле active (маленькая буква)
-                if (orderData.active === true) {
+                } else {
                     showActivatedStatus(API_BASE);
-                    clearInterval(window.activationCheckInterval);
-                    window.activationCheckInterval = null;
-                    return;
                 }
+                clearInterval(window.activationCheckInterval);
+                window.activationCheckInterval = null;
             }
-
+            
         } catch (error) {
             console.log('Ошибка проверки активации:', error);
         }
     }, 10000); // Проверка каждые 10 секунд
 
-    // Сохраняем ссылку на интервал в глобальной области для возможной очистки
     return window.activationCheckInterval;
 }
 
