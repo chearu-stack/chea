@@ -17,7 +17,7 @@ function hasParticipatedInPromo() {
 export async function checkActiveCampaign(API_BASE, userFP, helpers) {
     try {
         // === ЗАДЕРЖКА 11 СЕКУНД ДЛЯ ПРИОРИТЕТА ПЛАТНОГО ДОСТУПА ===
-        await new Promise(resolve => setTimeout(resolve, 11000));
+        await new Promise(resolve => setTimeout(resolve, 9000));
         // === КОНЕЦ ЗАДЕРЖКИ ===
 
         // === НОВАЯ ПРОВЕРКА: Есть ли уже активный платный код? ===
