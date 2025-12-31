@@ -4,74 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Личный Кабинет | Адвокат Медного Гроша</title>
-    <!-- ПОДКЛЮЧЕНИЕ СТИЛЕЙ -->
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- НИКАКИХ ДОПОЛНИТЕЛЬНЫХ СТИЛЕЙ НЕ ДОБАВЛЯЮ -->
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden;
-            background-color: #f4f7f6;
-        }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background-color: #f4f7f6; }
+        .widget-container { width: 100vw; height: 100vh; }
     </style>
 </head>
-<body>
-    <!-- ТВОЙ ОРИГИНАЛЬНЫЙ ИНТЕРФЕЙС ЧАТА -->
-    <div class="chat-wrapper">
-        <!-- ШАПКА (ТВОЯ, КОТОРАЯ БЫЛА И РАБОТАЛА) -->
-        <div class="chat-header">
-            <div class="header-left">
-                <div class="doc-vault">
-                    <button id="btn-pretenzia" class="doc-btn doc-inactive" disabled>
-                        <i class="fas fa-file-contract"></i> Претензия
-                    </button>
-                    <button id="btn-rospotreb" class="doc-btn doc-inactive" disabled>
-                        <i class="fas fa-balance-scale"></i> Жалоба
-                    </button>
-                    <button id="btn-prokuror" class="doc-btn doc-inactive" disabled>
-                        <i class="fas fa-gavel"></i> Заявление
-                    </button>
-                </div>
-            </div>
-            <div class="header-right">
-                <!-- ТВОЙ РАБОЧИЙ БАР, КОТОРЫЙ СЧИТАЕТ ОСТАТОК В ПРОЦЕНТАХ -->
-                <div class="caps-info">
-                    <span class="caps-label">
-                        <i class="fas fa-coins"></i> CAPS:
-                    </span>
-                    <div class="caps-bar-bg">
-                        <div class="caps-bar-fill" id="res-bar"></div>
-                    </div>
-                    <span class="caps-text" id="caps-count">--</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- ОКНО СООБЩЕНИЙ -->
-        <div class="chat-window" id="chat-window"></div>
-
-        <!-- ПАНЕЛЬ ВВОДА -->
-        <div class="input-container">
-            <div class="input-wrapper">
-                <textarea 
-                    id="user-input" 
-                    placeholder="Опишите вашу ситуацию подробно (минимум 30 символов)..." 
-                    rows="1"
-                ></textarea>
-                <button id="send-btn">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
-            </div>
-            <button onclick="clearChat()" class="clear-btn">
-                <i class="fas fa-trash-alt"></i>
-            </button>
-        </div>
+<body class="admin-body"> 
+    <div class="widget-container">
+        <iframe 
+            id="widget-frame"
+            src="" 
+            style="width: 100%; height: 100%; border: none;" 
+            title="Адвокат Медного Гроша">
+        </iframe>
     </div>
 
-    <!-- ПОДКЛЮЧЕНИЕ chat-logic.js -->
-    <script src="chat-logic.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const accessCode = urlParams.get('access_code');
+        const baseUrl = "https://bothub-bridge.onrender.com";
+        const iframe = document.getElementById('widget-frame');
+
+        if (accessCode) {
+            iframe.src = `${baseUrl}?access_code=${accessCode}`;
+        } else {
+            iframe.src = baseUrl;
+        }
+    </script>
 </body>
 </html>
