@@ -2,6 +2,17 @@
 // МОДУЛЬ: Логика промо-акций
 // ===================================================================
 
+// --- ПРОВЕРКА УЧАСТИЯ В АКЦИИ ---
+function hasParticipatedInPromo() {
+    const lastPromoCode = localStorage.getItem('lastPromoCode');
+    const promoTime = localStorage.getItem('promoTime');
+    
+    if (!lastPromoCode || !promoTime) return false;
+    
+    const timePassed = Date.now() - parseInt(promoTime);
+    return timePassed < 30 * 24 * 60 * 60 * 1000; // 30 дней
+}
+
 // --- ПРОВЕРКА АКТИВНОЙ АКЦИИ ---
 export async function checkActiveCampaign(API_BASE, userFP, helpers) {
     try {
@@ -14,7 +25,7 @@ export async function checkActiveCampaign(API_BASE, userFP, helpers) {
         window.currentCampaign = campaign;
 
         if (campaign.active) {
-            if (!helpers.hasParticipatedInPromo()) {
+            if (!hasParticipatedInPromo()) {  // ← Исправлено: используем локальную функцию
                 showPromoBanner(campaign);
                 showPromoHeroCard(campaign);
             } else {
