@@ -42,6 +42,11 @@ export function startActivationCheck(API_BASE, userFP, planDetails, campaignData
                 } else {
                     // НАДЁЖНО: Вызываем renderHeroCard для обновления интерфейса
                     console.log('✅ Платный тариф активирован! Обновляем интерфейс...');
+                    
+                    // === ДОБАВЛЕНО: Скрываем промо-баннер ===
+                    hidePromoCampaignIfPaidActive();
+                    // === КОНЕЦ ДОБАВЛЕНИЯ ===
+                    
                     await renderHeroCard(API_BASE, planDetails, campaignData);
                 }
                 clearInterval(window.activationCheckInterval);
@@ -62,5 +67,15 @@ export function stopActivationCheck() {
         clearInterval(window.activationCheckInterval);
         window.activationCheckInterval = null;
         console.log('Проверка активации остановлена');
+    }
+}
+
+// === ДОБАВЛЕНО: Скрытие промо-акции при активном платном доступе ===
+function hidePromoCampaignIfPaidActive() {
+    // Только скрываем промо-баннер, НЕ трогаем hero-карточку
+    const promoBanner = document.getElementById('promo-banner');
+    if (promoBanner) {
+        promoBanner.style.display = 'none';
+        console.log('🎫 Промо-баннер скрыт (активен платный тариф)');
     }
 }
