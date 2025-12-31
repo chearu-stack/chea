@@ -1,57 +1,68 @@
-// --- ПОКАЗ СТАТУСА "ОЖИДАНИЕ" ИЛИ "АКТИВИРОВАН" ---
-export async function showWaitingStatus(API_BASE, planDetails) {
-    const savedOrderID = localStorage.getItem('lastOrderID');
+// --- ПОКАЗ СТАТУСА "ОЖИДАНИЕ" ---
+export function showWaitingStatus(API_BASE, planDetails) {
     const savedPlan = localStorage.getItem('selectedPlan');
     const lockTime = localStorage.getItem('lockTime');
+    const orderID = localStorage.getItem('lastOrderID');
 
-    const cardHeader = document.querySelector('.card-header');
-    const cardBody = document.querySelector('.card-body');
-    
-    if (!cardHeader || !cardBody) {
-        return;
-    }
+    if (savedPlan && lockTime && (Date.now() - lockTime < 24 * 60 * 60 * 1000)) {
+        const cardHeader = document.querySelector('.card-header');
+        const cardBody = document.querySelector('.card-body');
 
-    // Если нет данных о выборе тарифа - ВОССТАНАВЛИВАЕМ ИСХОДНУЮ КАРТОЧКУ
-    if (!savedOrderID || !savedPlan || !lockTime) {
-        // Возвращаем оригинальную карточку с примером расчёта
-        cardHeader.innerHTML = `<i class="fas fa-bolt"></i> Пример расчёта`;
-        cardBody.innerHTML = `
-            <p><strong>Задержка ремонта на 14 дней</strong><br>Стоимость: 50 000 руб.</p>
-            <div class="calculation">
-                <p>50 000 × 3% × 14 дней =</p>
-                <div class="result">21 000 руб.</div>
-                <p class="note">Ваша компенсация (ст. 28 ЗоЗПП)</p>
-            </div>
-        `;
-        return;
-    }
+        if (cardHeader && cardBody) {
+            const plan = planDetails[savedPlan] || planDetails.extended;
 
-    // Если прошло больше 24 часов - очищаем и восстанавливаем исходную карточку
-    if (Date.now() - lockTime > 24 * 60 * 60 * 1000) {
-        localStorage.removeItem('lastOrderID');
-        localStorage.removeItem('selectedPlan');
-        localStorage.removeItem('lockTime');
-        
-        // Восстанавливаем исходную карточку
-        cardHeader.innerHTML = `<i class="fas fa-bolt"></i> Пример расчёта`;
-        cardBody.innerHTML = `
-            <p><strong>Задержка ремонта на 14 дней</strong><br>Стоимость: 50 000 руб.</p>
-            <div class="calculation">
-                <p>50 000 × 3% × 14 дней =</p>
-                <div class="result">21 000 руб.</div>
-                <p class="note">Ваша компенсация (ст. 28 ЗоЗПП)</p>
-            </div>
-        `;
-        return;
+            cardHeader.innerHTML = `<i class="fas fa-clock"></i> Ваш выбор: ${plan.name}`;
+            cardBody.innerHTML = `
+                <div style="text-align: left;">
+                    <p style="font-weight: bold; color: #e67e22; margin-bottom: 10px;">
+                        <i class="fas fa-hourglass-half"></i> Статус: ОЖИДАНИЕ ПОДТВЕРЖДЕНИЯ
+                    </p>
+                    <p style="margin-bottom: 15px;">${plan.desc}</p>
+                    <p style="font-size: 0.9rem; margin-bottom: 10px;">
+                        <strong>Бот забронирован.</strong> Отправьте ID и чек в Telegram:
+                    </p>
+                    <a href="https://t.me/chearu252?text=${encodeURIComponent('Мой ID: ' + orderID + '. Прикрепите чек к сообщению!')}" 
+                       target="_blank" 
+                       style="display: block; background: #0088cc; color: white; padding: 12px; border-radius: 6px; text-decoration: none; text-align: center; font-weight: 600;">
+                       <i class="fab fa-telegram"></i> ПОДТВЕРДИТЬ В TELEGRAM
+                    </a>
+                    <p style="font-size: 0.8rem; color: #718096; margin-top: 10px;">
+                        ID для справки: ${orderID}
+                    </p>
+                </div>
+            `;
+            
+            // СКРЫТИЕ БЛОКА АНАЛИЗА КАК В МОНОЛИТЕ
+            const questionnaire = document.getElementById('questionnaire');
+            if (questionnaire) questionnaire.style.display = 'none';
+            
+            // ЗАПУСК ПРОВЕРКИ АКТИВАЦИИ КАК В МОНОЛИТЕ
+            if (typeof startActivationCheck === 'function') {
+                startActivationCheck();
+            }
+        }
+    } else {
+        // ПОКАЗ БЛОКА АНАЛИЗА КАК В МОНОЛИТЕ
+        const questionnaire = document.getElementById('questionnaire');
+        if (questionnaire) questionnaire.style.display = 'block';
     }
+}
+
+// --- ПОКАЗ СТАТУСА "АКТИВИРОВАН" ДЛЯ ПЛАТНЫХ ТАРИФОВ ---
+export async function showActivatedStatus(API_BASE) {
+    const savedOrderID = localStorage.getItem('lastOrderID');
+    if (!savedOrderID) return;
 
     try {
-        // Проверяем текущий статус в БД
         const response = await fetch(`${API_BASE}/check-status?code=${savedOrderID}`);
         const status = await response.json();
 
-        // Если тариф АКТИВИРОВАН - показываем статус "АКТИВИРОВАН"
-        if (status.code && status.active === true) {
+        if (!status.code || !status.active) return;
+
+        const cardHeader = document.querySelector('.card-header');
+        const cardBody = document.querySelector('.card-body');
+
+        if (cardHeader && cardBody) {
             cardHeader.innerHTML = `<i class="fas fa-check-circle"></i> Статус: АКТИВИРОВАН`;
             cardBody.innerHTML = `
                 <div style="text-align: center;">
@@ -68,35 +79,13 @@ export async function showWaitingStatus(API_BASE, planDetails) {
                     </p>
                 </div>
             `;
-            return;
+            
+            // СКРЫТИЕ БЛОКА АНАЛИЗА КАК В МОНОЛИТЕ
+            const questionnaire = document.getElementById('questionnaire');
+            if (questionnaire) questionnaire.style.display = 'none';
         }
 
-        // Если тариф НЕ активирован (или код удалён) - показываем статус "ОЖИДАНИЕ"
-        const plan = planDetails[savedPlan] || planDetails.extended;
-        
-        cardHeader.innerHTML = `<i class="fas fa-clock"></i> Ваш выбор: ${plan.name}`;
-        cardBody.innerHTML = `
-            <div style="text-align: left;">
-                <p style="font-weight: bold; color: #e67e22; margin-bottom: 10px;">
-                    <i class="fas fa-hourglass-half"></i> Статус: ОЖИДАНИЕ ПОДТВЕРЖДЕНИЯ
-                </p>
-                <p style="margin-bottom: 15px;">${plan.desc}</p>
-                <p style="font-size: 0.9rem; margin-bottom: 10px;">
-                    <strong>Бот забронирован.</strong> Отправьте ID и чек в Telegram:
-                </p>
-                <a href="https://t.me/chearu252?text=${encodeURIComponent('Мой ID: ' + savedOrderID + '. Прикрепите чек к сообщению!')}" 
-                   target="_blank" 
-                   style="display: block; background: #0088cc; color: white; padding: 12px; border-radius: 6px; text-decoration: none; text-align: center; font-weight: 600;">
-                   <i class="fab fa-telegram"></i> ПОДТВЕРДИТЬ В TELEGRAM
-                </a>
-                <p style="font-size: 0.8rem; color: #718096; margin-top: 10px;">
-                    ID для справки: ${savedOrderID}
-                </p>
-            </div>
-        `;
-
     } catch (error) {
-        console.error('Ошибка проверки статуса:', error);
-        // В случае ошибки оставляем как есть или можно показать сообщение об ошибке
+        console.error('Ошибка проверки кода:', error);
     }
 }
