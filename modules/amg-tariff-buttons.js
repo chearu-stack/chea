@@ -135,11 +135,17 @@ export function showWaitingStatus(API_BASE, planDetails, helpers) {
                 </div>
             `;
 
-            helpers.hideQuestionnaireBlock();
+            // ИСПРАВЛЕНИЕ: проверяем, есть ли функция в helpers
+            if (helpers && typeof helpers.hideQuestionnaireBlock === 'function') {
+                helpers.hideQuestionnaireBlock();
+            }
             // startActivationCheck будет вызван из main script
         }
     } else {
-        helpers.showQuestionnaireBlock();
+        // ИСПРАВЛЕНИЕ: проверяем, есть ли функция в helpers
+        if (helpers && typeof helpers.showQuestionnaireBlock === 'function') {
+            helpers.showQuestionnaireBlock();
+        }
     }
 }
 
