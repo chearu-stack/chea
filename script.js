@@ -60,8 +60,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // 4. Показать статус "Активирован" (если уже активен)
     showActivatedStatus(API_BASE);
 
-    // 5. Проверить активные акции
-    checkActiveCampaign(API_BASE, userFP);
+    // 5. Проверить активные акции и запустить проверку активации с полученными данными
+    checkActiveCampaign(API_BASE, userFP).then(campaignData => {
+        startActivationCheck(API_BASE, userFP, planDetails, campaignData);
+    });
 
     // 6. Инициализация страницы оплаты (если мы на ней)
     setupPaymentPage(planDetails);
