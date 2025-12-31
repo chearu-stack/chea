@@ -4,79 +4,95 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Личный Кабинет | Адвокат Медного Гроша</title>
-    <!-- ПОДКЛЮЧАЕМ СТИЛИ ПРОЕКТА, а не пустую оболочку -->
+    <!-- Подключаем ВСЕ нужные стили проекта -->
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Дополнительные стили для страницы чата -->
     <style>
-        /* Дополнительные стили для страницы чата */
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
+            overflow: hidden;
             background-color: #f4f7f6;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
         }
-        .chat-wrapper {
+        /* Гарантируем, что контейнер чата занимает весь экран */
+        #chat-container {
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            height: 100vh;
+        }
+        /* Улучшаем внешний вид полосы CAPS */
+        .caps-bar {
+            width: 150px;
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 0 10px;
+        }
+        .caps-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00cc66);
+            border-radius: 5px;
+            transition: width 0.5s ease;
         }
     </style>
 </head>
 <body>
-    <!-- ВСТРАИВАЕМ ЛОКАЛЬНЫЙ ИНТЕРФЕЙС ЧАТА, а не удалённый iframe -->
-    <div class="chat-wrapper">
-        <!-- Шапка с документами -->
-        <header class="chat-header">
+    <!-- ОСНОВНОЙ КОНТЕЙНЕР ЧАТА (ДОЛЖЕН БЫТЬ В chat.html) -->
+    <div id="chat-container">
+        <!-- ШАПКА С ДОКУМЕНТАМИ -->
+        <div class="chat-header">
             <div class="header-left">
                 <div class="doc-vault">
-                    <button id="btn-pretenzia" class="doc-btn doc-inactive" title="Скачать претензию" disabled>
+                    <button id="btn-pretenzia" class="doc-btn doc-inactive" disabled>
                         <i class="fas fa-file-contract"></i> Претензия
                     </button>
-                    <button id="btn-rospotreb" class="doc-btn doc-inactive" title="Скачать жалобу в Роспотребнадзор" disabled>
+                    <button id="btn-rospotreb" class="doc-btn doc-inactive" disabled>
                         <i class="fas fa-balance-scale"></i> Жалоба
                     </button>
-                    <button id="btn-prokuror" class="doc-btn doc-inactive" title="Скачать заявление в прокуратуру" disabled>
+                    <button id="btn-prokuror" class="doc-btn doc-inactive" disabled>
                         <i class="fas fa-gavel"></i> Заявление
                     </button>
                 </div>
             </div>
-            <div class="caps-container">
-                <div class="caps-label">
-                    <i class="fas fa-coins"></i> CAPS:
+            <div class="header-right">
+                <div class="caps-display">
+                    <span><i class="fas fa-coins"></i> CAPS:</span>
+                    <div class="caps-bar">
+                        <div class="caps-fill" id="res-bar" style="width: 70%"></div>
+                    </div>
+                    <span id="caps-count" class="caps-count">--/--</span>
                 </div>
-                <div class="caps-bar">
-                    <div class="caps-fill" id="res-bar"></div>
-                </div>
-                <div class="caps-count" id="caps-count">--/--</div>
             </div>
-        </header>
+        </div>
 
-        <!-- Окно сообщений -->
-        <main class="chat-window" id="chat-window"></main>
+        <!-- ОКНО СООБЩЕНИЙ -->
+        <div class="chat-window" id="chat-window">
+            <!-- Сообщения будут добавляться через chat-logic.js -->
+        </div>
 
-        <!-- Панель ввода -->
-        <footer class="input-container">
+        <!-- ПАНЕЛЬ ВВОДА -->
+        <div class="input-area">
             <div class="input-wrapper">
                 <textarea 
                     id="user-input" 
-                    placeholder="Опишите вашу ситуацию подробно (минимум 30 символов)..."
+                    placeholder="Опишите вашу ситуацию подробно (минимум 30 символов)..." 
                     rows="1"
                 ></textarea>
+                <button id="send-btn" class="send-button">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
             </div>
-            <button id="send-btn">
-                <i class="fas fa-paper-plane"></i>
+            <button id="clear-chat" class="clear-chat-button" title="Очистить историю">
+                <i class="fas fa-trash-alt"></i>
             </button>
-        </footer>
-
-        <!-- Кнопка очистки -->
-        <button onclick="clearChat()" class="clear-btn" title="Очистить историю">
-            <i class="fas fa-trash-alt"></i>
-        </button>
+        </div>
     </div>
 
-    <!-- ПОДКЛЮЧАЕМ ЛОКАЛЬНЫЙ chat-logic.js, а не удалённый виджет -->
+    <!-- ПОДКЛЮЧАЕМ ОРИГИНАЛЬНЫЙ chat-logic.js -->
     <script src="chat-logic.js"></script>
 </body>
 </html>
