@@ -20,11 +20,13 @@ import {
 } from './modules/amg-tariff-buttons.js';
 
 import {
-    checkActiveCampaign
+    checkActiveCampaign,
+    showPromoActivatedStatus
 } from './modules/amg-promo-campaign.js';
 
 import {
-    startActivationCheck
+    startActivationCheck,
+    stopActivationCheck
 } from './modules/amg-activation-check.js';
 
 import {
@@ -41,51 +43,8 @@ import {
 
 // --- ГЛОБАЛЬНОЕ СОСТОЯНИЕ (привязано к точке входа) ---
 window.currentCampaign = null;
-let activationCheckInterval = null;
 
-// --- ЭКСПОРТ ГЛОБАЛЬНЫХ ПЕРЕМЕННЫХ ДЛЯ МОДУЛЕЙ (если нужно) ---
-export { activationCheckInterval };
-
-// --- ИНИЦИАЛИЗАЦИЯ ---
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('💰 Адвокат медного гроша: модульная инициализация');
-
-    // 1. Настройка кнопок тарифов
-    setupTariffButtons(API_BASE, userFP, generateOrderIdentifier, planDetails);
-
-    // 2. Проверка и блокировка тарифов (использует DOM-хелперы)
-    checkAndBlockTariffs(API_BASE, userFP, {
-        clearLocalStorage,
-        unlockAndResetTariffButtons,
-        blockTariffButtons,
-        unlockTariffButtons,
-        hideQuestionnaireBlock,
-        showQuestionnaireBlock
-    });
-
-    // 3. Показать статус "Ожидание" (если есть)
-    showWaitingStatus(API_BASE, planDetails, {
-        hideQuestionnaireBlock,
-        startActivationCheck
-    });
-
-    // 4. Проверить активные акции
-    checkActiveCampaign(API_BASE, userFP, {
-        hasParticipatedInPromo,
-        showPromoBanner,
-        showPromoHeroCard,
-        showPromoWaitingStatus,
-        startActivationCheck,
-        restoreOriginalHeroCard
-    });
-
-    // 5. Инициализация страницы оплаты (если мы на ней)
-    setupPaymentPage(planDetails);
-
-    console.log('✅ Все модули инициализированы');
-});
-
-// --- ЛОКАЛЬНЫЕ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (оставлены здесь, так как используют замыкания) ---
+// --- ЛОКАЛЬНЫЕ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
 function clearLocalStorage() {
     localStorage.removeItem('selectedPlan');
     localStorage.removeItem('lockTime');
@@ -111,18 +70,55 @@ function hasParticipatedInPromo() {
     return timePassed < 30 * 24 * 60 * 60 * 1000;
 }
 
-// Эти функции будут реализованы в amg-promo-campaign.js, но объявлены здесь для целостности
-function showPromoBanner(campaign) {
-    // Заглушка, реализация в модуле
-    console.log('showPromoBanner called for:', campaign.title);
-}
+// --- ИНИЦИАЛИЗАЦИЯ ---
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('💰 Адвокат медного гроша: модульная инициализация');
 
-function showPromoHeroCard(campaign) {
-    // Заглушка, реализация в модуле
-    console.log('showPromoHeroCard called for:', campaign.title);
-}
+    // 1. Настройка кнопок тарифов
+    setupTariffButtons(API_BASE, userFP, generateOrderIdentifier, planDetails);
 
-function showPromoWaitingStatus(code, campaign) {
-    // Заглушка, реализация в модуле
-    console.log('showPromoWaitingStatus called for:', code);
-}
+    // 2. Проверка и блокировка тарифов
+    checkAndBlockTariffs(API_BASE, userFP, {
+        clearLocalStorage,
+        unlockAndResetTariffButtons,
+        blockTariffButtons,
+        unlockTariffButtons,
+        hideQuestionnaireBlock,
+        showQuestionnaireBlock
+    });
+
+    // 3. Показать статус "Ожидание" (если есть)
+    showWaitingStatus(API_BASE, planDetails, {
+        hideQuestionnaireBlock,
+        startActivationCheck: () => startActivationCheck(API_BASE, userFP)
+    });
+
+    // 4. Проверить активные акции
+    checkActiveCampaign(API_BASE, userFP, {
+        hasParticipatedInPromo,
+        showPromoBanner: (campaign) => {
+            // Эти функции реализованы внутри amg-promo-campaign.js
+            // Они будут вызваны из checkActiveCampaign
+        },
+        showPromoHeroCard: (campaign) => {
+            // Реализовано внутри amg-promo-campaign.js
+        },
+        showPromoWaitingStatus: (code, campaign) => {
+            // Реализовано внутри amg-promo-campaign.js
+        },
+        startActivationCheck: () => startActivationCheck(API_BASE, userFP),
+        restoreOriginalHeroCard
+    });
+
+    // 5. Инициализация страницы оплаты (если мы на ней)
+    setupPaymentPage(planDetails);
+
+    console.log('✅ Все модули инициализированы');
+});
+
+// Экспортируем для возможного использования в других модулях (опционально)
+export {
+    clearLocalStorage,
+    unlockAndResetTariffButtons,
+    hasParticipatedInPromo
+};
