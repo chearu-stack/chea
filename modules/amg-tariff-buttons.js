@@ -48,8 +48,8 @@ export function setupTariffButtons(API_BASE, userFP, generateOrderIdentifier, pl
                 console.error("❌ Ошибка:", err);
             }
 
-            // После клика вызов checkAndBlockTariffs произойдёт при следующей инициализации
-            // или можно вызвать здесь, если передать функцию как зависимость
+            // Блокируем кнопки сразу после клика
+            blockTariffButtons('Тариф выбран. Оплатите в течение 24 часов.');
 
             const href = this.getAttribute('href');
             if (href) {
@@ -63,46 +63,86 @@ export function setupTariffButtons(API_BASE, userFP, generateOrderIdentifier, pl
     });
 }
 
-// --- ПРОВЕРКА И БЛОКИРОВКА ТАРИФОВ ---
-export async function checkAndBlockTariffs(API_BASE, userFP, helpers) {
+// --- БЛОКИРОВКА КНОПОК ---
+function blockTariffButtons(message) {
+    const buttons = document.querySelectorAll('.pricing-card .btn[data-plan]');
+    buttons.forEach(btn => {
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+        btn.title = message;
+        btn.setAttribute('disabled', 'disabled');
+        btn.setAttribute('data-original-href', btn.getAttribute('href'));
+        btn.removeAttribute('href');
+    });
+}
+
+// --- РАЗБЛОКИРОВКА КНОПОК ---
+function unlockTariffButtons() {
+    const buttons = document.querySelectorAll('.pricing-card .btn[data-plan]');
+    buttons.forEach(btn => {
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.title = '';
+        btn.removeAttribute('disabled');
+        const originalHref = btn.getAttribute('data-original-href');
+        if (originalHref) {
+            btn.setAttribute('href', originalHref);
+            btn.removeAttribute('data-original-href');
+        }
+    });
+}
+
+// --- ПРОВЕРКА И БЛОКИРОВКА ТАРИФОВ ПРИ ЗАГРУЗКЕ ---
+export async function checkAndBlockTariffs(API_BASE, userFP) {
+    const savedOrderID = localStorage.getItem('lastOrderID');
+    const savedPlan = localStorage.getItem('selectedPlan');
+    const lockTime = localStorage.getItem('lockTime');
+
+    if (!savedOrderID || !savedPlan || !lockTime) {
+        unlockTariffButtons();
+        return;
+    }
+
+    const timePassed = Date.now() - parseInt(lockTime);
+    
+    // Если прошло больше 24 часов - разблокировать
+    if (timePassed > 24 * 60 * 60 * 1000) {
+        localStorage.removeItem('lastOrderID');
+        localStorage.removeItem('selectedPlan');
+        localStorage.removeItem('lockTime');
+        unlockTariffButtons();
+        console.log('⌛ Время блокировки истекло (24 часа)');
+        return;
+    }
+
+    // Проверяем статус кода
     try {
-        const savedOrderID = localStorage.getItem('lastOrderID');
-        const savedPlan = localStorage.getItem('selectedPlan');
-        const lockTime = localStorage.getItem('lockTime');
-
-        if (!savedOrderID || !savedPlan || !lockTime) {
-            helpers.unlockTariffButtons();
-            return;
-        }
-
-        const timePassed = Date.now() - parseInt(lockTime);
-        if (timePassed > 24 * 60 * 60 * 1000) {
-            helpers.clearLocalStorage();
-            // unlockAndResetTariffButtons вызывается из main script
-            return;
-        }
-
         const response = await fetch(`${API_BASE}/check-status?code=${savedOrderID}`);
         const status = await response.json();
 
+        // Если код удален из БД - разблокировать
         if (!status.code) {
-            console.log('Код удалён из БД → разблокировка и сброс обработчиков');
-            helpers.clearLocalStorage();
-            // unlockAndResetTariffButtons вызывается из main script
+            console.log('🗑️ Код удалён из БД → разблокировка');
+            localStorage.removeItem('lastOrderID');
+            localStorage.removeItem('selectedPlan');
+            localStorage.removeItem('lockTime');
+            unlockTariffButtons();
             return;
         }
 
+        // Блокируем кнопки с сообщением о времени
         const hoursLeft = Math.ceil((24 * 60 * 60 * 1000 - timePassed) / (60 * 60 * 1000));
-        helpers.blockTariffButtons(`Тариф выбран. Смена через ${hoursLeft}ч`);
+        blockTariffButtons(`Тариф выбран. Смена через ${hoursLeft}ч`);
+        console.log(`⏳ Тарифы заблокированы на ${hoursLeft} часов`);
 
     } catch (error) {
         console.error('Ошибка проверки блокировки:', error);
-        helpers.unlockTariffButtons();
+        unlockTariffButtons();
     }
 }
 
 // --- ПОКАЗ СТАТУСА "ОЖИДАНИЕ" ---
-export function showWaitingStatus(API_BASE, planDetails, helpers) {
+export function showWaitingStatus(API_BASE, planDetails) {
     const savedPlan = localStorage.getItem('selectedPlan');
     const lockTime = localStorage.getItem('lockTime');
     const orderID = localStorage.getItem('lastOrderID');
@@ -134,17 +174,6 @@ export function showWaitingStatus(API_BASE, planDetails, helpers) {
                     </p>
                 </div>
             `;
-
-            // ИСПРАВЛЕНИЕ: проверяем, есть ли функция в helpers
-            if (helpers && typeof helpers.hideQuestionnaireBlock === 'function') {
-                helpers.hideQuestionnaireBlock();
-            }
-            // startActivationCheck будет вызван из main script
-        }
-    } else {
-        // ИСПРАВЛЕНИЕ: проверяем, есть ли функция в helpers
-        if (helpers && typeof helpers.showQuestionnaireBlock === 'function') {
-            helpers.showQuestionnaireBlock();
         }
     }
 }
@@ -158,11 +187,7 @@ export async function showActivatedStatus(API_BASE) {
         const response = await fetch(`${API_BASE}/check-status?code=${savedOrderID}`);
         const status = await response.json();
 
-        if (!status.code || !status.active) {
-            console.log('Код удалён, скрываем статус');
-            // clearLocalStorage будет вызван из main script при следующей проверке
-            return;
-        }
+        if (!status.code || !status.active) return;
 
         const cardHeader = document.querySelector('.card-header');
         const cardBody = document.querySelector('.card-body');
@@ -188,6 +213,5 @@ export async function showActivatedStatus(API_BASE) {
 
     } catch (error) {
         console.error('Ошибка проверки кода:', error);
-        // clearLocalStorage будет вызван из main script при следующей проверке
     }
 }
