@@ -3,8 +3,8 @@
 // ===================================================================
 
 // Импорт необходимых функций
-import { showActivatedStatus } from './amg-tariff-buttons.js';
 import { showPromoActivatedStatus } from './amg-promo-campaign.js';
+// УБРАЛИ импорт showActivatedStatus из amg-tariff-buttons.js
 
 // --- ЗАПУСК ПРОВЕРКИ АКТИВАЦИИ ---
 export function startActivationCheck(API_BASE, userFP) {
@@ -41,7 +41,9 @@ export function startActivationCheck(API_BASE, userFP) {
                 if (lastPromoCode) {
                     showPromoActivatedStatus(API_BASE, lastPromoCode);
                 } else {
-                    showActivatedStatus(API_BASE);
+                    // ВМЕСТО showActivatedStatus делаем релоад страницы или вызываем hero-renderer
+                    console.log('✅ Платный тариф активирован!');
+                    location.reload(); // Простой вариант
                 }
                 clearInterval(window.activationCheckInterval);
                 window.activationCheckInterval = null;
