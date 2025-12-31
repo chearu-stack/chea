@@ -15,7 +15,6 @@ import {
 import {
     setupTariffButtons,
     checkAndBlockTariffs
-    // showWaitingStatus и showActivatedStatus УБРАНЫ - теперь в hero-renderer.js
 } from './modules/amg-tariff-buttons.js';
 
 import {
@@ -53,17 +52,24 @@ document.addEventListener('DOMContentLoaded', function() {
     // 2. Проверка и блокировка тарифов
     checkAndBlockTariffs(API_BASE, userFP);
 
-    // 3. и 4. Статусы "Ожидание" и "Активирован" - ТЕПЕРЬ в hero-renderer.js
-
-    // 5. Проверить активные акции и запустить рендеринг
-    checkActiveCampaign(API_BASE, userFP).then(campaignData => {
+    // 3. ПЕРВОЕ: Запускаем проверку активации (платный доступ)
+    startActivationCheck(API_BASE, userFP, planDetails);
+    
+    // 4. ВТОРОЕ: Проверить активные акции и запустить рендеринг
+    // Передаём как объект с методами, а не результат промиса
+    checkActiveCampaign(API_BASE, userFP, {
+        hideQuestionnaireBlock,
+        showQuestionnaireBlock,
+        blockTariffButtons,
+        unlockTariffButtons,
+        restoreOriginalHeroCard,
+        startActivationCheck: () => startActivationCheck(API_BASE, userFP, planDetails)
+    }).then(campaignData => {
         // Рендерим hero-карточку с учётом акций
         renderHeroCard(API_BASE, planDetails, campaignData);
-        // Запускаем проверку активации
-        startActivationCheck(API_BASE, userFP, planDetails, campaignData);
     });
 
-    // 6. Инициализация страницы оплаты (если мы на ней)
+    // 5. Инициализация страницы оплаты (если мы на ней)
     setupPaymentPage(planDetails);
 
     console.log('✅ Все модули запущены');
