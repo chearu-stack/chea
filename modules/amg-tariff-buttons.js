@@ -48,13 +48,12 @@ export function setupTariffButtons(API_BASE, userFP, generateOrderIdentifier, pl
                 console.error("❌ Ошибка:", err);
             }
 
-            // Блокируем кнопки сразу после клика
-            blockTariffButtons('Тариф выбран. Оплатите в течение 24 часов.');
+            // УДАЛИЛ блокировку здесь - она будет при следующей загрузке главной страницы
 
             const href = this.getAttribute('href');
             if (href) {
                 setTimeout(() => {
-                    window.location.href = href;
+                    window.location.href = href; // ← ПЕРЕХОД НА СТРАНИЦУ ОПЛАТЫ
                 }, 100);
             }
 
