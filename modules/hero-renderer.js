@@ -1,22 +1,27 @@
 // ===================================================================
 // МОДУЛЬ: hero-renderer.js
-// ОТВЕТСТВЕННОСТЬ: Рендеринг hero-карточки для ДВУХ потоков:
+// ОТВЕТСТВЕННОСТЬ: Рендеринг hero-карточки + управление связанными элементами
 // 1. ПЛАТНЫЕ ТАРИФЫ (приоритет, если выбран ≤24h)
 // 2. АКЦИИ (только если нет активного платного тарифа)
 // 3. ДЕФОЛТ (пример расчёта 21000 руб.)
+// 4. Управление блоком анализа (#questionnaire)
 // ===================================================================
+
+// Импорт зависимостей
+import { hideQuestionnaireBlock, showQuestionnaireBlock } from './amg-dom-helpers.js';
 
 /**
  * Основная функция рендеринга hero-карточки
  * @param {string} API_BASE - Базовый URL API
  * @param {object} planDetails - Детали тарифов
  * @param {object|null} campaignData - Данные активной кампании (или null)
+ * @returns {object} Состояние пользователя для других модулей
  */
 export async function renderHeroCard(API_BASE, planDetails, campaignData = null) {
     const cardHeader = document.querySelector('.card-header');
     const cardBody = document.querySelector('.card-body');
     
-    if (!cardHeader || !cardBody) return;
+    if (!cardHeader || !cardBody) return { state: 'NO_CARD_ELEMENTS' };
 
     // ========== ПРИОРИТЕТ 1: ПРОВЕРКА ПЛАТНОГО ТАРИФА ==========
     const savedOrderID = localStorage.getItem('lastOrderID');
@@ -38,12 +43,22 @@ export async function renderHeroCard(API_BASE, planDetails, campaignData = null)
                 // 1А. ПЛАТНЫЙ ТАРИФ АКТИВИРОВАН
                 if (status.code && status.active === true) {
                     showActivatedCard(cardHeader, cardBody, savedOrderID);
-                    return; // Акции игнорируем
+                    hideQuestionnaireBlock();
+                    return { 
+                        state: 'ACTIVATED', 
+                        orderID: savedOrderID, 
+                        plan: savedPlan 
+                    };
                 }
 
                 // 1Б. ПЛАТНЫЙ ТАРИФ ВЫБРАН, НО НЕ АКТИВИРОВАН
                 showWaitingCard(cardHeader, cardBody, savedOrderID, savedPlan, planDetails);
-                return; // Акции игнорируем
+                hideQuestionnaireBlock();
+                return { 
+                    state: 'WAITING', 
+                    orderID: savedOrderID, 
+                    plan: savedPlan 
+                };
 
             } catch (error) {
                 console.error('❌ hero-renderer: Ошибка проверки платного тарифа:', error);
@@ -71,7 +86,12 @@ export async function renderHeroCard(API_BASE, planDetails, campaignData = null)
             if (isPromoActive) {
                 // 2А. ПОЛЬЗОВАТЕЛЬ УЖЕ УЧАСТВУЕТ В АКЦИИ
                 renderPromoWaitingState(cardHeader, cardBody, lastPromoCode, campaignData);
-                return;
+                hideQuestionnaireBlock();
+                return { 
+                    state: 'PROMO_WAITING', 
+                    promoCode: lastPromoCode, 
+                    campaign: campaignData 
+                };
             } else {
                 // Срок акции истёк - очищаем
                 localStorage.removeItem('lastPromoCode');
@@ -81,11 +101,17 @@ export async function renderHeroCard(API_BASE, planDetails, campaignData = null)
         
         // 2Б. АКЦИЯ АКТИВНА, НО ПОЛЬЗОВАТЕЛЬ ЕЩЁ НЕ УЧАСТВУЕТ
         renderPromoOfferState(cardHeader, cardBody, campaignData);
-        return;
+        hideQuestionnaireBlock();
+        return { 
+            state: 'PROMO_OFFER', 
+            campaign: campaignData 
+        };
     }
 
     // ========== ПРИОРИТЕТ 3: НОВЫЙ ПОЛЬЗОВАТЕЛЬ (дефолт) ==========
     showDefaultCard(cardHeader, cardBody);
+    showQuestionnaireBlock();
+    return { state: 'DEFAULT' };
 }
 
 // ===================================================================
@@ -115,7 +141,7 @@ function showWaitingCard(header, body, orderID, planKey, planDetails) {
             </p>
             <p style="margin-bottom: 15px;">${plan.desc}</p>
             <p style="font-size: 0.9rem; margin-bottom: 10px;">
-                <strong>Бот забронирован.</strong> Отправьте ID и чек в Telegram:
+                <strong>Бот забронирован.</strong> Отправьте ID и чеки в Telegram:
             </p>
             <a href="https://t.me/chearu252?text=${encodeURIComponent('Мой ID: ' + orderID + '. Прикрепите чек к сообщению!')}" 
                target="_blank" 
@@ -154,7 +180,7 @@ function showActivatedCard(header, body, orderID) {
 
 function renderPromoWaitingState(header, body, promoCode, campaign) {
     const planName = getPromoPlanName(campaign.package);
-    const { actionText, telegramText, buttonText } = getPromoTexts(campaign);
+    const { actionText, telegramText, buttonText } = getPromoTexts(campaign, promoCode);
     
     header.innerHTML = `<i class="fas fa-clock"></i> Акция: ${planName}`;
     body.innerHTML = `
@@ -202,7 +228,7 @@ function renderPromoOfferState(header, body, campaign) {
 }
 
 // ===================================================================
-// УТИЛИТЫ ДЛЯ АКЦИЙ
+// УТИЛИТЫ ДЛЯ АКЦИЙ (ИСПРАВЛЕННЫЕ)
 // ===================================================================
 
 function getPromoPlanName(packageType) {
@@ -214,14 +240,14 @@ function getPromoPlanName(packageType) {
     return names[packageType] || 'Акционный';
 }
 
-function getPromoTexts(campaign) {
+function getPromoTexts(campaign, promoCode) {
     const title = campaign.title || '';
     const description = campaign.description || '';
     
     if (title.includes('тестировщик') || description.includes('тестировщик')) {
         return {
             actionText: "Напишите в Telegram для получения доступа:",
-            telegramText: 'Хочу участвовать в тестировании. Код: ' + localStorage.getItem('lastPromoCode'),
+            telegramText: 'Хочу участвовать в тестировании. Код: ' + promoCode,
             buttonText: "НАПИСАТЬ ДЛЯ УЧАСТИЯ"
         };
     }
@@ -229,7 +255,7 @@ function getPromoTexts(campaign) {
     if (title.includes('лотерея') || description.includes('лотерея')) {
         return {
             actionText: "Отправьте данные для участия в лотерее:",
-            telegramText: 'Участвую в лотерее. Код: ' + localStorage.getItem('lastPromoCode'),
+            telegramText: 'Участвую в лотерее. Код: ' + promoCode,
             buttonText: "УЧАСТВОВАТЬ В ЛОТЕРЕЕ"
         };
     }
@@ -237,14 +263,14 @@ function getPromoTexts(campaign) {
     if (title.includes('подписк') || description.includes('подписк')) {
         return {
             actionText: "Отправьте скриншот подписки и этот код в Telegram:",
-            telegramText: 'Промо-акция! Код: ' + localStorage.getItem('lastPromoCode') + '. Скриншот прикреплён.',
+            telegramText: 'Промо-акция! Код: ' + promoCode + '. Скриншот прикреплён.',
             buttonText: "ОТПРАВИТЬ СКРИНШОТ В TELEGRAM"
         };
     }
     
     return {
         actionText: "Отправьте данные для участия в акции:",
-        telegramText: 'Промо-акция! Код: ' + localStorage.getItem('lastPromoCode'),
+        telegramText: 'Промо-акция! Код: ' + promoCode,
         buttonText: "УЧАСТВОВАТЬ В АКЦИИ"
     };
 }
