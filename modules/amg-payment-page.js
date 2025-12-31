@@ -4,8 +4,12 @@
 
 // --- ИНИЦИАЛИЗАЦИЯ СТРАНИЦЫ ОПЛАТЫ ---
 export function setupPaymentPage(planDetails) {
-    if (!window.location.pathname.includes('payment.html')) {
-        return; // Мы не на странице оплаты
+    // Проверяем, что мы на странице payment.html
+    const isPaymentPage = window.location.pathname.includes('payment.html') || 
+                          window.location.href.includes('payment.html');
+    
+    if (!isPaymentPage) {
+        return;
     }
 
     console.log('💰 Инициализация страницы оплаты');
@@ -13,9 +17,23 @@ export function setupPaymentPage(planDetails) {
     const urlParams = new URLSearchParams(window.location.search);
     const planKey = urlParams.get('plan') || 'extended';
     const orderID = localStorage.getItem('lastOrderID');
-    const plan = planDetails[planKey] || planDetails.extended;
+    
+    // Проверяем, есть ли данные
+    if (!orderID) {
+        console.error('❌ Нет orderID в localStorage');
+        return;
+    }
+    
+    const plan = planDetails[planKey];
+    if (!plan) {
+        console.error('❌ Неизвестный тариф:', planKey);
+        return;
+    }
 
-    const price = plan.price.replace(' ₽', '').replace(/\s/g, '');
+    // Убираем пробелы и "₽" из цены
+    const price = plan.price.replace(' ₽', '').replace(/\s/g, '').replace('₽', '');
+    
+    console.log('💰 Данные для оплаты:', { planKey, price, orderID, planName: plan.name });
 
     // Обновляем элементы на странице
     const elementsToUpdate = {
@@ -35,6 +53,9 @@ export function setupPaymentPage(planDetails) {
             } else {
                 element.textContent = value;
             }
+            console.log(`✅ Обновлен элемент #${id}:`, value);
+        } else {
+            console.warn(`⚠️ Элемент #${id} не найден на странице`);
         }
     });
 
@@ -43,7 +64,8 @@ export function setupPaymentPage(planDetails) {
     if (qrImg) {
         const baseQR = 'https://www.sberbank.ru/ru/choise_bank?requisiteNumber=79108777700&bankCode=100000000111';
         qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(baseQR + '&sum=' + price + '&label=' + orderID)}`;
+        console.log('✅ QR-код обновлен');
+    } else {
+        console.warn('⚠️ Элемент QR-кода не найден');
     }
-
-    console.log('💰 Данные обновлены:', { planKey, price, orderID });
 }
