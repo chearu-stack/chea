@@ -4,10 +4,10 @@
 
 // Импорт необходимых функций
 import { showPromoActivatedStatus } from './amg-promo-campaign.js';
-// УБРАЛИ импорт showActivatedStatus из amg-tariff-buttons.js
+import { renderHeroCard } from './hero-renderer.js';
 
 // --- ЗАПУСК ПРОВЕРКИ АКТИВАЦИИ ---
-export function startActivationCheck(API_BASE, userFP) {
+export function startActivationCheck(API_BASE, userFP, planDetails, campaignData = null) {
     // Очищаем предыдущий интервал, если есть
     if (window.activationCheckInterval) {
         clearInterval(window.activationCheckInterval);
@@ -15,22 +15,21 @@ export function startActivationCheck(API_BASE, userFP) {
 
     window.activationCheckInterval = setInterval(async () => {
         try {
-            // РАЗДЕЛЕНИЕ: промо-код проверяем по коду, платный — по fingerprint (КАК В СТАРОМ КОДЕ)
+            // РАЗДЕЛЕНИЕ: промо-код проверяем по коду, платный — по fingerprint
             const lastPromoCode = localStorage.getItem('lastPromoCode');
             const lastOrderID = localStorage.getItem('lastOrderID');
             
             let response;
             
             if (lastPromoCode) {
-                // ПРОМО-АКЦИЯ: проверяем по коду (fingerprint игнорируется)
+                // ПРОМО-АКЦИЯ: проверяем по коду
                 response = await fetch(`${API_BASE}/check-status?code=${lastPromoCode}`);
                 console.log('🔄 Проверка промо-кода:', lastPromoCode);
             } else if (lastOrderID) {
-                // ПЛАТНЫЙ ТАРИФ: проверяем по fingerprint (СТАРАЯ ЛОГИКА)
+                // ПЛАТНЫЙ ТАРИФ: проверяем по fingerprint (как в старой логике)
                 response = await fetch(`${API_BASE}/check-status?fp=${userFP}`);
                 console.log('🔄 Проверка платного тарифа по fingerprint');
             } else {
-                // Ничего не проверяем
                 return;
             }
             
@@ -41,9 +40,9 @@ export function startActivationCheck(API_BASE, userFP) {
                 if (lastPromoCode) {
                     showPromoActivatedStatus(API_BASE, lastPromoCode);
                 } else {
-                    // ВМЕСТО showActivatedStatus делаем релоад страницы или вызываем hero-renderer
-                    console.log('✅ Платный тариф активирован!');
-                    location.reload(); // Простой вариант
+                    // НАДЁЖНО: Вызываем renderHeroCard для обновления интерфейса
+                    console.log('✅ Платный тариф активирован! Обновляем интерфейс...');
+                    await renderHeroCard(API_BASE, planDetails, campaignData);
                 }
                 clearInterval(window.activationCheckInterval);
                 window.activationCheckInterval = null;
@@ -52,7 +51,7 @@ export function startActivationCheck(API_BASE, userFP) {
         } catch (error) {
             console.log('Ошибка проверки активации:', error);
         }
-    }, 10000); // Проверка каждые 10 секунд
+    }, 10000);
 
     return window.activationCheckInterval;
 }
