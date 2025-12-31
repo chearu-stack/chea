@@ -16,6 +16,10 @@ function hasParticipatedInPromo() {
 // --- ПРОВЕРКА АКТИВНОЙ АКЦИИ ---
 export async function checkActiveCampaign(API_BASE, userFP, helpers) {
     try {
+        // === ЗАДЕРЖКА 11 СЕКУНД ДЛЯ ПРИОРИТЕТА ПЛАТНОГО ДОСТУПА ===
+        await new Promise(resolve => setTimeout(resolve, 11000));
+        // === КОНЕЦ ЗАДЕРЖКИ ===
+
         // === НОВАЯ ПРОВЕРКА: Есть ли уже активный платный код? ===
         const paidCode = localStorage.getItem('access_code');
         if (paidCode) {
@@ -151,7 +155,7 @@ async function participateInPromo(campaign) {
     }
 }
 
-// --- ВОССТАНОВЛЕНИЕ ОРИГИНАЛЬНОГО HERO-CARD ---
+// --- ВОССТАНОВЛЕНИЕ ОРИГИНАЛЬНОЙ HERO-CARD ---
 function restoreOriginalHeroCard() {
     if (!window.originalHeroContent) return;
 
