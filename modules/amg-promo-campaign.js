@@ -2,45 +2,6 @@
 // МОДУЛЬ: Логика промо-акций
 // ===================================================================
 
-// --- ГЛОБАЛЬНАЯ ФУНКЦИЯ: Получить ВСЕ известные коды пользователя ---
-export function getAllUserCodes() {
-    const codes = new Set();
-    
-    // 1. Из localStorage
-    const accessCode = localStorage.getItem('access_code');
-    if (accessCode) codes.add(accessCode);
-    
-    const lastPromoCode = localStorage.getItem('lastPromoCode');
-    if (lastPromoCode) codes.add(lastPromoCode);
-    
-    // 2. Из amg-codes (если есть такой модуль)
-    try {
-        const amgCodes = JSON.parse(localStorage.getItem('amg_codes') || '[]');
-        amgCodes.forEach(codeObj => {
-            if (codeObj && codeObj.code) codes.add(codeObj.code);
-        });
-    } catch (e) {
-        console.warn('Ошибка парсинга amg_codes:', e);
-    }
-    
-    // 3. Из URL параметров
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlCode = urlParams.get('access_code');
-    if (urlCode) codes.add(urlCode);
-    
-    // 4. Из сессионного хранилища
-    const sessionCode = sessionStorage.getItem('current_access_code');
-    if (sessionCode) codes.add(sessionCode);
-    
-    // 5. Из window.currentAccessCode (если используется в других модулях)
-    if (window.currentAccessCode) {
-        codes.add(window.currentAccessCode);
-    }
-    
-    console.log('🔍 Все известные коды пользователя:', Array.from(codes));
-    return Array.from(codes);
-}
-
 // --- ПРОВЕРКА УЧАСТИЯ В АКЦИИ ---
 function hasParticipatedInPromo() {
     const lastPromoCode = localStorage.getItem('lastPromoCode');
@@ -54,106 +15,38 @@ function hasParticipatedInPromo() {
 
 // --- ПРОВЕРКА АКТИВНОЙ АКЦИИ ---
 export async function checkActiveCampaign(API_BASE, userFP, helpers) {
-    // СРАЗУ скрываем баннер при запуске
+    // ЗАДЕРЖКА перед проверкой - даем время другим модулям
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Сразу скрываем баннер на всякий случай
     const banner = document.getElementById('promo-banner');
-    if (banner) {
-        banner.style.display = 'none';
-        banner.style.visibility = 'hidden';
-        banner.style.opacity = '0';
-        banner.style.height = '0';
-        banner.style.margin = '0';
-        banner.style.padding = '0';
-        banner.style.overflow = 'hidden';
-        banner.style.position = 'absolute';
-        banner.style.left = '-9999px';
-    }
+    if (banner) banner.style.display = 'none';
     
     try {
-        // === СИНХРОНИЗИРУЕМСЯ С amg-activation-check.js ===
-        // Используем ту же логику получения кода, что и в amg-activation-check.js
-        let userCode = localStorage.getItem('access_code');
+        // === ПРОСТАЯ ПРОВЕРКА: Есть ли код в любом виде? ===
+        // Проверяем все возможные места
+        let userCode = localStorage.getItem('access_code') || 
+                      localStorage.getItem('lastPromoCode') ||
+                      sessionStorage.getItem('current_access_code');
         
-        // Если нет в localStorage, проверяем другие источники
+        // Если в localStorage нет, проверяем URL
         if (!userCode) {
-            // Проверяем параметр URL
             const urlParams = new URLSearchParams(window.location.search);
             userCode = urlParams.get('access_code');
         }
         
-        if (!userCode) {
-            // Проверяем сессионное хранилище
-            userCode = sessionStorage.getItem('current_access_code');
-        }
-        
-        if (!userCode) {
-            // Проверяем глобальную переменную (если используется)
-            userCode = window.currentAccessCode;
-        }
-        
-        console.log('🔍 Код для проверки (синхронизировано):', userCode);
-        
-        // Если найден какой-либо код пользователя - проверяем его
+        // Если есть хоть какой-то код - считаем что пользователь уже в системе
         if (userCode) {
-            try {
-                console.log(`🔍 Проверяем код ${userCode} на сервере...`);
-                const statusResponse = await fetch(`${API_BASE}/check-status?code=${userCode}`);
-                const status = await statusResponse.json();
-                
-                // Если код существует в системе (даже если не активен)
-                if (status && status.code) {
-                    console.log(`🎫 Код ${userCode} найден в системе (статус: ${status.active ? 'активен' : 'не активен'})`);
-                    
-                    // ГАРАНТИРОВАННОЕ СКРЫТИЕ БАННЕРА И ПРОМО-ЭЛЕМЕНТОВ
-                    hideAllPromoElements();
-                    
-                    // Сохраняем код в localStorage для будущих проверок
-                    if (!localStorage.getItem('access_code')) {
-                        localStorage.setItem('access_code', userCode);
-                        console.log('💾 Код сохранен в localStorage');
-                    }
-                    
-                    console.log('🚫 Пользователь имеет код, промо-акция скрыта');
-                    return;
-                }
-            } catch (error) {
-                console.warn(`⚠️ Не удалось проверить код ${userCode}:`, error);
-            }
-        }
-        
-        // Если код не найден или не проверяется - получаем все возможные коды
-        const allCodes = getAllUserCodes();
-        console.log('🔍 Все возможные коды пользователя:', allCodes);
-        
-        if (allCodes.length > 0) {
-            for (const code of allCodes) {
-                try {
-                    console.log(`🔍 Дополнительная проверка кода ${code}`);
-                    const statusResponse = await fetch(`${API_BASE}/check-status?code=${code}`);
-                    const status = await statusResponse.json();
-                    
-                    if (status && status.code) {
-                        console.log(`🎫 Код ${code} найден в системе`);
-                        hideAllPromoElements();
-                        
-                        // Сохраняем основной код
-                        if (!localStorage.getItem('access_code')) {
-                            localStorage.setItem('access_code', code);
-                        }
-                        
-                        return;
-                    }
-                } catch (error) {
-                    // Пропускаем ошибки проверки
-                }
-            }
+            console.log('🎫 Обнаружен код пользователя:', userCode, '- промо скрыто');
+            if (banner) banner.style.display = 'none';
+            return;
         }
 
-        // Получаем активную кампанию только если нет запрещающих кодов
+        // === ТОЛЬКО ЕСЛИ НЕТ КОДА - показываем промо ===
         const response = await fetch(`${API_BASE}/get-active-campaign`);
         const campaign = await response.json();
 
         console.log('🎁 Проверка акции:', campaign.active ? 'Активна' : 'Нет акций');
-        console.log('🎁 Данные кампании с сервера:', campaign);
 
         window.currentCampaign = campaign;
 
@@ -174,74 +67,23 @@ export async function checkActiveCampaign(API_BASE, userFP, helpers) {
     }
 }
 
-// --- СКРЫТИЕ ВСЕХ ПРОМО-ЭЛЕМЕНТОВ ---
-function hideAllPromoElements() {
-    const banner = document.getElementById('promo-banner');
-    if (banner) {
-        banner.style.display = 'none';
-        banner.style.visibility = 'hidden';
-        banner.style.opacity = '0';
-        banner.style.height = '0';
-        banner.style.margin = '0';
-        banner.style.padding = '0';
-        banner.style.overflow = 'hidden';
-        banner.style.position = 'absolute';
-        banner.style.left = '-9999px';
-        banner.style.zIndex = '-1000';
-    }
-    
-    // Дополнительно скрываем все элементы с промо-классами
-    const promoElements = document.querySelectorAll('[id*="promo"], [class*="promo"], [id*="Promo"], [class*="Promo"]');
-    promoElements.forEach(el => {
-        el.style.display = 'none';
-        el.style.visibility = 'hidden';
-        el.style.opacity = '0';
-        el.style.height = '0';
-        el.style.overflow = 'hidden';
-    });
-    
-    // Также скрываем кнопку "Участвовать" если есть
-    const participateBtn = document.querySelector('[onclick*="participate"], button:contains("Участвовать")');
-    if (participateBtn) {
-        participateBtn.style.display = 'none';
-        participateBtn.disabled = true;
-    }
-    
-    console.log('✅ Все промо-элементы гарантированно скрыты');
-}
-
-// --- ПОКАЗ БАННЕРА АКЦИИ ---
+// --- ОСТАЛЬНЫЕ ФУНКЦИИ БЕЗ ИЗМЕНЕНИЙ ---
 function showPromoBanner(campaign) {
     const banner = document.getElementById('promo-banner');
     const title = document.getElementById('promoTitle');
     const description = document.getElementById('promoDescription');
     const button = document.getElementById('promoBtn');
 
-    if (!banner) {
-        console.warn('⚠️ Баннер не найден в DOM');
-        return;
-    }
+    if (!banner) return;
 
     title.textContent = campaign.title || '🎁 АКЦИЯ';
     description.textContent = campaign.description || 'Специальное предложение';
     banner.style.background = campaign.color || 'linear-gradient(90deg, #dd6b20, #ed8936)';
 
     button.onclick = () => participateInPromo(campaign);
-    
-    // Восстанавливаем стили только если баннер нужно показать
     banner.style.display = 'flex';
-    banner.style.visibility = 'visible';
-    banner.style.opacity = '1';
-    banner.style.height = '';
-    banner.style.margin = '';
-    banner.style.padding = '';
-    banner.style.overflow = '';
-    banner.style.position = '';
-    banner.style.left = '';
-    banner.style.zIndex = '';
 }
 
-// --- ИЗМЕНЕНИЕ HERO-CARD ДЛЯ АКЦИИ ---
 function showPromoHeroCard(campaign) {
     const cardHeader = document.querySelector('.card-header');
     const cardBody = document.querySelector('.card-body');
@@ -274,12 +116,10 @@ function showPromoHeroCard(campaign) {
     `;
 }
 
-// --- УЧАСТИЕ В АКЦИИ ---
 async function participateInPromo(campaign) {
     console.log('🎁 Участие в промо-акции:', campaign);
 
     try {
-        // Импортируем функцию генерации промо-кода динамически, чтобы избежать циклической зависимости
         const { generatePromoIdentifier } = await import('./amg-config.js');
         const promoCode = generatePromoIdentifier(campaign.package);
 
@@ -304,13 +144,9 @@ async function participateInPromo(campaign) {
         localStorage.setItem('lastPromoCode', promoCode);
         localStorage.setItem('promoTime', Date.now());
 
-        // Явное скрытие баннера
-        hideAllPromoElements();
-        
+        document.getElementById('promo-banner').style.display = 'none';
         restoreOriginalHeroCard();
         showPromoWaitingStatus(promoCode, campaign);
-
-        // startActivationCheck будет вызван из main script
 
     } catch (error) {
         console.error('❌ Ошибка участия в акции:', error);
@@ -318,7 +154,6 @@ async function participateInPromo(campaign) {
     }
 }
 
-// --- ВОССТАНОВЛЕНИЕ ОРИГИНАЛЬНОЙ HERO-CARD ---
 function restoreOriginalHeroCard() {
     if (!window.originalHeroContent) return;
 
@@ -331,7 +166,6 @@ function restoreOriginalHeroCard() {
     }
 }
 
-// --- СТАТУС "ОЖИДАНИЕ" ДЛЯ ПРОМО-КОДА ---
 function showPromoWaitingStatus(code, campaign) {
     const cardHeader = document.querySelector('.card-header');
     const cardBody = document.querySelector('.card-body');
@@ -391,11 +225,8 @@ function showPromoWaitingStatus(code, campaign) {
             </p>
         </div>
     `;
-
-    // hideQuestionnaireBlock будет вызван из main script при необходимости
 }
 
-// --- СТАТУС "АКТИВИРОВАН" ДЛЯ ПРОМО-КОДА ---
 export async function showPromoActivatedStatus(API_BASE, promoCode) {
     if (!promoCode) return;
 
@@ -437,6 +268,3 @@ export async function showPromoActivatedStatus(API_BASE, promoCode) {
         console.error('Ошибка проверки промо-кода:', error);
     }
 }
-
-// Экспортируем функцию для других модулей
-export { getAllUserCodes };
