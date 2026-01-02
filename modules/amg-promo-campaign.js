@@ -15,10 +15,6 @@ function hasParticipatedInPromo() {
 
 // --- ПРОВЕРКА АКТИВНОЙ АКЦИИ ---
 export async function checkActiveCampaign(API_BASE, userFP, helpers) {
-    // ДАЕМ ВРЕМЯ ДРУГИМ МОДУЛЯМ
-    const banner = document.getElementById('promo-banner');
-    if (banner) banner.style.display = 'none';
-    
     try {
         // === НОВАЯ ПРОВЕРКА: Есть ли уже платный код (активный или ожидающий)? ===
         const paidCode = localStorage.getItem('access_code');
@@ -31,6 +27,7 @@ export async function checkActiveCampaign(API_BASE, userFP, helpers) {
                     console.log('🎫 Обнаружен платный код (статус:', status.active ? 'активен' : 'ожидание', '), промо-акция скрыта');
                     
                     // ГАРАНТИРОВАННО СКРЫВАЕМ БАННЕР
+                    const banner = document.getElementById('promo-banner');
                     if (banner) banner.style.display = 'none';
                     
                     return; // Пользователь уже имеет код (активен или ожидает), не показываем промо
@@ -81,10 +78,12 @@ function showPromoBanner(campaign) {
     banner.style.background = campaign.color || 'linear-gradient(90deg, #dd6b20, #ed8936)';
 
     button.onclick = () => participateInPromo(campaign);
+    
+    // ТОЛЬКО ЗДЕСЬ ПОКАЗЫВАЕМ БАННЕР, ЕСЛИ ПРОШЕЛ ВСЕ ПРОВЕРКИ
     banner.style.display = 'flex';
 }
 
-// --- ИЗМЕНЕНИЕ HERO-CARD ДЛЯ АКЦИИ ---
+// --- ОСТАЛЬНЫЙ КОД БЕЗ ИЗМЕНЕНИЙ ---
 function showPromoHeroCard(campaign) {
     const cardHeader = document.querySelector('.card-header');
     const cardBody = document.querySelector('.card-body');
@@ -117,12 +116,10 @@ function showPromoHeroCard(campaign) {
     `;
 }
 
-// --- УЧАСТИЕ В АКЦИИ ---
 async function participateInPromo(campaign) {
     console.log('🎁 Участие в промо-акции:', campaign);
 
     try {
-        // Импортируем функцию генерации промо-кода динамически, чтобы избежать циклической зависимости
         const { generatePromoIdentifier } = await import('./amg-config.js');
         const promoCode = generatePromoIdentifier(campaign.package);
 
@@ -151,15 +148,12 @@ async function participateInPromo(campaign) {
         restoreOriginalHeroCard();
         showPromoWaitingStatus(promoCode, campaign);
 
-        // startActivationCheck будет вызван из main script
-
     } catch (error) {
         console.error('❌ Ошибка участия в акции:', error);
         alert('Ошибка участия в акции. Попробуйте позже.');
     }
 }
 
-// --- ВОССТАНОВЛЕНИЕ ОРИГИНАЛЬНОЙ HERO-CARD ---
 function restoreOriginalHeroCard() {
     if (!window.originalHeroContent) return;
 
@@ -172,7 +166,6 @@ function restoreOriginalHeroCard() {
     }
 }
 
-// --- СТАТУС "ОЖИДАНИЕ" ДЛЯ ПРОМО-КОДА ---
 function showPromoWaitingStatus(code, campaign) {
     const cardHeader = document.querySelector('.card-header');
     const cardBody = document.querySelector('.card-body');
@@ -232,11 +225,8 @@ function showPromoWaitingStatus(code, campaign) {
             </p>
         </div>
     `;
-
-    // hideQuestionnaireBlock будет вызван из main script при необходимости
 }
 
-// --- СТАТУС "АКТИВИРОВАН" ДЛЯ ПРОМО-КОДА ---
 export async function showPromoActivatedStatus(API_BASE, promoCode) {
     if (!promoCode) return;
 
