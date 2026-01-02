@@ -167,6 +167,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
 
             if (response.ok && result.valid && result.status === 'active') {
+                // === СОХРАНЕНИЕ ДАННЫХ ОПРОСА В LOCALSTORAGE ===
+                saveSurveyData(userAnswers, accessCode);
+                // === КОНЕЦ СОХРАНЕНИЯ ===
+                
                 showAlert('✅ Доступ подтвержден! Перенаправляем в чат...', 'success');
                 setTimeout(() => {
                     window.location.href = `chat.html?access_code=${encodeURIComponent(accessCode)}`;
@@ -205,4 +209,20 @@ document.addEventListener('DOMContentLoaded', function() {
     window.botWidget = {
         nextStep // ТОЛЬКО ОДНА ФУНКЦИЯ, resetWidget УДАЛЕН
     };
+
+    // ===== БЛОК 12: СОХРАНЕНИЕ ДАННЫХ ОПРОСА ====
+    function saveSurveyData(answers, accessCode) {
+        const surveyData = {
+            timestamp: Date.now(),
+            accessCode: accessCode,
+            problem: answers.problem || '',
+            amount_date: answers.amount_date || '',
+            actions: answers.actions || '',
+            fullContext: `Проблема: ${answers.problem || ''}\nСумма и дата: ${answers.amount_date || ''}\nПредпринятые действия: ${answers.actions || ''}`
+        };
+        
+        localStorage.setItem('surveyData', JSON.stringify(surveyData));
+        localStorage.setItem('lastAccessCode', accessCode);
+        console.log('📝 Данные опроса сохранены:', surveyData);
+    }
 });
