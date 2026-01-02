@@ -13,6 +13,51 @@ document.addEventListener('DOMContentLoaded', function() {
     const ctaForm = document.getElementById('problemForm');
     const CODE_VERIFY_ENDPOINT = 'https://chea.onrender.com/verify-code';
     
+    // ===== ФУНКЦИЯ ПРОВЕРКИ: Можно ли показывать опрос? =====
+    function canShowSurvey() {
+        // 1. Если есть активный платный доступ — НЕ показываем
+        const paidCode = localStorage.getItem('access_code');
+        if (paidCode) {
+            return false;
+        }
+        
+        // 2. Проверяем время последнего опроса
+        const lastSurveyTime = localStorage.getItem('lastSurveyTime');
+        if (!lastSurveyTime) return true;
+        
+        const timePassed = Date.now() - parseInt(lastSurveyTime);
+        const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+        
+        return timePassed > TWENTY_FOUR_HOURS;
+    }
+    
+    // === ПРОВЕРКА: Если опрос уже пройден недавно или есть доступ — не показываем ===
+    if (!canShowSurvey()) {
+        const hasAccessCode = localStorage.getItem('access_code');
+        
+        document.getElementById('problemForm').innerHTML = `
+            <div class="bot-diagnosis" style="padding: 20px; text-align: center;">
+                <p><i class="fas fa-${hasAccessCode ? 'unlock' : 'clock'}"></i> 
+                ${hasAccessCode 
+                    ? 'У вас есть активный доступ к сервису.' 
+                    : 'Бесплатный анализ уже проведён.'}
+                </p>
+                <p style="margin-top: 10px; font-size: 0.9em;">
+                    ${hasAccessCode 
+                        ? 'Перейдите в чат для работы с юристом.' 
+                        : 'Вы можете пройти анализ снова через 24 часа.'}
+                </p>
+                ${hasAccessCode 
+                    ? `<a href="chat.html?access_code=${encodeURIComponent(hasAccessCode)}" class="btn btn-primary" style="margin-top: 15px;">
+                        <i class="fas fa-sign-in-alt"></i> Войти в чат
+                       </a>` 
+                    : ''}
+            </div>
+        `;
+        return;
+    }
+    // === КОНЕЦ ПРОВЕРКИ ===
+    
     // ===== БЛОК 3: СПИСОК ВОПРОСОВ =====
     const questions = [
         { 
@@ -129,24 +174,26 @@ document.addEventListener('DOMContentLoaded', function() {
         ctaForm.innerHTML = `
             <div class="bot-diagnosis">
                 <div class="diagnosis-header">
-                    <i class="fas fa-info-circle diagnosis-icon"></i>
+                    <i class="fas fa-check-circle diagnosis-icon" style="color: #27ae60;"></i>
                     <h3>Бесплатный анализ завершён</h3>
                 </div>
                 <div class="diagnosis-content">
                     <p><strong>Вы предоставили достаточно информации для первичной оценки.</strong></p>
                     <p>На основе вашего описания ситуация подпадает под <strong>статью 18 Закона «О защите прав потребителей»</strong>.</p>
-                    <p>Для получения полного пошагового плана, расчёта неустойки и готовых документов требуется оплата пакета помощи.</p>
-                    <div class="diagnosis-actions">
-                        <a href="payment.html" class="btn btn-primary btn-large">
-                            <i class="fas fa-shield-alt"></i> Перейти к оплате
-                        </a>
-                        <p style="margin-top: 15px; font-size: 0.9em; color: #666;">
-                            <i class="fas fa-lock"></i> Этот сеанс анализа завершён.
-                        </p>
-                    </div>
+                    <p style="font-weight: 600; color: #2c3e50; margin-top: 20px;">
+                        <i class="fas fa-arrow-down"></i> Для получения полного пошагового плана, расчёта неустойки и готовых документов — выберите тариф ниже.
+                    </p>
+                    <p style="font-size: 0.9em; color: #7f8c8d; margin-top: 15px; font-style: italic;">
+                        <i class="fas fa-lock"></i> Этот сеанс анализа завершён. Данные сохранены.
+                    </p>
                 </div>
             </div>
         `;
+        
+        // === ЗАПИСЫВАЕМ ВРЕМЯ ОПРОСА (метка времени) ===
+        localStorage.setItem('lastSurveyTime', Date.now());
+        // === КОНЕЦ ===
+        
         // Стираем возможность сброса
         window.botWidget = {};
     }
