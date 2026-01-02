@@ -36,6 +36,12 @@ export function startActivationCheck(API_BASE, userFP, planDetails, campaignData
             const data = await response.json();
             console.log('Результат проверки:', data);
             
+            // Сохраняем код в localStorage для других модулей
+            if (lastOrderID && data.code && !lastPromoCode) {
+                localStorage.setItem('access_code', lastOrderID);
+                console.log('💾 Платный код сохранен в localStorage для других модулей');
+            }
+            
             if (data.active === true) {
                 if (lastPromoCode) {
                     showPromoActivatedStatus(API_BASE, lastPromoCode);
