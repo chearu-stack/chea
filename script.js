@@ -52,11 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 2. Проверка и блокировка тарифов
     checkAndBlockTariffs(API_BASE, userFP);
 
-    // 3. ПЕРВОЕ: Запускаем проверку активации (платный доступ)
-    startActivationCheck(API_BASE, userFP, planDetails);
-    
-    // 4. ВТОРОЕ: Проверить активные акции и запустить рендеринг
-    // Передаём как объект с методами, а не результат промиса
+    // 3. СНАЧАЛА: Проверить активные акции
     checkActiveCampaign(API_BASE, userFP, {
         hideQuestionnaireBlock,
         showQuestionnaireBlock,
@@ -68,6 +64,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Рендерим hero-карточку с учётом акций
         renderHeroCard(API_BASE, planDetails, campaignData);
     });
+
+    // 4. ПОТОМ: Запускаем проверку активации (платный доступ)
+    startActivationCheck(API_BASE, userFP, planDetails);
 
     // 5. Инициализация страницы оплаты (если мы на ней)
     setupPaymentPage(planDetails);
