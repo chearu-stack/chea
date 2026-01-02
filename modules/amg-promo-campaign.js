@@ -13,48 +13,86 @@ function hasParticipatedInPromo() {
     return timePassed < 30 * 24 * 60 * 60 * 1000; // 30 дней
 }
 
+// --- ПОЛУЧЕНИЕ ВСЕХ КОДОВ ИЗ localStorage ---
+function getAllCodesFromStorage() {
+    const codes = [];
+    
+    // Основной платный код
+    const accessCode = localStorage.getItem('access_code');
+    if (accessCode) codes.push({code: accessCode, type: 'paid'});
+    
+    // Последний промо-код
+    const lastPromoCode = localStorage.getItem('lastPromoCode');
+    if (lastPromoCode) codes.push({code: lastPromoCode, type: 'promo'});
+    
+    // Коды из amg-codes (если есть такой модуль)
+    try {
+        const amgCodes = JSON.parse(localStorage.getItem('amg_codes') || '[]');
+        amgCodes.forEach(codeObj => {
+            if (codeObj.code) codes.push({code: codeObj.code, type: 'stored'});
+        });
+    } catch (e) {
+        // Игнорируем ошибки парсинга
+    }
+    
+    return codes;
+}
+
 // --- ПРОВЕРКА АКТИВНОЙ АКЦИИ ---
 export async function checkActiveCampaign(API_BASE, userFP, helpers) {
-    // ВАЖНО: Сразу скрываем баннер при запуске проверки
+    // СРАЗУ скрываем баннер при запуске
     const banner = document.getElementById('promo-banner');
     if (banner) {
-        banner.style.display = 'none'; // Предварительное скрытие
+        banner.style.display = 'none';
+        banner.style.visibility = 'hidden';
+        banner.style.opacity = '0';
+        banner.style.height = '0';
+        banner.style.margin = '0';
+        banner.style.padding = '0';
+        banner.style.overflow = 'hidden';
     }
     
     try {
-        // === НОВАЯ ПРОВЕРКА: Есть ли уже платный код (активный или ожидающий)? ===
-        const paidCode = localStorage.getItem('access_code');
-        if (paidCode) {
-            try {
-                const statusResponse = await fetch(`${API_BASE}/check-status?code=${paidCode}`);
-                const status = await statusResponse.json();
-                
-                if (status.code) {
-                    console.log('🎫 Обнаружен платный код (статус:', status.active ? 'активен' : 'ожидание', '), промо-акция скрыта');
+        // === УСИЛЕННАЯ ПРОВЕРКА: Проверяем ВСЕ возможные коды ===
+        const allCodes = getAllCodesFromStorage();
+        console.log('🔍 Найдены коды в localStorage:', allCodes);
+        
+        if (allCodes.length > 0) {
+            for (const codeObj of allCodes) {
+                try {
+                    console.log(`🔍 Проверяем код ${codeObj.code} (тип: ${codeObj.type})`);
+                    const statusResponse = await fetch(`${API_BASE}/check-status?code=${codeObj.code}`);
+                    const status = await statusResponse.json();
                     
-                    // ГАРАНТИРОВАННОЕ СКРЫТИЕ БАННЕРА
-                    if (banner) {
-                        banner.style.display = 'none';
-                        banner.style.visibility = 'hidden'; // Дополнительная гарантия
-                        banner.style.opacity = '0'; // Дополнительная гарантия
-                        banner.style.position = 'absolute'; // Убираем из потока
+                    // Если код существует в системе (не важно, активен или нет)
+                    if (status.code) {
+                        console.log(`🎫 Код ${codeObj.code} найден в системе (статус: ${status.active ? 'активен' : 'не активен'})`);
+                        
+                        // ГАРАНТИРОВАННОЕ СКРЫТИЕ БАННЕРА И ПРОМО-ЭЛЕМЕНТОВ
+                        hideAllPromoElements();
+                        
+                        // Если это платный код (даже неактивный), не показываем промо
+                        if (codeObj.type === 'paid' || status.package && !status.package.includes('PROMO')) {
+                            console.log('🚫 Обнаружен платный код, промо-акция полностью скрыта');
+                            return;
+                        }
+                        
+                        // Если это промо-код и пользователь уже участвовал
+                        if (codeObj.type === 'promo' && hasParticipatedInPromo()) {
+                            console.log('🚫 Пользователь уже участвовал в промо-акции');
+                            showPromoWaitingStatus(codeObj.code, window.currentCampaign || {});
+                            helpers.startActivationCheck();
+                            return;
+                        }
                     }
-                    
-                    // Также скрываем любые связанные элементы
-                    const promoElements = document.querySelectorAll('[id*="promo"], [class*="promo"]');
-                    promoElements.forEach(el => {
-                        el.style.display = 'none';
-                    });
-                    
-                    return; // Пользователь уже имеет код, не показываем промо
+                } catch (error) {
+                    console.warn(`⚠️ Не удалось проверить код ${codeObj.code}:`, error);
                 }
-            } catch (statusError) {
-                console.warn('⚠️ Не удалось проверить статус платного кода:', statusError);
-                // Продолжаем обычную логику при ошибке проверки
             }
         }
-        // === КОНЕЦ НОВОЙ ПРОВЕРКИ ===
+        // === КОНЕЦ УСИЛЕННОЙ ПРОВЕРКИ ===
 
+        // Получаем активную кампанию только если нет запрещающих кодов
         const response = await fetch(`${API_BASE}/get-active-campaign`);
         const campaign = await response.json();
 
@@ -80,6 +118,31 @@ export async function checkActiveCampaign(API_BASE, userFP, helpers) {
     }
 }
 
+// --- СКРЫТИЕ ВСЕХ ПРОМО-ЭЛЕМЕНТОВ ---
+function hideAllPromoElements() {
+    const banner = document.getElementById('promo-banner');
+    if (banner) {
+        banner.style.display = 'none';
+        banner.style.visibility = 'hidden';
+        banner.style.opacity = '0';
+        banner.style.height = '0';
+        banner.style.margin = '0';
+        banner.style.padding = '0';
+        banner.style.overflow = 'hidden';
+        banner.style.position = 'absolute';
+        banner.style.left = '-9999px';
+    }
+    
+    // Дополнительно скрываем все элементы с промо-классами
+    const promoElements = document.querySelectorAll('[id*="promo"], [class*="promo"], [id*="Promo"], [class*="Promo"]');
+    promoElements.forEach(el => {
+        el.style.display = 'none';
+        el.style.visibility = 'hidden';
+    });
+    
+    console.log('✅ Все промо-элементы скрыты');
+}
+
 // --- ПОКАЗ БАННЕРА АКЦИИ ---
 function showPromoBanner(campaign) {
     const banner = document.getElementById('promo-banner');
@@ -95,11 +158,16 @@ function showPromoBanner(campaign) {
 
     button.onclick = () => participateInPromo(campaign);
     
-    // Явно показываем баннер только здесь
+    // Восстанавливаем стили только если баннер нужно показать
     banner.style.display = 'flex';
     banner.style.visibility = 'visible';
     banner.style.opacity = '1';
-    banner.style.position = 'static'; // Возвращаем в поток
+    banner.style.height = '';
+    banner.style.margin = '';
+    banner.style.padding = '';
+    banner.style.overflow = '';
+    banner.style.position = '';
+    banner.style.left = '';
 }
 
 // --- ИЗМЕНЕНИЕ HERO-CARD ДЛЯ АКЦИИ ---
@@ -165,15 +233,8 @@ async function participateInPromo(campaign) {
         localStorage.setItem('lastPromoCode', promoCode);
         localStorage.setItem('promoTime', Date.now());
 
-        // Явное скрытие баннера с несколькими методами
-        const banner = document.getElementById('promo-banner');
-        if (banner) {
-            banner.style.display = 'none';
-            banner.style.visibility = 'hidden';
-            banner.style.opacity = '0';
-            banner.style.height = '0';
-            banner.style.overflow = 'hidden';
-        }
+        // Явное скрытие баннера
+        hideAllPromoElements();
         
         restoreOriginalHeroCard();
         showPromoWaitingStatus(promoCode, campaign);
