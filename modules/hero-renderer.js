@@ -160,7 +160,7 @@ function showActivatedCard(header, body, orderID) {
     body.innerHTML = `
         <div style="text-align: center;">
             <p style="margin-bottom: 20px; font-weight: 600;">
-                <strong>Ваш пакет полностью готов.</strong> Все инструменты цифрового адвоката разблокированы.
+                <strong>Ваш пакет полностью готов.</strong> Все инструменты цифрового помощника разблокированы. Перейдите в личный кабинет, дождитесь загрузки.
             </p>
             <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${orderID}" 
                target="_blank"
