@@ -398,13 +398,20 @@
                 </div>
                 ` : ''}
                 
-             
-        
-        document.getElementById('restart-btn').addEventListener('click', function() {
-            currentStep = 0;
-            answers = {};
-            showQuestion();
-        });
+                <div style="
+                    width: 100%;
+                    padding: 12px;
+                    background: #f8f9fa;
+                    border: 1px solid #dee2e6;
+                    border-radius: 6px;
+                    margin-top: 10px;
+                    text-align: center;
+                    font-weight: 500;
+                    color: #495057;">
+                    ${isSolvable ? 'Оплатите рекомендуемый пакет' : 'Уточните данные для анализа'}
+                </div>
+            </div>
+        `;
     }
     
     // Инициализация
