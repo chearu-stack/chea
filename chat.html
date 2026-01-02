@@ -10,6 +10,7 @@
     </style>
 </head>
 <body class="admin-body"> 
+
     <div class="widget-container">
         <iframe 
             id="widget-frame"
@@ -20,14 +21,19 @@
     </div>
 
     <script>
+        // 1. Получаем параметры из текущего URL (например, access_code)
         const urlParams = new URLSearchParams(window.location.search);
         const accessCode = urlParams.get('access_code');
+        
+        // 2. Формируем ссылку для виджета
         const baseUrl = "https://bothub-bridge.onrender.com";
         const iframe = document.getElementById('widget-frame');
 
         if (accessCode) {
+            // Если код есть, добавляем его к ссылке виджета
             iframe.src = `${baseUrl}?access_code=${accessCode}`;
         } else {
+            // Если кода нет, просто загружаем виджет
             iframe.src = baseUrl;
         }
     </script>
