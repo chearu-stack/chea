@@ -49,7 +49,7 @@ export async function checkActiveCampaign(API_BASE, userFP, helpers) {
 
         if (campaign.active) {
             if (!hasParticipatedInPromo()) {
-                showPromoBanner(campaign);
+                showPromoBanner(campaign, API_BASE, userFP, helpers);
                 showPromoHeroCard(campaign);
             } else {
                 const lastPromoCode = localStorage.getItem('lastPromoCode');
@@ -65,7 +65,7 @@ export async function checkActiveCampaign(API_BASE, userFP, helpers) {
 }
 
 // --- ПОКАЗ БАННЕРА АКЦИИ ---
-function showPromoBanner(campaign) {
+function showPromoBanner(campaign, API_BASE, userFP, helpers) {
     const banner = document.getElementById('promo-banner');
     const title = document.getElementById('promoTitle');
     const description = document.getElementById('promoDescription');
@@ -77,7 +77,7 @@ function showPromoBanner(campaign) {
     description.textContent = campaign.description || 'Специальное предложение';
     banner.style.background = campaign.color || 'linear-gradient(90deg, #dd6b20, #ed8936)';
 
-    button.onclick = () => participateInPromo(campaign);
+    button.onclick = () => participateInPromo(campaign, API_BASE, userFP, helpers);
     
     // ТОЛЬКО ЗДЕСЬ ПОКАЗЫВАЕМ БАННЕР, ЕСЛИ ПРОШЕЛ ВСЕ ПРОВЕРКИ
     banner.style.display = 'flex';
@@ -116,7 +116,7 @@ function showPromoHeroCard(campaign) {
     `;
 }
 
-async function participateInPromo(campaign) {
+async function participateInPromo(campaign, API_BASE, userFP, helpers) {
     console.log('🎁 Участие в промо-акции:', campaign);
 
     try {
@@ -147,6 +147,7 @@ async function participateInPromo(campaign) {
         document.getElementById('promo-banner').style.display = 'none';
         restoreOriginalHeroCard();
         showPromoWaitingStatus(promoCode, campaign);
+        helpers.startActivationCheck();
 
     } catch (error) {
         console.error('❌ Ошибка участия в акции:', error);
