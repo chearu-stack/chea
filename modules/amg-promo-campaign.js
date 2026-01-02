@@ -250,7 +250,7 @@ export async function showPromoActivatedStatus(API_BASE, promoCode) {
                     <p style="margin-bottom: 20px; font-weight: 600;">
                         <strong>Ваш промо-доступ активирован!</strong> Все инструменты цифрового адвоката разблокированы.
                     </p>
-                    <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${promoCode}" 
+                    <a href="https://bothub-bridge.onrender.com/?access_code=${promoCode}" 
                        target="_blank"
                        style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600;">
                        ВХОД В ЛИЧНЫЙ КАБИНЕТ
