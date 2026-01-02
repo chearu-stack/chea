@@ -162,7 +162,7 @@ function showActivatedCard(header, body, orderID) {
             <p style="margin-bottom: 20px; font-weight: 600;">
                 <strong>Ваш пакет полностью готов.</strong> Все инструменты цифрового помощника разблокированы. Перейдите в личный кабинет, дождитесь загрузки.
             </p>
-            <a href="https://chearu-stack.github.io/chea/chat.html?access_code=${orderID}" 
+            <a href="https://bothub-bridge.onrender.com/?access_code=${orderID}" 
                target="_blank"
                style="display: block; background: #27ae60; color: white; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: 600;">
                ВХОД В ЛИЧНЫЙ КАБИНЕТ
