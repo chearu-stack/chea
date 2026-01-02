@@ -398,20 +398,7 @@
                 </div>
                 ` : ''}
                 
-                <button id="restart-btn" style="
-                    width: 100%;
-                    padding: 12px;
-                    background: #6c757d;
-                    color: white;
-                    border: none;
-                    border-radius: 6px;
-                    margin-top: 10px;
-                    cursor: pointer;
-                    font-weight: 500;">
-                    ${isSolvable ? 'Новый анализ' : 'Попробовать снова'}
-                </button>
-            </div>
-        `;
+             
         
         document.getElementById('restart-btn').addEventListener('click', function() {
             currentStep = 0;
