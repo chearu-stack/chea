@@ -16,34 +16,36 @@ exports.handler = async (event, context) => {
       code, 
       package: packageType, 
       fingerprint,
-      caps_limit, // Добавляем принятие caps_limit из запроса
-      is_active, // Добавляем принятие is_active из запроса
-      metadata    // Добавляем принятие metadata из запроса
+      caps_limit,
+      caps_limit_hack,
+      is_active,
+      metadata
     } = JSON.parse(event.body || '{}');
     
     if (!code || !packageType) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing code or package' }) };
     }
 
-    // --- ЛОГИКА ТАРИФОВ (Защита от подмены лимита) ---
-    const limits = {
-      'base': 30000,
-      'pro': 60000,
-      'vip': 90000,
-      // Добавляем поддержку PROMO_ пакетов
+    // Исправление 1: правильные имена тарифов
+    const defaultLimits = {
+      'basic': 30000,
+      'extended': 60000,
+      'subscription': 90000,
       'PROMO_BASIC': 30000,
       'PROMO_EXTENDED': 60000,
       'PROMO_SUBSCRIPTION': 90000,
-      'PROMO_CAMPAIGN': 0 // Для записей кампаний лимит не нужен
+      'PROMO_CAMPAIGN': 0
     };
     
-    // ПРАВИЛО: если передали caps_limit и это промо-пакет — используем переданный
-    // Иначе используем стандартную логику защиты
+    // Исправление 2: приоритет caps_limit_hack
     let finalLimit;
-    if (caps_limit !== undefined && packageType.startsWith('PROMO_')) {
-      finalLimit = caps_limit; // Доверяем админке для промо-пакетов
+    
+    if (caps_limit_hack !== undefined) {
+      finalLimit = caps_limit_hack;
+    } else if (caps_limit !== undefined) {
+      finalLimit = caps_limit;
     } else {
-      finalLimit = limits[packageType] || 30000;
+      finalLimit = defaultLimits[packageType] || 30000;
     }
 
     console.log(`📡 Регистрация: ${code}, Пакет: ${packageType}, Лимит: ${finalLimit}, Активен: ${is_active || false}`);
@@ -58,13 +60,11 @@ exports.handler = async (event, context) => {
       ip_address: event.headers['x-forwarded-for'] || 'unknown'
     };
 
-    // Добавляем is_active только если передано
     if (is_active !== undefined) {
       recordData.is_active = is_active;
       recordData.status = is_active ? 'active' : 'pending';
     }
 
-    // Добавляем metadata если передано
     if (metadata !== undefined) {
       recordData.metadata = metadata;
     }
