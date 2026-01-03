@@ -13,15 +13,7 @@ export function startActivationCheck(API_BASE, userFP, planDetails, campaignData
         clearInterval(window.activationCheckInterval);
     }
 
-    // Выполняем немедленную проверку
-    checkImmediately();
-
-    window.activationCheckInterval = setInterval(checkImmediately, 10000);
-
-    return window.activationCheckInterval;
-
-    // Вложенная функция для повторного использования
-    async function checkImmediately() {
+    window.activationCheckInterval = setInterval(async () => {
         try {
             // РАЗДЕЛЕНИЕ: промо-код проверяем по коду, платный — по коду И fingerprint
             const lastPromoCode = localStorage.getItem('lastPromoCode');
@@ -47,7 +39,7 @@ export function startActivationCheck(API_BASE, userFP, planDetails, campaignData
             // Сохраняем код в localStorage для других модулей
             if (lastOrderID && data.code && !lastPromoCode) {
                 localStorage.setItem('access_code', lastOrderID);
-                console.log('💾 Платный код сохранен в localStorage для других модутелей');
+                console.log('💾 Платный код сохранен в localStorage для других модулей');
             }
             
             if (data.active === true) {
@@ -57,8 +49,9 @@ export function startActivationCheck(API_BASE, userFP, planDetails, campaignData
                     // НАДЁЖНО: Вызываем renderHeroCard для обновления интерфейса
                     console.log('✅ Платный тариф активирован! Обновляем интерфейс...');
                     
-                    // Скрываем промо-баннер
+                    // === ДОБАВЛЕНО: Скрываем промо-баннер ===
                     hidePromoCampaignIfPaidActive();
+                    // === КОНЕЦ ДОБАВЛЕНИЯ ===
                     
                     await renderHeroCard(API_BASE, planDetails, campaignData);
                 }
@@ -69,7 +62,9 @@ export function startActivationCheck(API_BASE, userFP, planDetails, campaignData
         } catch (error) {
             console.log('Ошибка проверки активации:', error);
         }
-    }
+    }, 10000);
+
+    return window.activationCheckInterval;
 }
 
 // --- ОСТАНОВКА ПРОВЕРКИ ---
@@ -81,7 +76,7 @@ export function stopActivationCheck() {
     }
 }
 
-// Скрытие промо-акции при активном платном доступе
+// === ДОБАВЛЕНО: Скрытие промо-акции при активном платном доступе ===
 function hidePromoCampaignIfPaidActive() {
     // Только скрываем промо-баннер, НЕ трогаем hero-карточку
     const promoBanner = document.getElementById('promo-banner');
