@@ -17,7 +17,6 @@ exports.handler = async (event, context) => {
       package: packageType, 
       fingerprint,
       caps_limit,
-      caps_limit_hack,
       is_active,
       metadata
     } = JSON.parse(event.body || '{}');
@@ -26,8 +25,8 @@ exports.handler = async (event, context) => {
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing code or package' }) };
     }
 
-    // Исправление 1: правильные имена тарифов
-    const defaultLimits = {
+    // ИСПРАВЛЕНИЕ: правильные имена тарифов
+    const limits = {
       'basic': 30000,
       'extended': 60000,
       'subscription': 90000,
@@ -37,15 +36,12 @@ exports.handler = async (event, context) => {
       'PROMO_CAMPAIGN': 0
     };
     
-    // Исправление 2: приоритет caps_limit_hack
+    // ИСПРАВЛЕНИЕ: используем переданный caps_limit если есть
     let finalLimit;
-    
-    if (caps_limit_hack !== undefined) {
-      finalLimit = caps_limit_hack;
-    } else if (caps_limit !== undefined) {
-      finalLimit = caps_limit;
+    if (caps_limit !== undefined) {
+      finalLimit = caps_limit; // Используем переданный лимит
     } else {
-      finalLimit = defaultLimits[packageType] || 30000;
+      finalLimit = limits[packageType] || 30000; // Иначе стандартный
     }
 
     console.log(`📡 Регистрация: ${code}, Пакет: ${packageType}, Лимит: ${finalLimit}, Активен: ${is_active || false}`);
