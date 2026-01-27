@@ -57,6 +57,32 @@ h1, h2, h3, h4 { font-family: 'Merriweather', serif; font-weight: 700; color: #1
     border: 2px solid #c53030;
 }
 
+.nav-button-business {
+    background: linear-gradient(135deg, #4a6fa5 0%, #3a5a8a 100%);
+    color: white !important;
+    font-weight: 700;
+    padding: 10px 24px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(74, 111, 165, 0.4);
+    transition: all 0.3s ease;
+}
+
+.nav-button-business:hover {
+    background: linear-gradient(135deg, #3a5a8a 0%, #2c3e50 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(74, 111, 165, 0.6);
+}
+
+.nav-button-business::after {
+    content: " ↗";
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
 /* ===== НАВИГАЦИЯ ===== */
 .main-nav {
     background-color: white;
